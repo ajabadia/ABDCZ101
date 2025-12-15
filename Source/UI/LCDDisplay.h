@@ -44,7 +44,7 @@ public:
         
         // Text (LCD Blue)
         g.setColour(juce::Colour(0xFF00BFFF));
-        g.setFont(juce::Font("Courier New", 16.0f, juce::Font::bold));
+        g.setFont(juce::FontOptions("Courier New", 16.0f, juce::Font::bold));
         
         // Draw lines
         g.drawText(m_line1, bounds.reduced(10, 0).removeFromTop(bounds.getHeight() / 2), juce::Justification::centredLeft, true);

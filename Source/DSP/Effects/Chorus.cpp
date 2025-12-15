@@ -1,0 +1,115 @@
+#include "Chorus.h"
+#include <cmath>
+
+namespace CZ101 {
+namespace DSP {
+namespace Effects {
+
+Chorus::Chorus()
+{
+    // Max delay depth 20ms usually enough (Allocating 50ms for safety)
+    // 50ms at 192kHz ~= 9600 samples
+    bufferSize = 16384; 
+    delayBufferL.resize(bufferSize, 0.0f);
+    delayBufferR.resize(bufferSize, 0.0f);
+}
+
+void Chorus::prepare(double sr)
+{
+    sampleRate = sr;
+    setRate(rate); // Recalc increment
+    reset();
+}
+
+void Chorus::reset()
+{
+    std::fill(delayBufferL.begin(), delayBufferL.end(), 0.0f);
+    std::fill(delayBufferR.begin(), delayBufferR.end(), 0.0f);
+    writeIndex = 0;
+    lfoPhase = 0.0f;
+}
+
+void Chorus::setRate(float rateHz)
+{
+    rate = rateHz;
+    // Inc per sample = Rate / SR
+    // 2PI for sin? Or 0-1 phasor? Using 0-1
+    lfoIncrement = rate / static_cast<float>(sampleRate);
+}
+
+void Chorus::setDepth(float depthMs)
+{
+    depth = depthMs;
+}
+
+void Chorus::setMix(float mix0to1)
+{
+    mix = std::clamp(mix0to1, 0.0f, 1.0f);
+}
+
+float Chorus::getInterpolatedSample(const std::vector<float>& buffer, float readIndex) const
+{
+    // Linear Interpolation
+    int index1 = static_cast<int>(readIndex);
+    int index2 = (index1 + 1) % bufferSize;
+    float fraction = readIndex - index1;
+    
+    float s1 = buffer[index1];
+    float s2 = buffer[index2];
+    
+    return s1 + fraction * (s2 - s1);
+}
+
+void Chorus::process(float* leftChannel, float* rightChannel, int numSamples)
+{
+    if (mix < 0.01f) return; // Bypass efficiency
+    
+    const float depthSamples = (depth / 1000.0f) * static_cast<float>(sampleRate);
+    // Base delay for Chorus usually slightly more than depth excursion
+    const float baseDelay = depthSamples * 1.5f + 100.0f; // Offset to avoid crossing write pointer
+    
+    for (int i = 0; i < numSamples; ++i)
+    {
+        // Update LFO
+        lfoPhase += lfoIncrement;
+        if (lfoPhase >= 1.0f) lfoPhase -= 1.0f;
+        
+        // Calculate LFO values
+        // Left: Sin(phase)
+        // Right: Cos(phase) or Sin(phase + 90) -> Separation
+        float lfoValL = std::sin(lfoPhase * 2.0f * juce::MathConstants<float>::pi);
+        float lfoValR = std::cos(lfoPhase * 2.0f * juce::MathConstants<float>::pi);
+        
+        // Calculate read positions
+        // Delay = Base + Depth * LFO
+        float delayL = baseDelay + (depthSamples * lfoValL);
+        float delayR = baseDelay + (depthSamples * lfoValR);
+        
+        // Circular buffer read pointers
+        float readPosL = static_cast<float>(writeIndex) - delayL;
+        if (readPosL < 0.0f) readPosL += bufferSize;
+        
+        float readPosR = static_cast<float>(writeIndex) - delayR;
+        if (readPosR < 0.0f) readPosR += bufferSize;
+        
+        // Read wet samples
+        float wetL = getInterpolatedSample(delayBufferL, readPosL);
+        float wetR = getInterpolatedSample(delayBufferR, readPosR);
+        
+        // Write inputs to buffer
+        delayBufferL[writeIndex] = leftChannel[i];
+        delayBufferR[writeIndex] = rightChannel[i];
+        
+        // Mix
+        leftChannel[i] = (leftChannel[i] * (1.0f - mix * 0.5f)) + (wetL * mix);
+        rightChannel[i] = (rightChannel[i] * (1.0f - mix * 0.5f)) + (wetR * mix);
+        
+        // Advance write pointer
+        writeIndex++;
+        if (writeIndex >= bufferSize) writeIndex = 0;
+    }
+}
+
+} // namespace Effects
+} // namespace DSP
+} // namespace CZ101

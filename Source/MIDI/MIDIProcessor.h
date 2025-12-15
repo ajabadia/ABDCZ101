@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Core/VoiceManager.h"
+#include "SysExManager.h"
 #include <juce_audio_processors/juce_audio_processors.h>
 
 namespace CZ101 {
@@ -9,20 +10,28 @@ namespace MIDI {
 class MIDIProcessor
 {
 public:
-    MIDIProcessor(Core::VoiceManager& voiceManager);
+    MIDIProcessor(Core::VoiceManager& voiceManager, State::PresetManager& presetManager);
     
     void processMidiMessage(const juce::MidiMessage& message) noexcept;
+    void setSysExManager(SysExManager* sysEx) { sysExManager = sysEx; }
+    
     // Alias for external use
     void processMessage(const juce::MidiMessage& message) { processMidiMessage(message); }
-    
     void processMidiBuffer(const juce::MidiBuffer& midiBuffer) noexcept;
     
     void setPitchBendRange(int semitones) noexcept { pitchBendRange = semitones; }
-    
+
 private:
     Core::VoiceManager& voiceManager;
+    State::PresetManager& presetManager; 
+    
+    SysExManager* sysExManager = nullptr;
     int pitchBendRange = 2;  // ±2 semitones
     float currentPitchBend = 0.0f;
+    
+    // MIDI State
+    float portamentoTime = 0.0f;
+    bool portamentoEnabled = true; // Default ON? Or OFF? Spec says ? 65 is Portamento On/Off.
     
     void handleNoteOn(int note, float velocity) noexcept;
     void handleNoteOff(int note) noexcept;

@@ -5,7 +5,8 @@
 
 namespace CZ101 {
 namespace DSP {
-
+namespace Effects {
+    
 class Delay
 {
 public:
@@ -30,5 +31,6 @@ private:
     float mix = 0.3f;
 };
 
+} // namespace Effects
 } // namespace DSP
 } // namespace CZ101

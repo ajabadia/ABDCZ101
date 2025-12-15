@@ -20,6 +20,9 @@ public:
     juce::AudioParameterFloat* osc2Level = nullptr;
     juce::AudioParameterChoice* osc2Waveform = nullptr;
     juce::AudioParameterFloat* osc2Detune = nullptr;
+    juce::AudioParameterBool* hardSync = nullptr;
+    juce::AudioParameterBool* ringMod = nullptr;
+    juce::AudioParameterFloat* glideTime = nullptr;
     
     // DCA Envelope
     juce::AudioParameterFloat* dcaAttack = nullptr;
@@ -43,8 +46,16 @@ public:
     juce::AudioParameterFloat* delayFeedback = nullptr;
     juce::AudioParameterFloat* delayMix = nullptr;
     
+    juce::AudioParameterFloat* reverbSize = nullptr;
+    juce::AudioParameterFloat* reverbMix = nullptr;
+
+    juce::AudioParameterFloat* chorusRate = nullptr;
+    juce::AudioParameterFloat* chorusDepth = nullptr;
+    juce::AudioParameterFloat* chorusMix = nullptr;
+    
     // LFO
     juce::AudioParameterFloat* lfoRate = nullptr;
+    juce::AudioParameterFloat* lfoDepth = nullptr; // Vibrato depth
     juce::AudioParameterChoice* lfoWaveform = nullptr;
     
     // Get parameter by ID helper

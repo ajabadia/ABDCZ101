@@ -2,6 +2,7 @@
 
 namespace CZ101 {
 namespace DSP {
+namespace Effects {
 
 Delay::Delay()
 {
@@ -50,5 +51,6 @@ float Delay::processSample(float input) noexcept
     return input * (1.0f - mix) + delayed * mix;
 }
 
+} // namespace Effects
 } // namespace DSP
 } // namespace CZ101

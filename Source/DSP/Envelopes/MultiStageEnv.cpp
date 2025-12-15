@@ -6,15 +6,22 @@ namespace DSP {
 
 MultiStageEnvelope::MultiStageEnvelope()
 {
-    // Initialize with default envelope
-    setStage(0, 0.0f, 0.001f);   // Start at 0
-    setStage(1, 1.0f, 0.01f);    // Fast attack
-    setStage(2, 0.7f, 0.1f);     // Decay
-    setStage(3, 0.7f, 0.1f, true); // Sustain
-    setStage(4, 0.0f, 0.2f);     // Release
-    setStage(5, 0.0f, 0.0f);     // Unused
-    setStage(6, 0.0f, 0.0f);     // Unused
-    setStage(7, 0.0f, 0.0f);     // Unused
+    // Default: Simple ADSR-like shape using 8 stages
+    // Stage 0: Attack to 1.0
+    setStage(0, 0.9f, 1.0f);
+    // Stage 1: Decay to 0.5
+    setStage(1, 0.8f, 0.5f);
+    // Stage 2: Sustain at 0.5
+    setStage(2, 0.99f, 0.5f);
+    
+    // Sets sustain point at Stage 2
+    setSustainPoint(2);
+    
+    // Stage 3: Release to 0
+    setStage(3, 0.8f, 0.0f);
+    
+    // End point at Stage 3
+    setEndPoint(3);
 }
 
 void MultiStageEnvelope::setSampleRate(double sr) noexcept
@@ -22,117 +29,159 @@ void MultiStageEnvelope::setSampleRate(double sr) noexcept
     sampleRate = sr;
 }
 
-void MultiStageEnvelope::setStage(int index, float level, float time, bool sustain) noexcept
+void MultiStageEnvelope::setStage(int index, float rate, float level) noexcept
 {
-    if (index < 0 || index >= MAX_STAGES)
-        return;
-    
-    stages[index].level = std::clamp(level, 0.0f, 1.0f);
-    stages[index].time = std::max(0.001f, time);
-    stages[index].sustain = sustain;
-    
-    if (sustain)
-        sustainStage = index;
+    if (index >= 0 && index < MAX_STAGES)
+    {
+        stages[index].rate = std::clamp(rate, 0.0f, 1.0f);
+        stages[index].level = std::clamp(level, 0.0f, 1.0f);
+    }
+}
+
+void MultiStageEnvelope::setSustainPoint(int stageIndex) noexcept
+{
+    if (stageIndex >= -1 && stageIndex < MAX_STAGES)
+        sustainPoint = stageIndex;
+}
+
+void MultiStageEnvelope::setEndPoint(int stageIndex) noexcept
+{
+    if (stageIndex >= 0 && stageIndex < MAX_STAGES)
+        endPoint = stageIndex;
 }
 
 void MultiStageEnvelope::noteOn() noexcept
 {
     currentStage = 0;
-    currentValue = stages[0].level;
-    stageProgress = 0.0f;
+    currentValue = 0.0f; // CZ starts from 0 (or previous value in advanced modes, but 0 simplify)
+    targetValue = stages[0].level;
+    
+    float seconds = rateToSeconds(stages[0].rate);
+    float samples = static_cast<float>(seconds * sampleRate);
+    
+    if (samples < 1.0f) samples = 1.0f;
+    
+    // Calculate linear increment
+    currentIncrement = (targetValue - currentValue) / samples;
+    
+    active = true;
     released = false;
 }
 
 void MultiStageEnvelope::noteOff() noexcept
 {
-    if (currentStage < 0)
-        return;
-    
     released = true;
     
-    // If we're at sustain stage, advance to next
-    if (sustainStage >= 0 && currentStage == sustainStage)
+    // If currently holding at sustain point, move to next stage immediately
+    if (active && currentStage == sustainPoint)
     {
-        advanceToNextStage();
+        // Force transition to next stage
+        currentStage++;
+        if (currentStage > endPoint)
+        {
+            active = false;
+            return;
+        }
+        
+        // Setup next stage
+        targetValue = stages[currentStage].level;
+        float seconds = rateToSeconds(stages[currentStage].rate);
+        float samples = static_cast<float>(seconds * sampleRate);
+        if (samples < 1.0f) samples = 1.0f;
+        
+        currentIncrement = (targetValue - currentValue) / samples;
     }
 }
 
 void MultiStageEnvelope::reset() noexcept
 {
-    currentStage = -1;
+    active = false;
+    currentStage = 0;
     currentValue = 0.0f;
-    stageProgress = 0.0f;
-    released = false;
+    currentIncrement = 0.0f;
 }
 
 float MultiStageEnvelope::getNextValue() noexcept
 {
-    if (currentStage < 0 || currentStage >= MAX_STAGES)
-        return 0.0f;
+    if (!active) return currentValue;
     
-    const Stage& stage = stages[currentStage];
+    // Apply increment
+    currentValue += currentIncrement;
     
-    // If sustain stage and not released, hold value
-    if (stage.sustain && !released)
-        return currentValue;
+    // Check if we reached target (or crossed it)
+    bool reached = false;
+    if (currentIncrement > 0.0f && currentValue >= targetValue) reached = true;
+    else if (currentIncrement < 0.0f && currentValue <= targetValue) reached = true;
+    else if (currentIncrement == 0.0f) reached = true; // Special case
     
-    // Calculate progress
-    float increment = 1.0f / (stage.time * static_cast<float>(sampleRate));
-    stageProgress += increment;
-    
-    // Get start value (current or previous stage level)
-    float startValue = (currentStage > 0) ? stages[currentStage - 1].level : 0.0f;
-    float targetValue = stage.level;
-    
-    // Apply curve
-    float curvedProgress = calculateCurve(stageProgress, startValue, targetValue);
-    currentValue = curvedProgress;
-    
-    // Check if stage complete
-    if (stageProgress >= 1.0f)
+    if (reached)
     {
-        currentValue = targetValue;
-        advanceToNextStage();
+        currentValue = targetValue; // Snap to target
+        
+        // Logic for Sustain / End
+        
+        // Are we at Sustain Point?
+        if (currentStage == sustainPoint && !released)
+        {
+            // Hold here until Note Off
+            currentIncrement = 0.0f;
+        }
+        else if (currentStage == endPoint)
+        {
+            // End of envelope
+            active = false;
+            currentIncrement = 0.0f;
+        }
+        else
+        {
+            // Move to next stage
+            currentStage++;
+            
+            if (currentStage < MAX_STAGES)
+            {
+                targetValue = stages[currentStage].level;
+                float seconds = rateToSeconds(stages[currentStage].rate);
+                float samples = static_cast<float>(seconds * sampleRate);
+                if (samples < 1.0f) samples = 1.0f;
+                
+                currentIncrement = (targetValue - currentValue) / samples;
+            }
+            else
+            {
+                active = false; // Safety
+            }
+        }
     }
     
     return currentValue;
 }
 
-float MultiStageEnvelope::calculateCurve(float t, float start, float end) const noexcept
+float MultiStageEnvelope::rateToSeconds(float rate) const noexcept
 {
-    t = std::clamp(t, 0.0f, 1.0f);
+    // CZ-101 Rate approximation
+    // Rate 0.0 (slow) -> ~3 seconds (can be longer on real hardware)
+    // Rate 1.0 (fast) -> ~1 ms
     
-    // Exponential curve
-    float curved = 1.0f - std::exp(-CURVE_FACTOR * t);
+    // Using exponential curve
+    // Invert rate: 1.0 is slow, 0.0 is fast for calculation
+    float r = 1.0f - rate;
     
-    // Interpolate between start and end
-    return start + (end - start) * curved;
+    // Base 30s max time
+    return 0.001f + (std::pow(r, 4.0f) * 30.0f);
 }
 
-void MultiStageEnvelope::advanceToNextStage() noexcept
+float MultiStageEnvelope::getStageRate(int index) const noexcept
 {
-    stageProgress = 0.0f;
-    currentStage++;
-    
-    // Check if we've reached the end
-    if (currentStage >= MAX_STAGES)
-    {
-        currentStage = -1;  // Idle
-        currentValue = 0.0f;
-        return;
-    }
-    
-    // Skip unused stages (time = 0)
-    while (currentStage < MAX_STAGES && stages[currentStage].time <= 0.001f)
-    {
-        currentStage++;
-    }
-    
-    if (currentStage >= MAX_STAGES)
-    {
-        currentStage = -1;
-        currentValue = 0.0f;
-    }
+    if (index >= 0 && index < MAX_STAGES)
+        return stages[index].rate;
+    return 0.0f;
+}
+
+float MultiStageEnvelope::getStageLevel(int index) const noexcept
+{
+    if (index >= 0 && index < MAX_STAGES)
+        return stages[index].level;
+    return 0.0f;
 }
 
 } // namespace DSP

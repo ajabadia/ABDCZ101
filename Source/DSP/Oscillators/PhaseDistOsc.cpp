@@ -36,7 +36,7 @@ void PhaseDistOscillator::updatePhaseIncrement() noexcept
     phaseIncrement = static_cast<float>(frequency / sampleRate);
 }
 
-float PhaseDistOscillator::renderNextSample(float dcwAmount) noexcept
+float PhaseDistOscillator::renderNextSample(float dcwAmount, bool* outDidWrap) noexcept
 {
     float sample = 0.0f;
     
@@ -72,7 +72,14 @@ float PhaseDistOscillator::renderNextSample(float dcwAmount) noexcept
     // Advance phase
     phase += phaseIncrement;
     if (phase >= 1.0f)
+    {
         phase -= 1.0f;
+        if (outDidWrap) *outDidWrap = true;
+    }
+    else
+    {
+        if (outDidWrap) *outDidWrap = false;
+    }
     
     return sample;
 }

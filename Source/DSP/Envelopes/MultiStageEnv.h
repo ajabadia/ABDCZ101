@@ -9,8 +9,11 @@ namespace DSP {
 /**
  * @brief Multi-Stage Envelope Generator (8 stages)
  * 
- * Complex envelope with 8 configurable stages for advanced modulation.
- * Used in CZ-101 for DCW (Digital Controlled Wave) modulation.
+ * Authentic CZ-101 Envelope Architecture:
+ * - 8 Steps per envelope
+ * - Each step has a Rate (speed) and Level (target)
+ * - Sustain Point: The step where the envelope holds while key is pressed.
+ * - End Point: The final step of the envelope.
  */
 class MultiStageEnvelope
 {
@@ -20,38 +23,53 @@ public:
     struct Stage
     {
         float level = 0.0f;      // Target level [0.0, 1.0]
-        float time = 0.1f;       // Time to reach level (seconds)
-        bool sustain = false;    // Hold at this stage until noteOff
+        float rate = 0.5f;       // Speed to reach level [0.0, 1.0] (1.0 = fast, 0.0 = slow)
     };
     
     MultiStageEnvelope();
     
     void setSampleRate(double sampleRate) noexcept;
-    void setStage(int index, float level, float time, bool sustain = false) noexcept;
     
+    // Configuration
+    void setStage(int index, float rate, float level) noexcept;
+    void setSustainPoint(int stageIndex) noexcept;
+    void setEndPoint(int stageIndex) noexcept;
+    
+    // Runtime
     void noteOn() noexcept;
     void noteOff() noexcept;
     void reset() noexcept;
     
     float getNextValue() noexcept;
     
+    // Getters for adapter logic
+    float getStageRate(int index) const noexcept;
+    float getStageLevel(int index) const noexcept;
+    
+    bool isActive() const noexcept { return active; }
     int getCurrentStage() const noexcept { return currentStage; }
-    bool isActive() const noexcept { return currentStage >= 0; }
+    
+    int getSustainPoint() const noexcept { return sustainPoint; }
+    int getEndPoint() const noexcept { return endPoint; }
     
 private:
     double sampleRate = 44100.0;
     std::array<Stage, MAX_STAGES> stages;
     
-    int currentStage = -1;        // -1 = idle
+    int currentStage = 0;
     float currentValue = 0.0f;
-    float stageProgress = 0.0f;
-    int sustainStage = -1;        // Which stage is sustain
+    float currentIncrement = 0.0f;
+    float targetValue = 0.0f;
+    
+    int sustainPoint = -1;  // -1 = no sustain (or one-shot)
+    int endPoint = 7;       // Default to using all 8 stages
+    
+    bool active = false;
     bool released = false;
     
-    static constexpr float CURVE_FACTOR = 4.0f;
-    
-    float calculateCurve(float t, float start, float end) const noexcept;
-    void advanceToNextStage() noexcept;
+    // CZ-101 Rate to Time conversion (internal helper)
+    // Rate 0-99 mapped to ms
+    float rateToSeconds(float rate) const noexcept;
 };
 
 } // namespace DSP

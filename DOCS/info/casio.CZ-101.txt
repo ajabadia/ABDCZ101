@@ -1,0 +1,29 @@
+From cord@lance.colostate.eduSun Feb 26 10:28:01 1995
+Date: Sun, 26 Feb 95 08:55:52 MST
+From: Cord Mueller <cord@lance.colostate.edu>
+To: Legion <legion@netaxs.com>, Electronica <electronica@andrew.cmu.edu>
+Cc: analogue@hyperreal.com
+Subject: Re: Good ol' sample 'n' hold
+
+>I've read manuals and such but still don't really get the guts of what a 
+>sample and hold feature is doing. I'd like to imitate this on other 
+>digital synths (cz101, VZ10m) but don't know how to do it.
+
+S/H means, that a source (most the noise) is sampled (take one value) and
+hold that value till the next trigger. To immitate this effect on the cz101
+you have to take one value fast (e.g.DCF), thus '#1 t=0 L=xx(here 55), than
+hold this value: #2 t=99 l=xx+1 (56), than take a new 'trigger' #3 t=0 l=yy
+(78), than hold this value like shown above #4 t=99 l=yy+ (or-) 1 (77), than
+jump again and so on... You see you can only use 3 phases/triggers but the
+effect is superb, I immitate a little bit the Wavetable scanning (at these
+times I didn't own a PPG :) ). The same you can do with the pitch.
+Interesting is, if you take both osc and start the second after the first
+s/h immitation! I think for short s/h effects is good enough. Also with
+using the resonance waveforms it makes really funny, analogue sounds. 
+
+With varying the times or the levels ranges, you can speed or slow this effect!
+
+I see the guys running to their CZs and trying...I played my CZ over
+Christmas too and I wonder myself what nice sounds in there. 
+
+Cord

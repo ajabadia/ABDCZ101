@@ -22,14 +22,14 @@ juce_add_plugin(CZ101Emulator
     COMPANY_NAME "CZ101"
     PLUGIN_MANUFACTURER_CODE Cz10
     PLUGIN_CODE Cz01
-    FORMATS VST3 Standalone
+    FORMATS Standalone
     PRODUCT_NAME "CZ-101 Emulator"
     IS_SYNTH TRUE
     NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
-    COPY_PLUGIN_AFTER_BUILD TRUE
+    COPY_PLUGIN_AFTER_BUILD FALSE
 )
 
 # Generar JuceHeader.h para compatibilidad
@@ -60,7 +60,10 @@ target_sources(CZ101Emulator PRIVATE
     Source/Core/VoiceManager.cpp
     Source/Core/VoiceManager.h
     Source/MIDI/MIDIProcessor.cpp
+    Source/MIDI/MIDIProcessor.cpp
     Source/MIDI/MIDIProcessor.h
+    Source/MIDI/SysExManager.cpp
+    Source/MIDI/SysExManager.h
     # Milestone 4: Modulation
     Source/DSP/Modulation/LFO.cpp
     Source/DSP/Modulation/LFO.h
@@ -69,6 +72,10 @@ target_sources(CZ101Emulator PRIVATE
     Source/DSP/Filters/ResonantFilter.h
     Source/DSP/Effects/Delay.cpp
     Source/DSP/Effects/Delay.h
+    Source/DSP/Effects/Reverb.cpp
+    Source/DSP/Effects/Reverb.h
+    Source/DSP/Effects/Chorus.cpp
+    Source/DSP/Effects/Chorus.h
     # Milestone 6: State Management
     Source/State/Parameters.cpp
     Source/State/Parameters.h
@@ -85,6 +92,8 @@ target_sources(CZ101Emulator PRIVATE
     Source/UI/Components/PresetBrowser.h
     Source/UI/Components/MIDIActivityIndicator.cpp
     Source/UI/Components/MIDIActivityIndicator.h
+    Source/UI/Components/EnvelopeEditor.cpp
+    Source/UI/Components/EnvelopeEditor.h
     # Milestone 9: Testing & Utilities
     Source/Utils/PerformanceMonitor.cpp
     Source/Utils/PerformanceMonitor.h
@@ -150,6 +159,23 @@ message(STATUS "  Version: ${PROJECT_VERSION}")
 message(STATUS "  C++ Standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "  JUCE Directory: ${JUCE_DIR}")
 
+
+# --- TEST UTILITIES ---
+# Standalone SysEx Verify Tool (No GUI, No Audio Device needed)
+add_executable(CZ101SysExTest 
+    Source/Tests/SysExTestMain.cpp 
+    Source/MIDI/SysExManager.cpp
+)
+
+target_include_directories(CZ101SysExTest PRIVATE Source)
+
+target_link_libraries(CZ101SysExTest
+    PRIVATE
+        juce::juce_core
+        juce::juce_audio_basics # Helper for MidiMessage
+)
+
+target_compile_definitions(CZ101SysExTest PUBLIC JUCE_DISPLAY_SPLASH_SCREEN=0)
 
 # Testing (GoogleTest)
 option(BUILD_TESTS "Build tests" OFF)  # Deshabilitado hasta tener archivos de test

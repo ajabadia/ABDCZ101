@@ -52,9 +52,10 @@ public:
     /**
      * @brief Render next sample with Phase Distortion simulation
      * @param dcwAmount Timbre control [0.0 = Pure Sine, 1.0 = Full Waveform]
+     * @param outDidWrap Pointer to bool that will be set to true if phase wrapped (optional)
      * @return Audio sample [-1.0, 1.0]
      */
-    float renderNextSample(float dcwAmount = 1.0f) noexcept;
+    float renderNextSample(float dcwAmount, bool* outDidWrap = nullptr) noexcept;
     
 private:
     WaveTable waveTable;

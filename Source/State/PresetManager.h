@@ -7,26 +7,50 @@
 namespace CZ101 {
 namespace State {
 
+// Values for an 8-stage envelope
+struct EnvelopeData
+{
+    float rates[8];
+    float levels[8];
+    int sustainPoint;
+    int endPoint;
+    
+    EnvelopeData()
+    {
+        for (int i=0; i<8; ++i) { rates[i] = 0.5f; levels[i] = 0.0f; }
+        sustainPoint = 2;
+        endPoint = 3;
+    }
+};
+
 struct Preset
 {
     std::string name;
     std::map<std::string, float> parameters;
     
+    // 8-Stage Data
+    EnvelopeData dcwEnv;
+    EnvelopeData dcaEnv;
+    EnvelopeData pitchEnv;
+    
     Preset() : name("Init") {}
     Preset(const std::string& n) : name(n) {}
 };
 
-class Parameters; // Forward declaration
+class Parameters; 
+} // namespace State
+namespace Core { class VoiceManager; } // Forward declaration outside State
+namespace State {
 
 class PresetManager
 {
 public:
-    PresetManager();
-    
-    void setParameters(Parameters* paramsToUse) { parameters = paramsToUse; }
+    PresetManager(Parameters* parameters, Core::VoiceManager* vm);
+    ~PresetManager();
     
     void loadPreset(int index);
     void savePreset(int index, const std::string& name);
+    void loadPresetFromStruct(const Preset& p); // Load directly (SysEx)
     
     const Preset& getCurrentPreset() const { return currentPreset; }
     const std::vector<Preset>& getPresets() const { return presets; }
@@ -35,16 +59,18 @@ private:
     std::vector<Preset> presets;
     Preset currentPreset;
     Parameters* parameters = nullptr;
+    Core::VoiceManager* voiceManager = nullptr;
     
     void createFactoryPresets();
-    void createInitPreset();
     void createBassPreset();
     void createLeadPreset();
-    void createPadPreset();
     void createBrassPreset();
-    void createStringsPreset();
+    void createStringPreset();
     void createBellsPreset();
-    void createFXPreset();
+    
+    void applyPresetToProcessor();
+    // Helper to push 8-stage data to VoiceManager
+    void applyEnvelopeToVoice(const EnvelopeData& env, int type); // 0=Pitch, 1=DCW, 2=DCA
 };
 
 } // namespace State

@@ -135,7 +135,7 @@ echo.
 echo 5. Compilando proyecto (Release)...
 echo    (Esto puede tardar varios minutos...)
 
-"%CMAKE_PATH%" --build build --config Release --target CZ101Emulator_Standalone
+"%CMAKE_PATH%" --build build --config Release
 if %errorlevel% neq 0 (
     echo Error: Compilacion fallida
     pause
@@ -158,6 +158,11 @@ if exist "build\CZ101Emulator_artefacts\Release\Standalone\CZ-101 Emulator.exe" 
 ) else (
     echo Warning: Ejecutable no encontrado en ruta esperada
     echo Busca en: build\CZ101Emulator_artefacts\
+)
+
+if exist "build\Release\CZ101SysExTest.exe" (
+    copy "build\Release\CZ101SysExTest.exe" "CZ101SysExTest.exe"
+    echo    Test Tool copiado a: %CD%\CZ101SysExTest.exe
 )
 
 echo.

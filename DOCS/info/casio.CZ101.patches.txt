@@ -1,0 +1,189 @@
+Article: 32886 of rec.music.makers.synth
+Path: news.u.washington.edu!netnews.nwnet.net!news.clark.edu!spool.mu.edu!agate!deep.rsoft.bc.ca!mindlink.bc.ca!a9575
+From: Brent_Wilson@mindlink.bc.ca (Brent Wilson)
+Newsgroups: rec.music.makers.synth
+Subject: More CZ Patches! (Long)
+Date: Thu, 01 Sep 94 12:58:49 -0700
+Organization: MIND LINK! - British Columbia, Canada
+Lines: 175
+Distribution: world
+Message-ID: <52863@mindlink.bc.ca>
+NNTP-Posting-Host: mindlink.bc.ca
+
+Due to the massive number of requests to my E-Mail address, Here's a
+few patches I've come up with on my CZ-101. These will also work for
+the CZ-1000.
+
+Moog-Like  - Indeed, a classic sound.
+---------
+
+Line Select 1+1
+Detune: +  Octave: 0  Note: 00  Fine: 07
+Vibrato: Wave 4  Delay: 00  Rate: 49  Depth: 59
+Octave: Range 0
+
+DCO1: Waveform First:2  Second:2
+      Step1- Rate:00  Level:00  END
+
+DCW1: Key Follow: 0
+      Step1- Rate:78  Level:48
+      Step2- Rate:50  Level:75
+      Step3- Rate:37  Level:83  SUS
+      Step4- Rate:41  Level:00  END
+
+DCA1: Key Folloe: 0
+      Step1- Rate:84  Level:87  SUS
+      Step2- Rate:39  Level:00  END
+
+
+*DCO2, DCW2, and DCA2 contain no step data whatsoever.  These  parameters
+should be left as originally initialized, or duplicate
+ the first set of parameters, and change the line select to 1+2
+ for a richer sound.
+
+
+Polyanalogue  - Trying to get my CZ to sound like a Roland Juno-106
+------------
+
+Line Select 1+2
+Detune: +  Octave: 0  Note: 00  Fine: 06
+Vibrato: Wave 1  Delay: 00  Rate: 00  Depth: 00
+Octave: Range 0
+
+DCO1: Waveform First:1  Second:0
+      Step1- Rate:99  Level:33           Step2- Rate:68  Level:00  END
+
+DCW1: Key Follow: 0
+      Step1- Rate:76  Level:99
+      Step2- Rate:47  Level:96
+      Step3- Rate:37  Level:52  SUS
+      Step4- Rate:26  Level:00  END
+
+DCA1: Key Follow: 0
+      Step1- Rate:99  Level:50           Step2- Rate:77  Level:99 Step3-
+Rate:67  Level:91  SUS
+      Step4- Rate:79  Level:59        Step5- Rate:33  Level:00  END
+
+*Duplicate the above parameters for DCO2, DCW2, and DCA1.
+
+
+Sonic Bubbles - An interesting aquatic sound effect.
+-------------
+
+Line Select 1+1
+Detune: +  Octave: 1  Note: 00  Fine: 06
+Vibrato: Wave 2  Delay: 00  Rate: 60  Depth: 99
+Octave: Range 0
+
+DCO1: Waveform First:2  Second:3
+      Step1- Rate:46  Level:45           Step2- Rate:55  Level:50
+Step3- Rate:56  Level:49           Step4- Rate:50  Level:00  SUS
+      Step5 to Step7- Rate:50  Level:00
+      Step8- Rate:50  Level:00  END
+
+DCW1: Key Follow: 9
+      Step1- Rate:99  Level:00  END
+
+DCA1: Key Follow: 0
+      Step1- Rate:99  Level:90           Step2- Rate:33  Level:16 Step3-
+Rate:57  Level:00  SUS
+      Step4- Rate:99  Level:00  END
+    DC02: Waveform First:3  Second: 7
+      Step1- Rate:99  Level:00  SUS
+      Step2- Rate:99  Level:00  END
+
+DCW2: Key Follow: 0
+      Step1- Rate:99  Level:50  SUS
+      Step2- Rate:99  Level:00  END
+
+DCA2: Key Follow: 0
+      Step1- Rate:76  Level:01           Step2- Rate:94  Level:99 Step3-
+Rate:58  Level:90           Step4- Rate:44  Level:00  SUS
+      Step5- Rate:99  Level:00  END
+
+*For interesting variations on this patch, play around with the
+ line select parameter.
+
+
+ Fat S/H  -  This is a nice FAT sample & hold patch.
+ -------
+
+Line Select 1+1 (Or use 1+2 depending on what you like better)
+Detune: -  Octave: 0  Note: 00  Fine: 13
+Vibrato: Wave 4  Delay: 00  Rate: 40  Depth: 99
+Octave: Range -1
+
+DCO1: Waveform First:5  Second:5
+      Step1- Rate:50  Level:00  SUS
+      Step2 to Step7- Rate:50  Level:00        Step8- Rate:50  Level:00
+END
+
+DCW1: Key Follow: 0
+      Step1- Rate:99  Level:99  SUS
+      Step2 to Step7- Rate:50  Level:00        Step8- Rate:50  Level:00
+END
+ DCA1: Key Follow: 0
+      Step1- Rate:99  Level:99  SUS
+      Step2 to Step7- Rate:50  Level:00        Step8- Rate:50  Level:00
+END
+    DC02: Waveform First:1  Second: 0
+      Step1- Rate:50  Level:00  SUS
+      Step2 to Step7- Rate:50  Level:00        Step8- Rate:50  Level:00
+END
+
+DCW2: Key Follow: 0
+      Step1- Rate:99  Level:99  SUS
+      Step2 to Step7- Rate:50  Level:00        Step8- Rate:50  Level:00
+END
+ DCA2: Key Follow: 0
+      Step1- Rate:99  Level:99  SUS
+      Step2 to Step7- Rate:50  Level:00        Step8- Rate:50  Level:00
+END
+
+
+Pluck & >WAH<  -  Messing around one day, just came up with it.
+-------------
+
+Line Select 2
+Detune: +  Octave: 1  Note: 08  Fine: 60
+Vibrato: Wave 1  Delay: 00  Rate: 00  Depth: 00
+Octave: Range  0
+
+DCO1: Waveform First:3  Second:4
+      Step1- Rate:20  Level:00  END
+
+DCW1: Key Follow: 4
+      Step1- Rate:65  Level:99           Step2- Rate:50  Level:00  END
+DCA1: Key Follow: 0
+      Step1- Rate:99  Level:99  SUS
+      Step2- Rate:50  Level:00  END
+ DC02: Waveform First:4  Second: 5
+      Step1- Rate:70  Level:00  END
+
+DCW2: Key Follow: 5
+      Step1- Rate:75  Level:99           Step2- Rate:50  Level:00
+Step3- Rate:99  Level:30
+      Step4- Rate:50  Level:70
+      Step5- Rate:00  Level:00  END
+      DCA2: Key Follow: 0
+      Step1- Rate:99  Level:00  SUS
+      Step2 to Step7- Rate:50  Level:00        Step8- Rate:50  Level:00
+END
+
+
+Well, that's all for now.  Hope you CZophiles out there enjoy these!
+-Peace-
+
+*Matahari*
+
+
+
+--
+ ----------------------------------------------
+| "I Graduated from the school of hard knocks  |
+|  and the kindergarten of getting the shit    |
+|  kicked out of you."                         |
+ ----------------------------------------------
+[ a9575@Mindlink.bc.ca ]  *KORDOS*
+
+

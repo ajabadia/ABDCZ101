@@ -21,6 +21,7 @@ void CZ101LookAndFeel::drawRotarySlider(juce::Graphics& g,
                                        float rotaryEndAngle,
                                        juce::Slider& slider)
 {
+    juce::ignoreUnused(slider);
     auto radius = juce::jmin(width / 2, height / 2) - 4.0f;
     auto centreX = x + width * 0.5f;
     auto centreY = y + height * 0.5f;

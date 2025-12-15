@@ -1,0 +1,411 @@
+{
+  "machine": {
+    "name": "cz101",
+    "sourcefile": "casio/cz101.cpp",
+    "isbios": "no",
+    "isdevice": "no",
+    "ismechanical": "no",
+    "runnable": "yes",
+    "description": "CZ-101",
+    "year": "1984",
+    "manufacturer": "Casio",
+    "biosset": [
+      {
+        "name": "v2",
+        "description": "Version II",
+        "default": "no"
+      },
+      {
+        "name": "v1",
+        "description": "Version I",
+        "default": "no"
+      }
+    ],
+    "rom": [
+      {
+        "name": "hn613256ps40.bin",
+        "bios": "v2",
+        "size": "32768",
+        "crc": "c417bc57",
+        "sha1": "2aa5bfb76dc0a56797cf5dd547197816cedfa370",
+        "region": "program",
+        "offset": "0",
+        "status": "good",
+        "optional": "no"
+      },
+      {
+        "name": "hn613256pn26.bin",
+        "bios": "v1",
+        "size": "32768",
+        "crc": "e6c7780e",
+        "sha1": "52ff2c280392e104e84b05288c2b952fc29b50f4",
+        "region": "program",
+        "offset": "0",
+        "status": "good",
+        "optional": "no"
+      },
+      {
+        "name": "upd7811g-120.bin",
+        "size": "4096",
+        "crc": "597ac04a",
+        "sha1": "96451a764296eaa22aaad3cba121226dcba865f4",
+        "region": "maincpu",
+        "offset": "0",
+        "status": "good",
+        "optional": "no"
+      },
+      {
+        "name": "init_ram.bin",
+        "size": "4096",
+        "crc": "11010fa5",
+        "sha1": "a5f33408cc2852c8429b828849675d231c370831",
+        "region": "nvram",
+        "offset": "0",
+        "status": "good",
+        "optional": "no"
+      }
+    ],
+    "device_ref": [
+      {
+        "name": "upd7811"
+      },
+      {
+        "name": "clock"
+      },
+      {
+        "name": "nvram"
+      },
+      {
+        "name": "casio_ra3"
+      },
+      {
+        "name": "midi_port"
+      },
+      {
+        "name": "midiin_port"
+      },
+      {
+        "name": "midiin"
+      },
+      {
+        "name": "midi_port"
+      },
+      {
+        "name": "midiout_port"
+      },
+      {
+        "name": "midiout"
+      },
+      {
+        "name": "screen"
+      },
+      {
+        "name": "palette"
+      },
+      {
+        "name": "hd44780"
+      },
+      {
+        "name": "speaker"
+      },
+      {
+        "name": "upd933"
+      }
+    ],
+    "chip": [
+      {
+        "type": "cpu",
+        "tag": "maincpu",
+        "name": "NEC uPD7811",
+        "clock": "10000000"
+      },
+      {
+        "type": "audio",
+        "tag": "speaker",
+        "name": "Speaker"
+      },
+      {
+        "type": "audio",
+        "tag": "upd933",
+        "name": "NEC uPD933",
+        "clock": "4480000"
+      }
+    ],
+    "display": {
+      "tag": "screen",
+      "type": "lcd",
+      "rotate": "0",
+      "width": "97",
+      "height": "19",
+      "refresh": "50.000000",
+      "flipx": "no"
+    },
+    "sound": {
+      "channels": "1"
+    },
+    "input": {
+      "players": "1",
+      "service": "no",
+      "tilt": "no",
+      "control": [
+        {
+          "type": "paddle",
+          "minimum": "0",
+          "maximum": "255",
+          "sensitivity": "100",
+          "keydelta": "10",
+          "reverse": "no"
+        },
+        {
+          "type": "keypad",
+          "buttons": "51",
+          "reverse": "no"
+        }
+      ]
+    },
+    "configuration": [
+      {
+        "name": "Battery Level",
+        "tag": "AN2",
+        "mask": "255",
+        "confsetting": [
+          {
+            "name": "Normal",
+            "value": "255",
+            "default": "yes"
+          },
+          {
+            "name": "Low",
+            "value": "0",
+            "default": "no"
+          }
+        ]
+      },
+      {
+        "name": "MIDI file mode",
+        "tag": "mdin:midiin:midiinimg:CFG",
+        "mask": "255",
+        "confsetting": [
+          {
+            "name": "Multi",
+            "value": "255",
+            "default": "yes"
+          },
+          {
+            "name": "Poly: Channel 1",
+            "value": "0",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 2",
+            "value": "1",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 3",
+            "value": "2",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 4",
+            "value": "3",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 5",
+            "value": "4",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 6",
+            "value": "5",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 7",
+            "value": "6",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 8",
+            "value": "7",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 9",
+            "value": "8",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 10",
+            "value": "9",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 11",
+            "value": "10",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 12",
+            "value": "11",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 13",
+            "value": "12",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 14",
+            "value": "13",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 15",
+            "value": "14",
+            "default": "no"
+          },
+          {
+            "name": "Poly: Channel 16",
+            "value": "15",
+            "default": "no"
+          }
+        ]
+      }
+    ],
+    "port": [
+      {
+        "tag": ":AN1",
+        "analog": {
+          "mask": "255"
+        }
+      },
+      {
+        "tag": ":AN2"
+      },
+      {
+        "tag": ":PB"
+      },
+      {
+        "tag": ":kc0"
+      },
+      {
+        "tag": ":kc1"
+      },
+      {
+        "tag": ":kc10"
+      },
+      {
+        "tag": ":kc11"
+      },
+      {
+        "tag": ":kc12"
+      },
+      {
+        "tag": ":kc13"
+      },
+      {
+        "tag": ":kc14"
+      },
+      {
+        "tag": ":kc15"
+      },
+      {
+        "tag": ":kc2"
+      },
+      {
+        "tag": ":kc3"
+      },
+      {
+        "tag": ":kc4"
+      },
+      {
+        "tag": ":kc5"
+      },
+      {
+        "tag": ":kc6"
+      },
+      {
+        "tag": ":kc7"
+      },
+      {
+        "tag": ":kc8"
+      },
+      {
+        "tag": ":kc9"
+      },
+      {
+        "tag": ":mdin:midiin:midiinimg:CFG"
+      }
+    ],
+    "driver": {
+      "status": "good",
+      "emulation": "good",
+      "savestate": "supported",
+      "requiresartwork": "no",
+      "unofficial": "no",
+      "nosoundhardware": "no",
+      "incomplete": "no"
+    },
+    "device": [
+      {
+        "type": "cartridge",
+        "tag": "cart",
+        "interface": "cz_cart",
+        "instance": {
+          "name": "cartridge",
+          "briefname": "cart"
+        },
+        "extension": {
+          "name": "bin"
+        }
+      },
+      {
+        "type": "midiin",
+        "tag": "mdin:midiin:midiinimg",
+        "instance": {
+          "name": "midiin",
+          "briefname": "min"
+        },
+        "extension": [
+          {
+            "name": "mid"
+          },
+          {
+            "name": "syx"
+          }
+        ]
+      },
+      {
+        "type": "midiout",
+        "tag": "mdout:midiout:midioutimg",
+        "instance": {
+          "name": "midiout",
+          "briefname": "mout"
+        },
+        "extension": {
+          "name": "mid"
+        }
+      }
+    ],
+    "slot": [
+      {
+        "name": "mdin",
+        "slotoption": {
+          "name": "midiin",
+          "devname": "midiin_port",
+          "default": "yes"
+        }
+      },
+      {
+        "name": "mdout",
+        "slotoption": {
+          "name": "midiout",
+          "devname": "midiout_port",
+          "default": "yes"
+        }
+      }
+    ]
+  }
+}

@@ -1,12 +1,16 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "Utils/PerformanceMonitor.h"
 #include "Core/VoiceManager.h"
 #include "MIDI/MIDIProcessor.h"
+#include "MIDI/SysExManager.h"
 #include "State/Parameters.h"
 #include "State/PresetManager.h"
 #include "DSP/Filters/ResonantFilter.h"
 #include "DSP/Effects/Delay.h"
+#include "DSP/Effects/Chorus.h"
+#include "DSP/Effects/Reverb.h"
 #include "DSP/Modulation/LFO.h"
 
 class CZ101AudioProcessor : public juce::AudioProcessor
@@ -41,20 +45,31 @@ public:
     void setStateInformation(const void* data, int sizeInBytes) override;
     
     CZ101::State::PresetManager& getPresetManager() { return presetManager; }
+    CZ101::MIDI::SysExManager& getSysExManager() { return sysExManager; }
     CZ101::MIDI::MIDIProcessor& getMidiProcessor() { return midiProcessor; }
     CZ101::State::Parameters& getParameters() { return parameters; }
+    CZ101::Core::VoiceManager& getVoiceManager() { return voiceManager; }
+    CZ101::Utils::PerformanceMonitor& getPerformanceMonitor() { return performanceMonitor; }
 
 private:
     CZ101::Core::VoiceManager voiceManager;
     CZ101::MIDI::MIDIProcessor midiProcessor;
     CZ101::State::Parameters parameters;
     CZ101::State::PresetManager presetManager;
+    CZ101::MIDI::SysExManager sysExManager{presetManager};
     
     CZ101::DSP::ResonantFilter filterL;
     CZ101::DSP::ResonantFilter filterR;
-    CZ101::DSP::Delay delayL;
-    CZ101::DSP::Delay delayR;
+    CZ101::DSP::Effects::Delay delayL;
+    CZ101::DSP::Effects::Delay delayR;
+    
+    juce::Reverb reverb;
+    juce::Reverb::Parameters reverbParams;
+    CZ101::DSP::Effects::Chorus chorus;
+    
+    // UI Update Tracking
     CZ101::DSP::LFO lfo;
+    CZ101::Utils::PerformanceMonitor performanceMonitor;
     
     void updateParameters();
 

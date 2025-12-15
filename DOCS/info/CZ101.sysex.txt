@@ -1,0 +1,30 @@
+Date: Fri, 7 May 1999 12:37:27 EDT
+From: Spreznib@aol.com
+To: machines@hyperreal.org
+Subject: Casio CZ101 sysex
+
+This tip makes the CZ101 SO MUCH easier to use with a computer - if you are 
+supporting it at all still, CZ nuts may find it helpful.  The tip is :
+At least in later software revs, YOU CAN IGNORE HANDSHAKING and the CZ will 
+still send and receive data.
+
+Send it F0 44 00 00 70 10 70 31 F7 (note the handshaking is buried in the 
+message)
+It sends F0 44 00 00 70 30 <data> F7
+
+If the CZ is not on ch 1, the correct channel must be in BOTH 7x's
+
+Change the 0x30 in the data header to 0x20 <patch>, send it to the CZ, and it 
+goes into the patch location.  Patch 0x60 is the edit buffer, 0x20..2F is 
+internal memory, 0x40..4F is cartridge memory.
+
+This has worked for me for 4 different CZs, and a bunch of computer hardware 
+and software, including the venerable MIDIEX.  The only problem is that a 
+data dump from the CZ is not the same format as a data dump to the CZ, and 
+editing binary files and changing their length is a hassle.
+
+No reply necessary.
+
+Ken Whitley
+spreznib@aol.com
+

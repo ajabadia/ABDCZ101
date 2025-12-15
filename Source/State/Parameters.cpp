@@ -31,6 +31,15 @@ void Parameters::createParameters()
     osc2Detune = new AudioParameterFloat("osc2_detune", "Osc 2 Detune", -100.0f, 100.0f, 0.0f);
     audioProcessor.addParameter(osc2Detune);
     
+    hardSync = new AudioParameterBool("hard_sync", "Hard Sync", false);
+    audioProcessor.addParameter(hardSync);
+
+    ringMod = new AudioParameterBool("ring_mod", "Ring Mod", false);
+    audioProcessor.addParameter(ringMod);
+
+    glideTime = new AudioParameterFloat("glide_time", "Glide Time", 0.0f, 2.0f, 0.0f);
+    audioProcessor.addParameter(glideTime);
+    
     // DCA Envelope
     dcaAttack = new AudioParameterFloat("dca_attack", "DCA Attack", 0.001f, 5.0f, 0.01f);
     audioProcessor.addParameter(dcaAttack);
@@ -78,9 +87,29 @@ void Parameters::createParameters()
     delayMix = new AudioParameterFloat("delay_mix", "Delay Mix", 0.0f, 1.0f, 0.3f);
     audioProcessor.addParameter(delayMix);
     
+    // Reverb
+    reverbSize = new AudioParameterFloat("reverb_size", "Reverb Size", 0.0f, 1.0f, 0.5f);
+    audioProcessor.addParameter(reverbSize);
+    
+    reverbMix = new AudioParameterFloat("reverb_mix", "Reverb Mix", 0.0f, 1.0f, 0.0f);
+    audioProcessor.addParameter(reverbMix);
+
+    // Chorus
+    chorusRate = new AudioParameterFloat("chorus_rate", "Chorus Rate", 0.1f, 10.0f, 0.5f);
+    audioProcessor.addParameter(chorusRate);
+
+    chorusDepth = new AudioParameterFloat("chorus_depth", "Chorus Depth", 0.0f, 20.0f, 2.0f);
+    audioProcessor.addParameter(chorusDepth);
+
+    chorusMix = new AudioParameterFloat("chorus_mix", "Chorus Mix", 0.0f, 1.0f, 0.0f);
+    audioProcessor.addParameter(chorusMix);
+    
     // LFO
     lfoRate = new AudioParameterFloat("lfo_rate", "LFO Rate", 0.01f, 20.0f, 1.0f);
     audioProcessor.addParameter(lfoRate);
+    
+    lfoDepth = new AudioParameterFloat("lfo_depth", "LFO Depth", 0.0f, 1.0f, 0.0f);
+    audioProcessor.addParameter(lfoDepth);
     
     lfoWaveform = new AudioParameterChoice("lfo_waveform", "LFO Waveform",
         StringArray{"Sine", "Triangle", "Sawtooth", "Square", "Random"}, 0);

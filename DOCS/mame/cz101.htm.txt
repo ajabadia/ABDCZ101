@@ -1,0 +1,232 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width">
+    <link href="/stylesheet.css" rel="stylesheet" type="text/css" />
+
+    <script type="text/javascript">
+		const mameAO = async (line) => {
+			try {
+				const response = await fetch(`http://localhost:12380/api/command?line=${line}`);
+				const result = await response.text();
+				if (response.status !== 200)
+					alert('MAME-AO error:\n\n' + result);
+			}
+			catch (e) {
+				alert('MAME-AO not reachable. Is it running?');
+			}
+		}
+    </script>
+    <title>CZ-101 - mame (0283) machine</title>
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="logo"><img src="/spludlow.svg" alt="spludlow logo"></a>
+        <h1>CZ-101 - mame (0283) machine</h1>
+    </div>
+    <nav>
+        <table class="nav"><tr class="nav"><td class="nav-on"><a class="nav-on" href="/mame" title="MAME Data">MAME</a></td><td class="nav-off"><a class="nav-off" href="/hbmame" title="HBMAME Data">HBMAME</a></td><td class="nav-off"><a class="nav-off" href="/fbneo" title="FBNeo Data">FBNeo</a></td><td class="nav-off"><a class="nav-off" href="/tosec" title="TOSEC Data">TOSEC</a></td></tr></table><table class="nav"><tr class="nav"><td class="nav-on"><a class="nav-on" href="/mame/machine" title="MAME Machine Data">MAME Machine</a></td><td class="nav-off"><a class="nav-off" href="/mame/software" title="MAME Software Data">MAME Software</a></td></tr></table>
+    </nav>
+    <hr />
+    <div>
+        MAME: 0283 - Released: 2025-11-27T19:22:18 - Machines: 49383 - rom: 366513 - disk: 1391
+    </div>
+    <hr />
+    <form>
+        <br />
+<div><h2 style="display:inline;">machine</h2> &bull; <a href="cz101.xml">XML</a> &bull; <a href="cz101.json">JSON</a> &bull; <a href="#" onclick="mameAO('cz101@mame'); return false">RUN</a></div>
+<br />
+<table>
+<tr><th>name</th><th>sourcefile</th><th>sampleof</th><th>isbios</th><th>isdevice</th><th>ismechanical</th><th>runnable</th><th>description</th><th>year</th><th>manufacturer</th><th>cloneof</th><th>romof</th></tr>
+<tr><td>cz101</td><td><a href="https://github.com/mamedev/mame/blob/mame0283/src/mame/casio/cz101.cpp" target="_blank">casio/cz101.cpp</a></td><td></td><td>no</td><td>no</td><td>no</td><td>yes</td><td>CZ-101</td><td>1984</td><td>Casio</td><td></td><td></td></tr>
+</table>
+
+<hr />
+<h2>display</h2>
+<table>
+<tr><th>tag</th><th>type</th><th>rotate</th><th>width</th><th>height</th><th>refresh</th><th>pixclock</th><th>htotal</th><th>hbend</th><th>hbstart</th><th>vtotal</th><th>vbend</th><th>vbstart</th><th>flipx</th></tr>
+<tr><td>screen</td><td>lcd</td><td>0</td><td>97</td><td>19</td><td>50.000000</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>no</td></tr>
+</table>
+
+<hr />
+<h2>driver</h2>
+<table>
+<tr><th>status</th><th>emulation</th><th>savestate</th><th>requiresartwork</th><th>unofficial</th><th>nosoundhardware</th><th>incomplete</th><th>cocktail</th></tr>
+<tr><td>good</td><td>good</td><td>supported</td><td>no</td><td>no</td><td>no</td><td>no</td><td></td></tr>
+</table>
+
+<hr />
+<h2>rom</h2>
+<table>
+<tr><th>name</th><th>size</th><th>crc</th><th>sha1</th><th>region</th><th>offset</th><th>status</th><th>optional</th><th>merge</th><th>bios</th></tr>
+<tr><td>hn613256ps40.bin</td><td>32768</td><td>c417bc57</td><td>2aa5bfb76dc0a56797cf5dd547197816cedfa370</td><td>program</td><td>0</td><td>good</td><td>no</td><td></td><td>v2</td></tr>
+<tr><td>hn613256pn26.bin</td><td>32768</td><td>e6c7780e</td><td>52ff2c280392e104e84b05288c2b952fc29b50f4</td><td>program</td><td>0</td><td>good</td><td>no</td><td></td><td>v1</td></tr>
+<tr><td>upd7811g-120.bin</td><td>4096</td><td>597ac04a</td><td>96451a764296eaa22aaad3cba121226dcba865f4</td><td>maincpu</td><td>0</td><td>good</td><td>no</td><td></td><td></td></tr>
+<tr><td>init_ram.bin</td><td>4096</td><td>11010fa5</td><td>a5f33408cc2852c8429b828849675d231c370831</td><td>nvram</td><td>0</td><td>good</td><td>no</td><td></td><td></td></tr>
+</table>
+
+<hr />
+<h2>chip</h2>
+<table>
+<tr><th>type</th><th>tag</th><th>name</th><th>clock</th></tr>
+<tr><td>cpu</td><td>maincpu</td><td>NEC uPD7811</td><td>10000000</td></tr>
+<tr><td>audio</td><td>speaker</td><td>Speaker</td><td></td></tr>
+<tr><td>audio</td><td>upd933</td><td>NEC uPD933</td><td>4480000</td></tr>
+</table>
+
+<hr />
+<h2>device_ref</h2>
+<table>
+<tr><th>name</th></tr>
+<tr><td><a href="/mame/machine/upd7811">upd7811</a></td></tr>
+<tr><td><a href="/mame/machine/clock">clock</a></td></tr>
+<tr><td><a href="/mame/machine/nvram">nvram</a></td></tr>
+<tr><td><a href="/mame/machine/casio_ra3">casio_ra3</a></td></tr>
+<tr><td><a href="/mame/machine/midi_port">midi_port</a></td></tr>
+<tr><td><a href="/mame/machine/midiin_port">midiin_port</a></td></tr>
+<tr><td><a href="/mame/machine/midiin">midiin</a></td></tr>
+<tr><td><a href="/mame/machine/midi_port">midi_port</a></td></tr>
+<tr><td><a href="/mame/machine/midiout_port">midiout_port</a></td></tr>
+<tr><td><a href="/mame/machine/midiout">midiout</a></td></tr>
+<tr><td><a href="/mame/machine/screen">screen</a></td></tr>
+<tr><td><a href="/mame/machine/palette">palette</a></td></tr>
+<tr><td><a href="/mame/machine/hd44780">hd44780</a></td></tr>
+<tr><td><a href="/mame/machine/speaker">speaker</a></td></tr>
+<tr><td><a href="/mame/machine/upd933">upd933</a></td></tr>
+</table>
+
+<hr />
+<h2>biosset</h2>
+<table>
+<tr><th>name</th><th>description</th><th>default</th></tr>
+<tr><td>v2</td><td>Version II</td><td>no</td></tr>
+<tr><td>v1</td><td>Version I</td><td>no</td></tr>
+</table>
+
+<hr />
+<h2>sound</h2>
+<table>
+<tr><th>channels</th></tr>
+<tr><td>1</td></tr>
+</table>
+
+<hr />
+<h2>device, instance</h2>
+<table>
+<tr><th>type</th><th>tag</th><th>interface</th><th>fixed_image</th><th>mandatory</th><th>name</th><th>briefname</th></tr>
+<tr><td>cartridge</td><td>cart</td><td>cz_cart</td><td></td><td></td><td>cartridge</td><td>cart</td></tr>
+<tr><td>midiin</td><td>mdin:midiin:midiinimg</td><td></td><td></td><td></td><td>midiin</td><td>min</td></tr>
+<tr><td>midiout</td><td>mdout:midiout:midioutimg</td><td></td><td></td><td></td><td>midiout</td><td>mout</td></tr>
+</table>
+
+<hr />
+<h2>device, extension</h2>
+<table>
+<tr><th>type</th><th>tag</th><th>interface</th><th>fixed_image</th><th>mandatory</th><th>extension_names</th></tr>
+<tr><td>cartridge</td><td>cart</td><td>cz_cart</td><td></td><td></td><td>bin</td></tr>
+<tr><td>midiin</td><td>mdin:midiin:midiinimg</td><td></td><td></td><td></td><td>mid, syx</td></tr>
+<tr><td>midiout</td><td>mdout:midiout:midioutimg</td><td></td><td></td><td></td><td>mid</td></tr>
+</table>
+
+<hr />
+<h2>input</h2>
+<table>
+<tr><th>players</th><th>coins</th><th>service</th><th>tilt</th></tr>
+<tr><td>1</td><td></td><td>no</td><td>no</td></tr>
+</table>
+
+<h3>control</h3>
+<table>
+<tr><th>type</th><th>player</th><th>buttons</th><th>ways</th><th>reverse</th><th>minimum</th><th>maximum</th><th>sensitivity</th><th>keydelta</th><th>ways2</th><th>ways3</th></tr>
+<tr><td>paddle</td><td></td><td></td><td></td><td>no</td><td>0</td><td>255</td><td>100</td><td>10</td><td></td><td></td></tr>
+<tr><td>keypad</td><td></td><td>51</td><td></td><td>no</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<hr />
+<h2>port, analog</h2>
+<table>
+<tr><th>port_tag</th><th>analog_masks</th></tr>
+<tr><td>:AN1</td><td>255</td></tr>
+<tr><td>:AN2</td><td></td></tr>
+<tr><td>:PB</td><td></td></tr>
+<tr><td>:kc0</td><td></td></tr>
+<tr><td>:kc1</td><td></td></tr>
+<tr><td>:kc10</td><td></td></tr>
+<tr><td>:kc11</td><td></td></tr>
+<tr><td>:kc12</td><td></td></tr>
+<tr><td>:kc13</td><td></td></tr>
+<tr><td>:kc14</td><td></td></tr>
+<tr><td>:kc15</td><td></td></tr>
+<tr><td>:kc2</td><td></td></tr>
+<tr><td>:kc3</td><td></td></tr>
+<tr><td>:kc4</td><td></td></tr>
+<tr><td>:kc5</td><td></td></tr>
+<tr><td>:kc6</td><td></td></tr>
+<tr><td>:kc7</td><td></td></tr>
+<tr><td>:kc8</td><td></td></tr>
+<tr><td>:kc9</td><td></td></tr>
+<tr><td>:mdin:midiin:midiinimg:CFG</td><td></td></tr>
+</table>
+
+<hr />
+<h2>slot, slotoption</h2>
+<table>
+<tr><th>slot_name</th><th>slotoption_name</th><th>slotoption_devname</th><th>slotoption_default</th></tr>
+<tr><td>mdin</td><td>midiin</td><td><a href="/mame/machine/midiin_port">midiin_port</a></td><td>yes</td></tr>
+<tr><td>mdout</td><td>midiout</td><td><a href="/mame/machine/midiout_port">midiout_port</a></td><td>yes</td></tr>
+</table>
+
+<hr />
+<h2>configuration</h2>
+<hr class='px2' />
+<h3>Battery Level</h3>
+<table>
+<tr><th>name</th><th>tag</th><th>mask</th><th>condition_tag</th><th>condition_mask</th><th>condition_relation</th><th>condition_value</th></tr>
+<tr><td>Battery Level</td><td>AN2</td><td>255</td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<h4>setting</h4>
+<table>
+<tr><th>name</th><th>value</th><th>default</th><th>condition_tag</th><th>condition_mask</th><th>condition_relation</th><th>condition_value</th></tr>
+<tr><td>Normal</td><td>255</td><td>yes</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Low</td><td>0</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<hr class='px2' />
+<h3>MIDI file mode</h3>
+<table>
+<tr><th>name</th><th>tag</th><th>mask</th><th>condition_tag</th><th>condition_mask</th><th>condition_relation</th><th>condition_value</th></tr>
+<tr><td>MIDI file mode</td><td>mdin:midiin:midiinimg:CFG</td><td>255</td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<h4>setting</h4>
+<table>
+<tr><th>name</th><th>value</th><th>default</th><th>condition_tag</th><th>condition_mask</th><th>condition_relation</th><th>condition_value</th></tr>
+<tr><td>Multi</td><td>255</td><td>yes</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 1</td><td>0</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 2</td><td>1</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 3</td><td>2</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 4</td><td>3</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 5</td><td>4</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 6</td><td>5</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 7</td><td>6</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 8</td><td>7</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 9</td><td>8</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 10</td><td>9</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 11</td><td>10</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 12</td><td>11</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 13</td><td>12</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 14</td><td>13</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 15</td><td>14</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Poly: Channel 16</td><td>15</td><td>no</td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+
+    </form>
+    <hr />
+    <div class="footer">
+    </div>
+</body>
+</html>

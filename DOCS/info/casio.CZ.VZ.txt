@@ -1,0 +1,86 @@
+From cadsi.com!kent@elvis.cadsi.com Thu Nov 17 14:12:46 1994
+Date: Thu, 17 Nov 1994 13:38:31 -0600
+From: Kent Williams <cadsi.com!kent@elvis.cadsi.com>
+Reply to: cadsi.com!kent@cadsi.com
+To: electronica+@andrew.cmu.edu, casio@cadsi.com
+Subject: Casio (was Re: analog)
+
+On Nov 17, 12:06pm, Ab Wilson wrote:
+> The only Casio synth I'm really  familar with is  the CZ101. Since all
+> the CZ series  have the same archetecture I  feel I can  generalise my
+> views to all of these.
+
+I've got a collection of nearly 200  patches for the CZ, so there's a lot
+of different sounds you can make.  It is one of those synthesizers where you
+can spend a lot of time specifying how  each note will sound, but for which
+there is very little you can globally vary about a performance -- no
+free-running LFO's.  The real strength of the old analogs was that different
+modules could be set up to sync with other modules, or simply to modify other
+modules asynchronously.  That's why I want a midi-fied serge modular.
+
+The CZ-1 has a velocity sensitive keyboard with aftertouch, which can interact
+very nicely with the CZ architecture; you can individually set velocity
+sensitivity for the pitch envelope, amp envelope and waveform envelope.
+My favorite trick is to make pitch and amp relatively insensitive and make
+waveform very sensitive, meaning that different key pressure gives you a
+different waveform.
+
+>
+> One thing I've always  wanted to know about Casio  synths was what the
+> big different was  between the PM synthesis as  used in the CZ  series
+> and the iPM as used in the VZs. Can anyone give an authoritive answer?
+>
+The CZ has a digital architecture that goes kind of like this
+
+DCO1->DCW1->DCA1-+
+                 |
+                 +---> Mix/Ring Mod/Noise
+                 |
+DCO2->DCW2->DCA2-+
+
+There are 6 different waveforms possible, and the DCW envelop varies between a
+sine wave (DCW level 0) and the 'full' waveform (DCW level 99).  Morphing the
+waveform from a sawtooth to a sine for example, sounds a lot like closing a
+steep non-resonant filter.
+
+The Noise modulation is really just mixing a noise source on line 2 with the
+tone source on line one.
+
+The VZ series works something like FM (perhaps equivalent on some level to FM,
+without infringing on Yamaha patents, if you get my drift).  You have 8
+oscillators in pairs of two.  Each oscillator can be a sine, one of 4 types of
+sawtooth, or two types of noise.  Each pair can be internally mixed, ring
+modulated, or 'phase' modulated.  The four pairs are set up such that they
+either get mixed to the final output or phase modulate another pair.
+
+There are no filters!
+
+What is phase modulation (or phase 'distortion')?  I've not figured out
+exactly.  Something like this:  If source A phase distorts source B, the
+momentary value of A controls distortion of B's slope.  At amplitude 0, B is
+unmodifed; at maximum amplitude B's slope is changed drastically.
+
+The net effect is that if you phase distort a signal with high amplitude
+signal, it gets pretty dirty and fuzzy.  If you set all the lines to sine, set
+all modulation paths to phase mod, and set the amplifier envelopes to be full
+on when a note is played, you get a really evil noise like a guitar fed through
+multiple distortion boxes.
+
+The really weird part comes when you fool around with velocity sensitivity;
+For each step in the amplifier envelope for a line you can enable or disable
+velocity sensitivity.  This makes it very easy to come up with heavily
+distorted unpredictable sounds.  It's also very hard to get an idea for a sound
+in your head and then implement it.
+
+The presets seem to be very sparing in their use of phase distortion.  They're
+also not very interesting.  I would dearly love to get a decent editor for this
+thing and give it a good workout.
+
+Does that answer your question?
+
+
+-- 
+Kent Williams -- kent@gilligan.cadsi.com
+Look in the mail header for all sorts of  vital information about me.
+Go on, EMOTE!  I was RAISED on thought balloons!!
+
