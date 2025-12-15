@@ -40,6 +40,8 @@ public:
     void setCurrentProgram(int index) override;
     const juce::String getProgramName(int index) override;
     void changeProgramName(int index, const juce::String& newName) override;
+    
+    void saveCurrentPreset(const juce::String& name); // New Save Method
 
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
@@ -50,8 +52,18 @@ public:
     CZ101::State::Parameters& getParameters() { return parameters; }
     CZ101::Core::VoiceManager& getVoiceManager() { return voiceManager; }
     CZ101::Utils::PerformanceMonitor& getPerformanceMonitor() { return performanceMonitor; }
+    
+    // For Editor Visualization
+    // juce::AudioVisualiserComponent& getVisualiser() { return visualiser; } 
+    
+    juce::AudioBuffer<float>& getVisualisationBuffer() { return visBuffer; }
+    juce::AbstractFifo& getVisualisationFifo() { return visFifo; }
 
 private:
+    // ...
+    // Visualisation
+    juce::AudioBuffer<float> visBuffer { 1, 1024 }; // Mono, 1024 samples ring buffer
+    juce::AbstractFifo visFifo { 1024 };
     CZ101::Core::VoiceManager voiceManager;
     CZ101::MIDI::MIDIProcessor midiProcessor;
     CZ101::State::Parameters parameters;

@@ -3,6 +3,14 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <string>
+#include <vector>
+#include <map>
+#include <juce_core/juce_core.h> // Instead of JuceHeader.h
+#include <juce_data_structures/juce_data_structures.h> // For juce::var (if in data_structures) or core
+// juce::var is in core usually, let's verify. Yes, juce_core. 
+// But let's include both safely.
+// Actually juce module headers are guarded.
 
 namespace CZ101 {
 namespace State {
@@ -51,6 +59,12 @@ public:
     void loadPreset(int index);
     void savePreset(int index, const std::string& name);
     void loadPresetFromStruct(const Preset& p); // Load directly (SysEx)
+    void copyStateFromProcessor(); // Capture current parameters/envelopes
+    
+    // Management
+    void renamePreset(int index, const std::string& newName);
+    void saveBank(const juce::File& file);
+    void loadBank(const juce::File& file);
     
     const Preset& getCurrentPreset() const { return currentPreset; }
     const std::vector<Preset>& getPresets() const { return presets; }

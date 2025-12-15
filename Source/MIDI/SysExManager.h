@@ -12,7 +12,8 @@ public:
     SysExManager(State::PresetManager& presetManager);
     
     // Main entry point for incoming SysEx data
-    void handleSysEx(const void* data, int size);
+    // Option to provide a name (e.g. from filename)
+    void handleSysEx(const void* data, int size, juce::String presetName = "");
     
     // Create a dump message for a specific preset
     juce::MidiMessage createDumpMessage(const State::Preset& preset);

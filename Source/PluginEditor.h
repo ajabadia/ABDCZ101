@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_audio_utils/juce_audio_utils.h>
+#include <juce_opengl/juce_opengl.h>
 #include "PluginProcessor.h"
 #include "UI/CZ101LookAndFeel.h"
 #include "UI/Components/Knob.h"
@@ -10,11 +11,18 @@
 #include "UI/Components/MIDIActivityIndicator.h"
 #include "UI/Components/EnvelopeEditor.h"
 #include "UI/LCDDisplay.h"
+#include "UI/Overlays/NameEditorOverlay.h"
 
 /**
- * CZ-101 Emulator Editor
+ * CZ-101 Emulator Editor - REDESIGNED
  * 
- * Interfaz gráfica completa del plugin con todos los componentes UI
+ * Nuevo layout 800x600 (responsive):
+ * - Header compacto (45px)
+ * - Left Panel: Osciladores, Filter, LFO
+ * - Right Panel: Envelopes (tabs), Effects (2x3 grid)
+ * - Bottom: Keyboard MIDI
+ * 
+ * Optimizado para Raspberry Pi y pantallas pequeñas
  */
 class CZ101AudioProcessorEditor : public juce::AudioProcessorEditor,
                                    private juce::MidiKeyboardState::Listener,
@@ -25,31 +33,23 @@ public:
     CZ101AudioProcessorEditor(CZ101AudioProcessor&);
     ~CZ101AudioProcessorEditor() override;
 
-    //==============================================================================
     void paint(juce::Graphics&) override;
     void resized() override;
     
     juce::MidiKeyboardState& getKeyboardState() { return keyboardState; }
-
-    // Helper to refresh MIDI devices
-    // Helper to refresh MIDI devices
     void refreshMidiOutputs();
-    
-    // Timer callback for UI updates (CPU meter)
     void timerCallback() override;
 
-    // File Drag & Drop
-    bool isInterestedInFileDrag (const juce::StringArray& files) override;
-    void filesDropped (const juce::StringArray& files, int x, int y) override;
+    bool isInterestedInFileDrag(const juce::StringArray& files) override;
+    void filesDropped(const juce::StringArray& files, int x, int y) override;
 
 private:
-    // MidiKeyboardState::Listener
     void handleNoteOn(juce::MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity) override;
     void handleNoteOff(juce::MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity) override;
-    CZ101AudioProcessor& audioProcessor;
     
-    // Custom Look and Feel
+    CZ101AudioProcessor& audioProcessor;
     CZ101::UI::CZ101LookAndFeel customLookAndFeel;
+    juce::OpenGLContext openGLContext;
     
     // MIDI Infrastructure
     juce::MidiKeyboardState keyboardState;
@@ -61,70 +61,70 @@ private:
     CZ101::UI::LCDDisplay lcdDisplay;
     CZ101::UI::PresetBrowser presetBrowser;
     CZ101::UI::MIDIActivityIndicator midiIndicator;
-    CZ101::UI::WaveformDisplay waveformDisplay;
-    
-    juce::TextButton loadSysExButton { "LOAD SYSX" };
+    juce::TextButton loadSysExButton { "LOAD SYX" };
+    juce::TextButton saveSysExButton { "SAVE" };
     std::unique_ptr<juce::FileChooser> fileChooser;
     void loadSysExFile();
+    void saveSysExFile();
     
-    // --- OSCILLATOR SECTION ---
+    // --- LEFT PANEL: OSCILLATORS + FILTER + LFO ---
+    
+    // Oscillators
     juce::ComboBox osc1WaveSelector;
     CZ101::UI::Knob osc1LevelKnob;
-    
     juce::ComboBox osc2WaveSelector;
     CZ101::UI::Knob osc2LevelKnob;
     CZ101::UI::Knob osc2DetuneKnob;
-    
     juce::ToggleButton hardSyncButton;
     juce::ToggleButton ringModButton;
     CZ101::UI::Knob glideKnob;
+    CZ101::UI::WaveformDisplay waveformDisplay;
     
-    // --- FILTER SECTION ---
+    // Filter
     CZ101::UI::Knob filterCutoffKnob;
     CZ101::UI::Knob filterResonanceKnob;
     
-    // --- ENVELOPE SECTIONS ---
-    // PITCH (DCO)
+    // LFO
+    CZ101::UI::Knob lfoRateKnob;
+    
+    // --- RIGHT PANEL: ENVELOPES (TABS) + EFFECTS GRID ---
+    
+    // Envelope Tabs
+    juce::TabbedComponent envelopeTabs { juce::TabbedButtonBar::TabsAtTop };
+    
+    // Envelopes
     CZ101::UI::EnvelopeEditor pitchEditor;
-
-    // DCW (Timbre)
     CZ101::UI::EnvelopeEditor dcwEditor;
+    CZ101::UI::EnvelopeEditor dcaEditor;
+    
+    // Envelope ADSR Knobs (DCW)
     CZ101::UI::Knob dcwAttackKnob;
     CZ101::UI::Knob dcwDecayKnob;
     CZ101::UI::Knob dcwSustainKnob;
     CZ101::UI::Knob dcwReleaseKnob;
     
-    // DCA (Amplitude) -> Reusing generic names for clarity
-    CZ101::UI::EnvelopeEditor dcaEditor;
+    // Envelope ADSR Knobs (DCA)
     CZ101::UI::Knob dcaAttackKnob;
     CZ101::UI::Knob dcaDecayKnob;
     CZ101::UI::Knob dcaSustainKnob;
     CZ101::UI::Knob dcaReleaseKnob;
     
-    // --- EFFECTS & LFO ---
-    // Group Boxes
-    juce::GroupComponent filterGroup;
-    juce::GroupComponent lfoGroup;
-    juce::GroupComponent delayGroup;
-    juce::GroupComponent chorusGroup; 
-    juce::GroupComponent reverbGroup;
-    
-    // Chorus Knobs
-    CZ101::UI::Knob chorusRateKnob;
-    CZ101::UI::Knob chorusDepthKnob;
-    CZ101::UI::Knob chorusMixKnob;
-    
+    // Effects Grid (2x3)
     CZ101::UI::Knob delayTimeKnob;
     CZ101::UI::Knob delayFeedbackKnob;
     CZ101::UI::Knob delayMixKnob;
-    
+    CZ101::UI::Knob chorusRateKnob;
+    CZ101::UI::Knob chorusDepthKnob;
+    CZ101::UI::Knob chorusMixKnob;
     CZ101::UI::Knob reverbSizeKnob;
     CZ101::UI::Knob reverbMixKnob;
     
-    CZ101::UI::Knob lfoRateKnob;
+    // Effect Labels (no GroupComponents, solo etiquetas)
+    juce::Label delayLabel;
+    juce::Label chorusLabel;
+    juce::Label reverbLabel;
     
     // --- ATTACHMENTS ---
-    // Using ParameterAttachment because we manage parameters manually (no APVTS)
     using SliderAttachment = juce::SliderParameterAttachment;
     using ComboBoxAttachment = juce::ComboBoxParameterAttachment;
     using ButtonAttachment = juce::ButtonParameterAttachment;
@@ -133,6 +133,9 @@ private:
     std::vector<std::unique_ptr<ComboBoxAttachment>> comboBoxAttachments;
     std::unique_ptr<ButtonAttachment> hardSyncAttachment;
     std::unique_ptr<ButtonAttachment> ringModAttachment;
+    
+    // Overlays
+    CZ101::UI::NameEditorOverlay nameOverlay;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CZ101AudioProcessorEditor)
 };

@@ -49,37 +49,23 @@ void WaveformDisplay::setWaveform(int waveformType)
     generateWaveform();
 }
 
-void WaveformDisplay::generateWaveform()
+void WaveformDisplay::pushBuffer(const juce::AudioBuffer<float>& buffer)
 {
-    constexpr float TWO_PI = 6.28318530718f;
+    // Simple circular buffer or just grab the first channel's chunk for visualization
+    auto* channelData = buffer.getReadPointer(0);
+    int numSamples = buffer.getNumSamples();
     
-    for (size_t i = 0; i < waveformData.size(); ++i)
+    for (int i = 0; i < numSamples; ++i)
     {
-        float phase = i / static_cast<float>(waveformData.size());
-        
-        switch (currentWaveform)
-        {
-            case 0: // Sine
-                waveformData[i] = std::sin(TWO_PI * phase);
-                break;
-            case 1: // Sawtooth
-                waveformData[i] = 2.0f * phase - 1.0f;
-                break;
-            case 2: // Square
-                waveformData[i] = (phase < 0.5f) ? 1.0f : -1.0f;
-                break;
-            case 3: // Triangle
-                if (phase < 0.25f)
-                    waveformData[i] = 4.0f * phase;
-                else if (phase < 0.75f)
-                    waveformData[i] = 2.0f - 4.0f * phase;
-                else
-                    waveformData[i] = 4.0f * phase - 4.0f;
-                break;
-            default:
-                waveformData[i] = 0.0f;
-        }
+        // Simple ring buffer push
+        waveformData[writePos] = channelData[i];
+        writePos = (writePos + 1) % waveformData.size();
     }
+}
+
+void WaveformDisplay::generateWaveform() 
+{
+    // No-op or clear, as we use live data now
 }
 
 } // namespace UI

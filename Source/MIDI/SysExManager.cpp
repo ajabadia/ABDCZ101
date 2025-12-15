@@ -10,7 +10,7 @@ SysExManager::SysExManager(State::PresetManager& pm)
 {
 }
 
-void SysExManager::handleSysEx(const void* data, int size)
+void SysExManager::handleSysEx(const void* data, int size, juce::String presetName)
 {
     const juce::uint8* bytes = static_cast<const juce::uint8*>(data);
     
@@ -25,32 +25,34 @@ void SysExManager::handleSysEx(const void* data, int size)
         std::cout << "[SysEx] Wrong Manufacturer: " << (int)bytes[1] << std::endl;
         return;
     }
-        
-    // CZ-101 Dump Header usually: F0 44 00 00 70+ch ...
-    // Let's look for the "Receive Request" pattern or "Dump" pattern.
-    // Doc: "Receive request: F0 44 00 00 70+ch 20 program ... F7"
-    // But actual Data Dump is the response to a "Send Request".
-    // "Send request... CZ101: F0 44 00 00 70+ch 30" -> Ack.
-    // The big data block usually comes after a handshake.
-    // However, .syx files usually contain the FULL sequence or the DATA block.
-    // A Sound Data Reference usually looks like:
-    // F0 44 00 00 7n 31 ... data ... sum F7
     
-    // For now, let's just look for the data payload signature if possible.
-    // If bytes[5] == 0x31 (Data follows?) or we just try to parse if valid.
-    
-    // Let's try to parse if it looks like a parameter dump.
-    // Dump length is huge (256 bytes payload meaning 512 nibbles?).
-    // 25 distinct sections.
-    
-    // Simplified: process payload if it matches Casio format.
-    // Offset 6 is usually where data starts?
+    // Process Payload
+    // Offset 6 is usually where data starts
     int payloadStart = 6; 
-    int payloadEnd = size - 2; // exclude checksum and F7?
+    int payloadEnd = size - 2; // exclude checksum and F7
     
-    if (payloadEnd - payloadStart > 100) // Arbitrary check for "big enough"
+    // If name provided, set it on current preset via member (hacky but effective for now)
+    // Actually parseToneData calls presetManager.getCurrentPreset() which returns a COPY.
+    // We need to pass the name down or set it after.
+    // Let's set it in a member variable or pass it to parseToneData.
+    // For now, let's rely on parseToneData reading the member variable we added? 
+    // Wait, I can't easily add a member variable without changing header repeatedly.
+    // I will modify parseToneData signature to accept name too? No, easier to just update the preset AFTER parsing.
+    
+    if (payloadEnd - payloadStart > 20) 
     {
-        parseToneData(bytes + payloadStart, payloadEnd - payloadStart);
+         parseToneData(bytes + payloadStart, payloadEnd - payloadStart);
+         
+         // Update Name AFTER parsing (overwriting whatever was in the file if we want the filename)
+         if (presetName.isNotEmpty())
+         {
+             // We need to fetch the preset again, modify name, and save it back.
+             // Or better: parseToneData loads it into 'currentPreset'. 
+             // Accessing presetManager directly:
+             auto p = presetManager.getCurrentPreset();
+             p.name = presetName.toStdString();
+             presetManager.loadPresetFromStruct(p);
+         }
     }
 }
 

@@ -16,14 +16,21 @@ public:
     void resized() override;
     
     std::function<void(int)> onPresetSelected;
+    std::function<void()> onSaveRequested;
+    
+    // Exposed for Editor
+    void updatePresetList();
+    int getSelectedItemIndex() const;
+    void setSelectedItemIndex(int index);
     
 private:
     State::PresetManager* presetManager = nullptr;
     juce::ComboBox presetCombo;
     juce::TextButton prevButton;
     juce::TextButton nextButton;
+    juce::TextButton saveButton;
     
-    void updatePresetList();
+    // void updatePresetList(); // Moved to public
     void selectPreset(int index);
 };
 

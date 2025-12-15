@@ -23,6 +23,26 @@ CZ101AudioProcessor::~CZ101AudioProcessor()
 {
 }
 
+// ... (Top of file usually)
+
+void CZ101AudioProcessor::saveCurrentPreset(const juce::String& name)
+{
+    // 1. Capture current state from params/voices into CurrentPreset
+    presetManager.copyStateFromProcessor();
+    
+    // 2. Save it to the current slot (in memory)
+    // Note: To persist to disk, we rely on getStateInformation/setStateInformation or a dedicated file save.
+    // For now, this updates the runtime preset so switching presets doesn't lose edits, if we stay in session.
+    // Wait, switching AWAY saves? No, usually "Save" button confirms the save.
+    // Switching away usually reloads the destination preset.
+    
+    int idx = getCurrentProgram();
+    presetManager.savePreset(idx, name.toStdString());
+    
+    // Also update host notification?
+    updateHostDisplay();
+}
+
 const juce::String CZ101AudioProcessor::getName() const
 {
     return JucePlugin_Name;
@@ -149,6 +169,26 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     right = buffer.getWritePointer(1);
     
     reverb.processStereo(left, right, buffer.getNumSamples());
+    
+    // --- VISUALIZATION COPY ---
+    // Push mono mix to circular buffer for the UI
+    if (visFifo.getFreeSpace() >= buffer.getNumSamples())
+    {
+         int start1, size1, start2, size2;
+         visFifo.prepareToWrite(buffer.getNumSamples(), start1, size1, start2, size2);
+         
+         // Helper to copy and mix down (Mono for display simpler for now)
+         auto* l = buffer.getReadPointer(0);
+         auto* r = buffer.getReadPointer(1);
+         
+         for (int i=0; i<size1; ++i) 
+             visBuffer.setSample(0, start1 + i, (l[i] + r[i]) * 0.5f);
+             
+         for (int i=0; i<size2; ++i) 
+             visBuffer.setSample(0, start2 + i, (l[size1 + i] + r[size1 + i]) * 0.5f);
+             
+         visFifo.finishedWrite(size1 + size2);
+    }
     
     performanceMonitor.stopMeasurement();
 }

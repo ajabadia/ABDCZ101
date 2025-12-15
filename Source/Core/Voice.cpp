@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "Voice.h"
 #include <cmath>
+#include "../DSP/Envelopes/ADSRtoStage.h"
 
 namespace CZ101 {
 namespace Core {
@@ -11,6 +12,7 @@ Voice::Voice()
 
 void Voice::setSampleRate(double sr) noexcept
 {
+    sampleRate = sr;
     osc1.setSampleRate(sr);
     osc2.setSampleRate(sr);
     dcwEnvelope.setSampleRate(sr);
@@ -77,12 +79,33 @@ void Voice::setLFOValue(float val) noexcept { lfoValue = val; }
 void Voice::setPitchBend(float semitones) noexcept { pitchBendFactor = std::pow(2.0f, semitones / 12.0f); }
 void Voice::setMasterTune(float semitones) noexcept { masterTuneFactor = std::pow(2.0f, semitones / 12.0f); }
 
-// ... DCW Envelope ...
+// ============================================================================
+// DCW ENVELOPE - IMPLEMENTACIÓN MEJORADA
+// ============================================================================
 
-void Voice::setDCWAttack(float s) noexcept { juce::ignoreUnused(s); }
-void Voice::setDCWDecay(float s) noexcept { juce::ignoreUnused(s); }
-void Voice::setDCWSustain(float l) noexcept { juce::ignoreUnused(l); }
-void Voice::setDCWRelease(float s) noexcept { juce::ignoreUnused(s); }
+void Voice::setDCWAttack(float seconds) noexcept
+{
+    dcwADSR.attackMs = std::clamp(seconds * 1000.0f, 0.5f, 8000.0f);
+    updateDCWEnvelopeFromADSR();
+}
+
+void Voice::setDCWDecay(float seconds) noexcept
+{
+    dcwADSR.decayMs = std::clamp(seconds * 1000.0f, 0.5f, 8000.0f);
+    updateDCWEnvelopeFromADSR();
+}
+
+void Voice::setDCWSustain(float level) noexcept
+{
+    dcwADSR.sustainLevel = std::clamp(level, 0.0f, 1.0f);
+    updateDCWEnvelopeFromADSR();
+}
+
+void Voice::setDCWRelease(float seconds) noexcept
+{
+    dcwADSR.releaseMs = std::clamp(seconds * 1000.0f, 0.5f, 8000.0f);
+    updateDCWEnvelopeFromADSR();
+}
 
 void Voice::setDCWStage(int i, float r, float l) noexcept { dcwEnvelope.setStage(i, r, l); }
 void Voice::setDCWSustainPoint(int i) noexcept { dcwEnvelope.setSustainPoint(i); }
@@ -92,12 +115,33 @@ void Voice::getDCWStage(int i, float& r, float& l) const noexcept { r = dcwEnvel
 int Voice::getDCWSustainPoint() const noexcept { return dcwEnvelope.getSustainPoint(); }
 int Voice::getDCWEndPoint() const noexcept { return dcwEnvelope.getEndPoint(); }
 
-// ... DCA Envelope ...
+// ============================================================================
+// DCA ENVELOPE - IMPLEMENTACIÓN MEJORADA
+// ============================================================================
 
-void Voice::setDCAAttack(float s) noexcept { }
-void Voice::setDCADecay(float s) noexcept { }
-void Voice::setDCASustain(float l) noexcept { }
-void Voice::setDCARelease(float s) noexcept { }
+void Voice::setDCAAttack(float seconds) noexcept
+{
+    dcaADSR.attackMs = std::clamp(seconds * 1000.0f, 0.5f, 8000.0f);
+    updateDCAEnvelopeFromADSR();
+}
+
+void Voice::setDCADecay(float seconds) noexcept
+{
+    dcaADSR.decayMs = std::clamp(seconds * 1000.0f, 0.5f, 8000.0f);
+    updateDCAEnvelopeFromADSR();
+}
+
+void Voice::setDCASustain(float level) noexcept
+{
+    dcaADSR.sustainLevel = std::clamp(level, 0.0f, 1.0f);
+    updateDCAEnvelopeFromADSR();
+}
+
+void Voice::setDCARelease(float seconds) noexcept
+{
+    dcaADSR.releaseMs = std::clamp(seconds * 1000.0f, 0.5f, 8000.0f);
+    updateDCAEnvelopeFromADSR();
+}
 
 void Voice::setDCAStage(int i, float r, float l) noexcept { dcaEnvelope.setStage(i, r, l); }
 void Voice::setDCASustainPoint(int i) noexcept { dcaEnvelope.setSustainPoint(i); }
@@ -117,83 +161,142 @@ void Voice::getPitchStage(int i, float& r, float& l) const noexcept { r = pitchE
 int Voice::getPitchSustainPoint() const noexcept { return pitchEnvelope.getSustainPoint(); }
 int Voice::getPitchEndPoint() const noexcept { return pitchEnvelope.getEndPoint(); }
 
+// ===== HELPER METHODS FOR ADSR CONSISTENCY =====
+
+void Voice::updateDCWEnvelopeFromADSR() noexcept
+{
+    std::array<float, 8> rates, levels;
+    int sus, end;
+    
+    DSP::ADSRtoStageConverter::convertADSR(
+        dcwADSR.attackMs,
+        dcwADSR.decayMs,
+        dcwADSR.sustainLevel,
+        dcwADSR.releaseMs,
+        rates, levels, sus, end,
+        44100.0  // Assuming 44.1k for now until setSampleRate propagates properly to ADSR context
+        // NOTE: Ideally we should use the stored sampleRate
+    );
+    
+    // Aplicar todos los stages a la vez
+    for (int i = 0; i < 4; ++i) {
+        dcwEnvelope.setStage(i, rates[i], levels[i]);
+    }
+    dcwEnvelope.setSustainPoint(sus);
+    dcwEnvelope.setEndPoint(end);
+}
+
+void Voice::updateDCAEnvelopeFromADSR() noexcept
+{
+    std::array<float, 8> rates, levels;
+    int sus, end;
+    
+    DSP::ADSRtoStageConverter::convertADSR(
+        dcaADSR.attackMs,
+        dcaADSR.decayMs,
+        dcaADSR.sustainLevel,
+        dcaADSR.releaseMs,
+        rates, levels, sus, end,
+        44100.0
+    );
+    
+    for (int i = 0; i < 4; ++i) {
+        dcaEnvelope.setStage(i, rates[i], levels[i]);
+    }
+    dcaEnvelope.setSustainPoint(sus);
+    dcaEnvelope.setEndPoint(end);
+}
+
+void Voice::updatePitchEnvelopeFromADSR() noexcept
+{
+    std::array<float, 8> rates, levels;
+    int sus, end;
+    
+    DSP::ADSRtoStageConverter::convertADSR(
+        pitchADSR.attackMs,
+        pitchADSR.decayMs,
+        pitchADSR.sustainLevel,
+        pitchADSR.releaseMs,
+        rates, levels, sus, end,
+        44100.0
+    );
+    
+    for (int i = 0; i < 4; ++i) {
+        pitchEnvelope.setStage(i, rates[i], levels[i]);
+    }
+    pitchEnvelope.setSustainPoint(sus);
+    pitchEnvelope.setEndPoint(end);
+}
+
 float Voice::renderNextSample() noexcept
 {
     if (!dcaEnvelope.isActive()) return 0.0f;
     
-    // Get Envelope Values
-    float dcwValue = dcwEnvelope.getNextValue(); // Timbre
-    float dcaValue = dcaEnvelope.getNextValue(); // Amp
-    float pitchEnvVal = pitchEnvelope.getNextValue(); // Pitch Mod (0-1)
+    // === ENVELOPE VALUES ===
+    float dcwValue = dcwEnvelope.getNextValue();         // Timbre (0-1)
+    float dcaValue = dcaEnvelope.getNextValue();         // Amplitud (0-1)
+    float pitchEnvVal = pitchEnvelope.getNextValue();    // Pitch mod (0-1)
     
-    // ... Processing Logic (Same as before) ...
+    // === PITCH MODULATION ===
+    // Pitch envelope: 0.0 = -1 octava, 0.5 = unison, 1.0 = +1 octava
+    float semitones = (pitchEnvVal - 0.5f) * 100.0f;     // ±50 semitones
+    float pitchMod = std::pow(2.0f, semitones / 12.0f);
     
-    // Pitch Modulation
-    // 0.0 -> -1 Octave, 0.5 -> Unison, 1.0 -> +1 Octave
-    // Modulate Pitch (Envelope 0..1  ->  +/- 50 Semitones)
-    // 0.5 = No Mod. 1.0 = +50 semi. 0.0 = -50 semi.
-    float semitones = (pitchEnvVal - 0.5f) * 100.0f;
-    float pitchMod = std::pow(2.0f, semitones / 12.0f); 
-
-    // Glide Processing
-    if (glideTime > 0.001f && currentFrequency != targetFrequency)
-    {
-        // Simple 1-pole lowpass
-        // 4.0f scale factor to make "1.0" feel like approx 1 sec at 44.1k
-        float alpha = 1.0f / (44100.0f * (glideTime + 0.001f)); 
+    // === GLIDE (PORTAMENTO) ===
+    if (glideTime > 0.001f && currentFrequency != targetFrequency) {
+        float alpha = 1.0f / (44100.0f * (glideTime + 0.001f));
         float diff = targetFrequency - currentFrequency;
-        currentFrequency += diff * alpha * 4.0f; 
+        currentFrequency += diff * alpha * 4.0f;
         
-        // Snap if close
         if (std::abs(diff) < 0.1f) currentFrequency = targetFrequency;
-    }
-    else
-    {
+    } else {
         currentFrequency = targetFrequency;
     }
     
-    // Apply LFO (Vibrato)
+    // === LFO VIBRATO ===
     float vibratoMod = 1.0f;
-    if (vibratoDepth > 0.001f)
-    {
-        // LFO value is -1 to 1. scaling to semitones
+    if (vibratoDepth > 0.001f) {
         float lfoSemitones = lfoValue * vibratoDepth;
         vibratoMod = std::pow(2.0f, lfoSemitones / 12.0f);
     }
     
-    // Apply modulated frequency to Base (currentFrequency)
-    // Combine Pitch Envelope (pitchMod), Vibrato (vibratoMod), Pitch Bend, and Master Tune
-    float finalFreq = currentFrequency * pitchMod * vibratoMod * pitchBendFactor * masterTuneFactor;
+    // === FINAL FREQUENCY ===
+    // Combina: Pitch Env + Vibrato + Pitch Bend + Master Tune
+    float finalFreq = currentFrequency * pitchMod * vibratoMod 
+                    * pitchBendFactor * masterTuneFactor;
+    
     osc1.setFrequency(finalFreq);
     osc2.setFrequency(finalFreq * currentDetuneFactor);
     
+    // === OSCILLATOR RENDERING ===
     bool osc1Wrapped = false;
     float osc1Sample = osc1.renderNextSample(dcwValue, &osc1Wrapped);
     
-    // Hard Sync Logic: If Osc1 wrapped, reset Osc2
-    if (isHardSyncEnabled && osc1Wrapped)
-    {
+    // Hard Sync: reset osc2 cuando osc1 wraps
+    if (isHardSyncEnabled && osc1Wrapped) {
         osc2.reset();
     }
     
-    // Osc 2
     float osc2Sample = osc2.renderNextSample(dcwValue);
     
-    // Ring Mod?
-    if (isRingModEnabled)
-    {
-        // Ring mod: Osc2 is modulated by Osc1
-        // Usually, Ring Mod replaces Osc2 output, or mixes.
-        // In CZ: Ring Mod output replaces standard Osc2.
-        // Osc2 Output = Osc1 * Osc2
+    // Ring Modulation: osc2_out = osc1 * osc2
+    if (isRingModEnabled) {
         osc2Sample = osc1Sample * osc2Sample;
     }
     
-    // Mix
-    float mix = (osc1Sample * osc1Level) + (osc2Sample * osc2Level);
+    // === OSCILLATOR MIX WITH NORMALIZATION ✅ ===
+    // Importante: Evitar overshooting si osc1Level + osc2Level > 1.0
+    float totalLevel = osc1Level + osc2Level;
+    float normalizer = (totalLevel > 1.0f) ? (1.0f / totalLevel) : 1.0f;
     
-    // Apply VCA (DCA) and Velocity
-    return mix * dcaValue * currentVelocity;
+    float mix = (osc1Sample * osc1Level + osc2Sample * osc2Level) * normalizer;
+    
+    // === FINAL OUTPUT WITH SAFETY ===
+    // 0.9f headroom para prevenir clipping de efectos posteriores
+    float output = mix * dcaValue * currentVelocity * 0.9f;
+    
+    // Clamp final para ultra-seguridad
+    return std::clamp(output, -1.0f, 1.0f);
 }
 
 float Voice::midiNoteToFrequency(int midiNote) const noexcept

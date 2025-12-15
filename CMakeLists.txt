@@ -41,6 +41,7 @@ target_sources(CZ101Emulator PRIVATE
     Source/PluginProcessor.h
     Source/PluginEditor.cpp
     Source/PluginEditor.h
+    Source/Standalone/StandaloneApp.cpp
     # Milestone 1: Oscillators
     Source/DSP/Oscillators/WaveTable.cpp
     Source/DSP/Oscillators/WaveTable.h
@@ -87,9 +88,12 @@ target_sources(CZ101Emulator PRIVATE
     Source/UI/Components/Knob.cpp
     Source/UI/Components/Knob.h
     Source/UI/Components/WaveformDisplay.cpp
+    Source/UI/Components/WaveformDisplay.cpp
     Source/UI/Components/WaveformDisplay.h
     Source/UI/Components/PresetBrowser.cpp
     Source/UI/Components/PresetBrowser.h
+    Source/UI/Overlays/NameEditorOverlay.cpp
+    Source/UI/Overlays/NameEditorOverlay.h
     Source/UI/Components/MIDIActivityIndicator.cpp
     Source/UI/Components/MIDIActivityIndicator.h
     Source/UI/Components/EnvelopeEditor.cpp
@@ -116,6 +120,7 @@ target_include_directories(CZ101Emulator PRIVATE
     Source/State
     Source/UI
     Source/UI/Components
+    Source/UI/Overlays
     Source/UI/LookAndFeel
     Source/Utils
 )
@@ -135,7 +140,9 @@ target_link_libraries(CZ101Emulator
         juce::juce_events
         juce::juce_graphics
         juce::juce_gui_basics
+        juce::juce_gui_basics
         juce::juce_gui_extra
+        juce::juce_opengl
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
@@ -151,6 +158,7 @@ target_compile_definitions(CZ101Emulator
         JUCE_DISPLAY_SPLASH_SCREEN=0
         JUCE_REPORT_APP_USAGE=0
         JUCE_STRICT_REFCOUNTEDPOINTER=1
+        JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1
 )
 
 # Mensajes informativos

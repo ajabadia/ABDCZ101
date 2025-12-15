@@ -56,9 +56,23 @@ public:
             g.fillRect(0, y, getWidth(), 1);
     }
 
+    void setPresetName(const juce::String& name)
+    {
+        // Update line 2 with preset name
+        m_line2 = "PRESET: " + name;
+        repaint();
+    }
+
+    std::function<void()> onClick;
+
+    void mouseDown(const juce::MouseEvent& e) override
+    {
+        if (onClick) onClick();
+    }
+
 private:
-    juce::String m_line1 = "CZ-101 EMULATOR";
-    juce::String m_line2 = "V1.1 READY";
+    juce::String m_line1 = "CZ-101   CPU: 0.0%";
+    juce::String m_line2 = "PRESET: Init";
 };
 
 } // namespace UI
