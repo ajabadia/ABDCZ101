@@ -1,0 +1,33 @@
+# Build directories
+build/
+Builds/
+cmake-build-*/
+bin/
+obj/
+*.exe
+*.dll
+*.lib
+*.pdb
+
+# Visual Studio
+.vs/
+*.user
+*.vcxproj
+*.vcxproj.filters
+*.sln
+*.suo
+
+# MacOS
+.DS_Store
+
+# Codespaces / VSCode
+.vscode/
+
+# JUCE
+JuceLibraryCode/
+*.jucer
+
+# Temporary
+*.log
+compilation_error.log
+tmp/
