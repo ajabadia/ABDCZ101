@@ -154,7 +154,7 @@ private:
     float midiNoteToFrequency(int midiNote) const noexcept;
 
 private:
-   // ===== ADSR STATE (NEW) =====
+    // ===== ADSR STATE (NEW) =====
     struct ADSRParams {
         float attackMs = 10.0f;
         float decayMs = 200.0f;
@@ -166,21 +166,13 @@ private:
     ADSRParams dcaADSR;  // DCA envelope state
     ADSRParams pitchADSR;  // Pitch envelope state
     
-    // Actualizar envelopes desde ADSR
+    // Helper to update envelopes from ADSR using stored sampleRate
     void updateDCWEnvelopeFromADSR() noexcept;
     void updateDCAEnvelopeFromADSR() noexcept;
     void updatePitchEnvelopeFromADSR() noexcept;
 
     double sampleRate = 44100.0;
 
-    // Oscillators are already defined above (lines 117-118), removing duplicates here to avoid C2086
-    // If they were not visible due to scope, we should move them or check class structure.
-    // However, they *were* defined in the original file view in the private section.
-    // Let's check if the previous view showed them.
-    // Yes, lines 117-118 in previous view.
-    // So we don't need to redeclare them.
-    
-    // We DO need to close the class.
 };
 } // namespace Core
 } // namespace CZ101

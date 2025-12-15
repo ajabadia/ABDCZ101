@@ -141,6 +141,13 @@ void EnvelopeEditor::paint(juce::Graphics& g)
     }
     
     g.strokePath(p, juce::PathStrokeType(2.0f));
+    
+    // Add help text at bottom
+    g.setColour(juce::Colours::white.withAlpha(0.3f));
+    g.setFont(10.0f);
+    g.drawText("Drag: Level | Shift+Drag: Rate", 
+               getLocalBounds().reduced(5).withHeight(15),
+               juce::Justification::centredBottom, false);
 }
 
 void EnvelopeEditor::resized()
@@ -165,21 +172,26 @@ void EnvelopeEditor::mouseDrag(const juce::MouseEvent& e)
 {
     if (selectedStage >= 0 && selectedStage < 8)
     {
-        // Y controls Level
-        float y = std::clamp(e.position.y / static_cast<float>(getHeight()), 0.0f, 1.0f);
-        levels[selectedStage] = 1.0f - y; // Invert because screen Y is top-down
-        
-        // X dragging within the slot could control Rate? 
-        // Or Shift+Drag?
-        // Let's say drag Up/Down = Level.
-        // Drag Left/Right = Rate.
-        
-        // It's tricky to map X to rate if X is also stage index.
-        // Let's treat Rate as a separate control for now? 
-        // No, let's use vertical drag for level, horizontal delta for rate?
-        // Simplest: Drag Y = Level. 
-        // Rate is hard to visualize in fixed-width mode without textual feedback.
-        // Let's assume Drag Y = Level for now.
+        if (e.mods.isShiftDown())
+        {
+            // SHIFT+DRAG = Rate (horizontal)
+            // Range 0..1 based on position within the step width
+            float w = static_cast<float>(getWidth());
+            float stepWidth = w / 8.0f;
+            float stageStartX = selectedStage * stepWidth;
+            
+            // Normalize X within stage to 0..1
+            float xWithinStage = e.position.x - stageStartX;
+            float newRate = std::clamp(xWithinStage / stepWidth, 0.01f, 0.99f);
+            
+            rates[selectedStage] = newRate;
+        }
+        else
+        {
+            // NORMAL DRAG = Level (vertical)
+            float y = std::clamp(e.position.y / static_cast<float>(getHeight()), 0.0f, 1.0f);
+            levels[selectedStage] = 1.0f - y; // Invert because screen Y is top-down
+        }
         
         sendUpdateToProcessor(selectedStage);
         repaint();

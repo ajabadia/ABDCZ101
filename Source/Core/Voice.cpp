@@ -18,6 +18,11 @@ void Voice::setSampleRate(double sr) noexcept
     dcwEnvelope.setSampleRate(sr);
     dcaEnvelope.setSampleRate(sr);
     pitchEnvelope.setSampleRate(sr);
+
+    // Re-calculate envelopes with new sample rate
+    updateDCWEnvelopeFromADSR();
+    updateDCAEnvelopeFromADSR();
+    updatePitchEnvelopeFromADSR();
 }
 
 void Voice::noteOn(int midiNote, float velocity) noexcept
@@ -85,13 +90,15 @@ void Voice::setMasterTune(float semitones) noexcept { masterTuneFactor = std::po
 
 void Voice::setDCWAttack(float seconds) noexcept
 {
-    dcwADSR.attackMs = std::clamp(seconds * 1000.0f, 0.5f, 8000.0f);
+    double ms = static_cast<double>(seconds) * 1000.0;
+    dcwADSR.attackMs = static_cast<float>(std::clamp(ms, 0.5, 8000.0));
     updateDCWEnvelopeFromADSR();
 }
 
 void Voice::setDCWDecay(float seconds) noexcept
 {
-    dcwADSR.decayMs = std::clamp(seconds * 1000.0f, 0.5f, 8000.0f);
+    double ms = static_cast<double>(seconds) * 1000.0;
+    dcwADSR.decayMs = static_cast<float>(std::clamp(ms, 0.5, 8000.0));
     updateDCWEnvelopeFromADSR();
 }
 
@@ -103,7 +110,8 @@ void Voice::setDCWSustain(float level) noexcept
 
 void Voice::setDCWRelease(float seconds) noexcept
 {
-    dcwADSR.releaseMs = std::clamp(seconds * 1000.0f, 0.5f, 8000.0f);
+    double ms = static_cast<double>(seconds) * 1000.0;
+    dcwADSR.releaseMs = static_cast<float>(std::clamp(ms, 0.5, 8000.0));
     updateDCWEnvelopeFromADSR();
 }
 
@@ -121,13 +129,15 @@ int Voice::getDCWEndPoint() const noexcept { return dcwEnvelope.getEndPoint(); }
 
 void Voice::setDCAAttack(float seconds) noexcept
 {
-    dcaADSR.attackMs = std::clamp(seconds * 1000.0f, 0.5f, 8000.0f);
+    double ms = static_cast<double>(seconds) * 1000.0;
+    dcaADSR.attackMs = static_cast<float>(std::clamp(ms, 0.5, 8000.0));
     updateDCAEnvelopeFromADSR();
 }
 
 void Voice::setDCADecay(float seconds) noexcept
 {
-    dcaADSR.decayMs = std::clamp(seconds * 1000.0f, 0.5f, 8000.0f);
+    double ms = static_cast<double>(seconds) * 1000.0;
+    dcaADSR.decayMs = static_cast<float>(std::clamp(ms, 0.5, 8000.0));
     updateDCAEnvelopeFromADSR();
 }
 
@@ -139,7 +149,8 @@ void Voice::setDCASustain(float level) noexcept
 
 void Voice::setDCARelease(float seconds) noexcept
 {
-    dcaADSR.releaseMs = std::clamp(seconds * 1000.0f, 0.5f, 8000.0f);
+    double ms = static_cast<double>(seconds) * 1000.0;
+    dcaADSR.releaseMs = static_cast<float>(std::clamp(ms, 0.5, 8000.0));
     updateDCAEnvelopeFromADSR();
 }
 
@@ -174,8 +185,7 @@ void Voice::updateDCWEnvelopeFromADSR() noexcept
         dcwADSR.sustainLevel,
         dcwADSR.releaseMs,
         rates, levels, sus, end,
-        44100.0  // Assuming 44.1k for now until setSampleRate propagates properly to ADSR context
-        // NOTE: Ideally we should use the stored sampleRate
+        sampleRate
     );
     
     // Aplicar todos los stages a la vez
@@ -197,7 +207,7 @@ void Voice::updateDCAEnvelopeFromADSR() noexcept
         dcaADSR.sustainLevel,
         dcaADSR.releaseMs,
         rates, levels, sus, end,
-        44100.0
+        sampleRate
     );
     
     for (int i = 0; i < 4; ++i) {
@@ -218,7 +228,7 @@ void Voice::updatePitchEnvelopeFromADSR() noexcept
         pitchADSR.sustainLevel,
         pitchADSR.releaseMs,
         rates, levels, sus, end,
-        44100.0
+        sampleRate
     );
     
     for (int i = 0; i < 4; ++i) {
@@ -244,7 +254,7 @@ float Voice::renderNextSample() noexcept
     
     // === GLIDE (PORTAMENTO) ===
     if (glideTime > 0.001f && currentFrequency != targetFrequency) {
-        float alpha = 1.0f / (44100.0f * (glideTime + 0.001f));
+        float alpha = 1.0f / (float)(sampleRate * (glideTime + 0.001f));
         float diff = targetFrequency - currentFrequency;
         currentFrequency += diff * alpha * 4.0f;
         
