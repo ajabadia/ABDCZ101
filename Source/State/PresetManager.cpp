@@ -202,6 +202,92 @@ static void initEnvelopes(Preset& p)
 void PresetManager::createFactoryPresets()
 {
     presets.clear();
+    
+    // --- PRESTIGIOUS USER CONTRIBUTIONS ---
+    // Patch 1: Moog-Like (Classic Bass/Lead)
+    {
+        Preset p;
+        p.name = "Moog-Like";
+        p.author = "User";
+        initEnvelopes(p);
+        
+        p.parameters["osc1_waveform"] = 1.0f; // Saw
+        p.parameters["osc1_level"] = 1.0f;
+        p.parameters["osc2_waveform"] = 1.0f; 
+        p.parameters["osc2_level"] = 1.0f;
+        p.parameters["osc2_detune"] = -7.0f; 
+        
+        // DCW
+         p.dcwEnv.levels[0] = 0.48f; p.dcwEnv.rates[0] = 0.78f;
+         p.dcwEnv.levels[1] = 0.75f; p.dcwEnv.rates[1] = 0.5f;
+         p.dcwEnv.levels[2] = 0.83f; p.dcwEnv.rates[2] = 0.37f;
+        p.dcwEnv.sustainPoint = 2;
+         p.dcwEnv.levels[3] = 0.0f; p.dcwEnv.rates[3] = 0.41f;
+        p.dcwEnv.endPoint = 3;
+
+        // DCA
+        p.dcaEnv.levels[0] = 0.87f; p.dcaEnv.rates[0] = 0.84f;
+        p.dcaEnv.sustainPoint = 0; 
+        p.dcaEnv.levels[1] = 0.0f; p.dcaEnv.rates[1] = 0.39f;
+        p.dcaEnv.endPoint = 1;
+        
+        p.parameters["lfo_waveform"] = 3.0f; 
+        p.parameters["lfo_rate"] = 0.49f;
+        p.parameters["lfo_depth"] = 0.59f;
+
+        presets.push_back(p);
+    }
+
+    // Patch 2: Polyanalogue (Juno-106)
+    {
+        Preset p;
+        p.name = "Polyanalogue";
+        p.author = "User";
+        initEnvelopes(p);
+
+        p.parameters["osc1_waveform"] = 1.0f;
+        p.parameters["osc1_level"] = 0.5f;
+        p.parameters["osc2_waveform"] = 1.0f; 
+        p.parameters["osc2_level"] = 0.5f;
+        p.parameters["osc2_detune"] = 6.0f; 
+
+        // DCW
+        p.dcwEnv.levels[0] = 0.99f; p.dcwEnv.rates[0] = 0.99f; 
+        p.dcwEnv.levels[1] = 0.96f; p.dcwEnv.rates[1] = 0.4f;
+        p.dcwEnv.levels[2] = 0.52f; p.dcwEnv.rates[2] = 0.3f;
+        p.dcwEnv.sustainPoint = 2;
+        p.dcwEnv.levels[3] = 0.0f; p.dcwEnv.rates[3] = 0.3f;
+        p.dcwEnv.endPoint = 3;
+
+        // DCA
+        p.dcaEnv.levels[0] = 0.5f; p.dcaEnv.rates[0] = 1.0f; 
+        p.dcaEnv.levels[1] = 0.99f; p.dcaEnv.rates[1] = 0.77f; 
+        p.dcaEnv.levels[2] = 0.91f; p.dcaEnv.rates[2] = 0.67f;
+        p.dcaEnv.sustainPoint = 2; 
+        p.dcaEnv.levels[3] = 0.59f; p.dcaEnv.rates[3] = 0.79f;
+        p.dcaEnv.levels[4] = 0.0f; p.dcaEnv.rates[4] = 0.33f;
+        p.dcaEnv.endPoint = 4;
+
+        presets.push_back(p);
+    }
+    
+    // Patch 3: Sonic Bubbles (FX)
+    {
+        Preset p;
+        p.name = "Sonic Bubbles";
+        p.author = "User";
+        initEnvelopes(p);
+
+        p.parameters["lfo_waveform"] = 1.0f; 
+        p.parameters["lfo_depth"] = 1.0f; 
+        p.parameters["lfo_rate"] = 0.6f; 
+
+        p.pitchEnv.levels[0] = 0.5f; p.pitchEnv.rates[0] = 0.5f; 
+        p.pitchEnv.levels[1] = 0.0f; p.pitchEnv.rates[1] = 0.5f;
+        
+        presets.push_back(p);
+    }
+
     createBassPreset();
     createStringPreset();
     createBrassPreset();
@@ -534,6 +620,8 @@ void PresetManager::saveBank(const juce::File& file)
         
         // Name & params (EXISTENTE)
         obj->setProperty("name", juce::String(preset.name));
+        if (!preset.author.empty()) obj->setProperty("author", juce::String(preset.author));
+
         juce::DynamicObject::Ptr paramsObj = new juce::DynamicObject();
         for (const auto& [id, val] : preset.parameters) {
             paramsObj->setProperty(juce::Identifier(id), val);
@@ -609,6 +697,8 @@ void PresetManager::loadBank(const juce::File& file)
         if (presetVar.isObject()) {
             Preset p;
             p.name = presetVar["name"].toString().toStdString();
+            if (presetVar.hasProperty("author"))
+                p.author = presetVar["author"].toString().toStdString();
             
             // Params
             if (auto* paramsObj = presetVar["params"].getDynamicObject()) {

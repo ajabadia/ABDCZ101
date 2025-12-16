@@ -22,7 +22,7 @@ juce_add_plugin(CZ101Emulator
     COMPANY_NAME "CZ101"
     PLUGIN_MANUFACTURER_CODE Cz10
     PLUGIN_CODE Cz01
-    FORMATS Standalone
+    FORMATS Standalone VST3
     PRODUCT_NAME "CZ-101 Emulator"
     IS_SYNTH TRUE
     NEEDS_MIDI_INPUT TRUE

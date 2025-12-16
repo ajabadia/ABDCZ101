@@ -48,8 +48,17 @@ namespace CZ101 { namespace State { class Parameters {}; } }
 namespace CZ101 { namespace Core { class VoiceManager {}; } }
 
 
+class StdoutLogger : public juce::Logger {
+    void logMessage(const juce::String& message) override {
+        std::cout << "[LOG] " << message << std::endl;
+    }
+};
+
 int main(int argc, char* argv[])
 {
+    StdoutLogger logger;
+    juce::Logger::setCurrentLogger(&logger);
+    
     std::cout << "========================================" << std::endl;
     std::cout << "      CZ-101 SysEx Logic Test" << std::endl;
     std::cout << "========================================" << std::endl;
@@ -81,10 +90,14 @@ int main(int argc, char* argv[])
 
     // Initialize mock dependencies
     CZ101::State::PresetManager mockPM(nullptr, nullptr);
-    CZ101::MIDI::SysExManager sysExManager(mockPM);
+    CZ101::MIDI::SysExManager sysExManager;
+    // Bind mock
+    sysExManager.onPresetParsed = [&](const CZ101::State::Preset& p) {
+        mockPM.loadPresetFromStruct(p);
+    };
 
     // Run Parsing
-    sysExManager.handleSysEx(buffer.data(), (int)size);
+    sysExManager.handleSysEx(buffer.data(), (int)size, "Test Import");
 
     if (CZ101::State::presetWasLoaded) {
         std::cout << "SUCCESS: Preset decoded!" << std::endl;

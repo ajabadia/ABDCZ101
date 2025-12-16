@@ -8,12 +8,32 @@ CZ101AudioProcessor::CZ101AudioProcessor()
       parameters(*this),
       presetManager(&parameters, &voiceManager),
       midiProcessor(voiceManager, presetManager),
-      sysExManager(presetManager)
+      sysExManager()
 {
     parameters.createParameters();
+
+    // Setup File Logger
+    auto logFile = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                   .getChildFile("CZ101Emulator")
+                   .getChildFile("cz101_debug.log");
+                   
+    fileLogger = std::make_unique<juce::FileLogger>(logFile, "CZ-101 Emulator Log");
+    juce::Logger::setCurrentLogger(fileLogger.get());
+    juce::Logger::writeToLog("Logger initialized at: " + logFile.getFullPathName());
     
     // Bind SysEx Callback
     sysExManager.onPresetParsed = [this](const CZ101::State::Preset& p) {
+        // 1. Load into PresetManager (updates currentPreset and calls applyPresetToProcessor internally)
+        // Note: loadPresetFromStruct calls applyPresetToProcessor which updates APVTS.
+        // It also applies envelopes to VoiceManager.
+        // HOWEVER, our applyPresetToVoiceEngine handles EXTRA logic (Line Select, calculated Levels).
+        // loadPresetFromStruct basically does a subset of what we need OR essentially the same.
+        // Let's call BOTH for safety:
+        // - loadPresetFromStruct: Updates 'currentPreset', applies basic params + envelopes.
+        // - applyPresetToVoiceEngine: Applies derived logic (Line Select 1+1' -> osc levels) + syncs params again.
+        // Redundant sync is fine. Key is updating currentPreset struct.
+        presetManager.loadPresetFromStruct(p);
+        
         applyPresetToVoiceEngine(p);
     };
     
@@ -49,10 +69,100 @@ void CZ101AudioProcessor::applyPresetToVoiceEngine(const CZ101::State::Preset& p
     }
     voiceManager.setDCASustainPoint(preset.dcaEnv.sustainPoint);
     voiceManager.setDCAEndPoint(preset.dcaEnv.endPoint);
+
+    // --- Extended Parameter Mapping (Oscillators, LFO, Effects) ---
+
+    auto getParam = [&](const std::string& key, float defaultVal) -> float {
+        auto it = preset.parameters.find(key);
+        return (it != preset.parameters.end()) ? it->second : defaultVal;
+    };
+
+    // 1. Oscillators & Line Select
+    int osc1Wave = (int)getParam("osc1waveform", 0.0f);
+    int osc2Wave = (int)getParam("osc2waveform", 0.0f);
+    
+    // CZ-101 Line Select: 0=1, 1=2, 2=1+1', 3=1+2
+    // If not present (e.g. envelope-only test), assume 0 (Line 1) or check waveforms?
+    // If we have waveforms but no line select, we might check if they are non-zero?
+    // But mostly legitimate SysEx will have lineselect.
+    int lineSel = (int)getParam("lineselect", 0.0f);
+
+    float osc1Lvl = 0.0f;
+    float osc2Lvl = 0.0f;
+    
+    switch (lineSel) {
+        case 0: osc1Lvl = 1.0f; osc2Lvl = 0.0f; break; // Line 1
+        case 1: osc1Lvl = 0.0f; osc2Lvl = 1.0f; break; // Line 2
+        case 2: osc1Lvl = 1.0f; osc2Lvl = 1.0f; break; // Line 1+1'
+        case 3: osc1Lvl = 1.0f; osc2Lvl = 1.0f; break; // Line 1+2
+        default: osc1Lvl = 1.0f; osc2Lvl = 0.0f; break;
+    }
+    
+
+    // Fallback: If map is empty (old SysEx logic), force Osc1
+    if (preset.parameters.empty()) {
+        osc1Lvl = 1.0f;
+    }
+
+    voiceManager.setOsc1Waveform(osc1Wave);
+    voiceManager.setOsc2Waveform(osc2Wave);
+    voiceManager.setOsc1Level(osc1Lvl);
+    voiceManager.setOsc2Level(osc2Lvl);
+    
+    float detune = getParam("osc2detune", 0.0f);
+    voiceManager.setOsc2Detune(detune);
+    
+    // 2. Filter (Global Open)
+    filterL.setCutoff(20000.0f); 
+    filterR.setCutoff(20000.0f);
+    
+    // 3. LFO
+    if (preset.parameters.count("lforate")) {
+        lfo.setFrequency(getParam("lforate", 1.0f));
+    }
+    if (preset.parameters.count("lfowaveform")) {
+        lfo.setWaveform((CZ101::DSP::LFO::Waveform)(int)getParam("lfowaveform", 0.0f));
+    }
+    if (preset.parameters.count("lfodepth")) {
+        voiceManager.setVibratoDepth(getParam("lfodepth", 0.0f));
+    }
+    
+    // 4. Master Tune
+    int octRange = (int)getParam("octaverange", 0.0f); 
+    float masterTuneShift = 0.0f;
+    if (octRange == 1) masterTuneShift = 12.0f;
+    if (octRange == 2) masterTuneShift = -12.0f;
+    voiceManager.setMasterTune(masterTuneShift);
+
+    // --- SYNC TO APVTS (UI & UpdateParameters Loop) ---
+    // Critical: Update the parameters so the AudioProcessorValueTreeState reflects the changes.
+    // Otherwise updateParameters() inside processBlock will overwrite everything with stale UI values.
+
+    if (parameters.osc1Waveform) parameters.osc1Waveform->setValueNotifyingHost(parameters.osc1Waveform->convertTo0to1((float)osc1Wave));
+    if (parameters.osc2Waveform) parameters.osc2Waveform->setValueNotifyingHost(parameters.osc2Waveform->convertTo0to1((float)osc2Wave));
+    
+    // Level scaling: 0.0-1.0 matches parameter range
+    if (parameters.osc1Level) parameters.osc1Level->setValueNotifyingHost(osc1Lvl);
+    if (parameters.osc2Level) parameters.osc2Level->setValueNotifyingHost(osc2Lvl);
+    
+    if (parameters.osc2Detune) {
+        // Detune coming from SysEx is in cents (+/-). Param might be normalized 0..1 or scaled.
+        // Check Parameters.cpp for range. Usually NormalisableRange handles mapping if we usesetValueNotifyingHost?
+        // Wait, setValueNotifyingHost EXPECTS 0..1 NORMALIZED value.
+        // We need to use the parameter's range to map Real->Normalized.
+        // RangedAudioParameter::convertTo0to1(realValue)
+        parameters.osc2Detune->setValueNotifyingHost(parameters.osc2Detune->convertTo0to1(detune));
+    }
+
+    if (parameters.lfoRate)    parameters.lfoRate->setValueNotifyingHost(parameters.lfoRate->convertTo0to1(getParam("lforate", 1.0f)));
+    if (parameters.lfoDepth)   parameters.lfoDepth->setValueNotifyingHost(parameters.lfoDepth->convertTo0to1(getParam("lfodepth", 0.0f)/2.0f)); // Undo scaling in updateParams (depth*2)
+    if (parameters.lfoWaveform) parameters.lfoWaveform->setValueNotifyingHost(parameters.lfoWaveform->convertTo0to1((float)(int)getParam("lfowaveform", 0.0f)));
+
 }
 
 CZ101AudioProcessor::~CZ101AudioProcessor()
 {
+    juce::Logger::setCurrentLogger(nullptr);
 }
 
 // ... (Top of file usually)
@@ -128,8 +238,6 @@ void CZ101AudioProcessor::changeProgramName(int index, const juce::String& newNa
 
 void CZ101AudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
-    juce::ignoreUnused(samplesPerBlock);
-    
     voiceManager.setSampleRate(sampleRate);
     filterL.setSampleRate(sampleRate);
     filterR.setSampleRate(sampleRate);
@@ -138,7 +246,31 @@ void CZ101AudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     reverb.setSampleRate(sampleRate);
     chorus.prepare(sampleRate);
     lfo.setSampleRate(sampleRate);
-    lfo.setFrequency(1.0f); // Default rate
+    lfo.setFrequency(1.0f);
+    
+    // Patch 1: Deep Persistence (User Fix)
+    juce::File presetsDir = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                            .getChildFile("CZ101Emulator");
+    
+    if (!presetsDir.exists()) {
+        presetsDir.createDirectory();
+        // Simple logging if we had a logger, or just proceed
+    }
+    
+    juce::File bankFile = presetsDir.getChildFile("userbank.json");
+    
+    if (bankFile.existsAsFile()) {
+        presetManager.loadBank(bankFile);
+        if (presetManager.getPresets().empty()) {
+            presetManager.createFactoryPresets();
+            presetManager.saveBank(bankFile);
+        }
+        presetManager.loadPreset(0);
+    } else {
+        presetManager.createFactoryPresets();
+        presetManager.saveBank(bankFile);
+        presetManager.loadPreset(0);
+    } // Default rate
 }
 
 void CZ101AudioProcessor::releaseResources()

@@ -34,15 +34,18 @@ struct EnvelopeData
 struct Preset
 {
     std::string name;
+    std::string author; // Added author field
+    
+    // Parameter map (string ID -> normalized value 0.0-1.0 or specific range)
     std::map<std::string, float> parameters;
     
-    // 8-Stage Data
+    // Envelopes
+    EnvelopeData pitchEnv;
     EnvelopeData dcwEnv;
     EnvelopeData dcaEnv;
-    EnvelopeData pitchEnv;
-    
-    Preset() : name("Init") {}
-    Preset(const std::string& n) : name(n) {}
+
+    Preset() : name("Init"), author("Factory") {} 
+    Preset(const std::string& n) : name(n), author("Factory") {}
 };
 
 class Parameters; 
@@ -66,11 +69,15 @@ public:
     void saveBank(const juce::File& file);
     void loadBank(const juce::File& file);
     
+
     // Reset entire bank to factory defaults
     void resetToFactory();
+    void createFactoryPresets(); // Exposed for PluginProcessor fallback
     
     const Preset& getCurrentPreset() const { return currentPreset; }
     const std::vector<Preset>& getPresets() const { return presets; }
+    int getCurrentPresetIndex() const { return currentPresetIndex; }
+    
     
 private:
     std::vector<Preset> presets;
@@ -79,7 +86,7 @@ private:
     Parameters* parameters = nullptr;
     Core::VoiceManager* voiceManager = nullptr;
     
-    void createFactoryPresets();
+    // void createFactoryPresets(); // Moved to public
     void createBassPreset();
     void createLeadPreset();
     void createBrassPreset();

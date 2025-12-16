@@ -1,0 +1,35 @@
+﻿========================================
+      CZ-101 SysEx Logic Test
+========================================
+Loading file: DOCS\info\patches\cz-pack-1\Drunk Trumpet.syx
+Read 264 bytes.
+[Test] Preset Loaded: Test Import
+SUCCESS: Preset decoded!
+  Name: Test Import
+  DCA Env:
+    Step 0: R=0.0017614 L=1 [SUS]
+    Step 1: R=0.001 L=0.515152
+    Step 2: R=0.0618364 L=0.656566 [END]
+    Step 3: R=0.001 L=0
+    Step 4: R=0.0104364 L=0.494949
+    Step 5: R=0.00190976 L=1
+    Step 6: R=0.001 L=0.747475
+    Step 7: R=0.001 L=0.585859
+  DCW Env:
+    Step 0: R=0.0275436 L=1
+    Step 1: R=0.001 L=0.383838 [SUS]
+    Step 2: R=0.001 L=1
+    Step 3: R=1.57088 L=0.535354 [END]
+    Step 4: R=0.0526017 L=0.89899
+    Step 5: R=0.001 L=1
+    Step 6: R=0.001 L=0.444444
+    Step 7: R=0.001 L=0.262626
+  DCO Env:
+    Step 0: R=0.00310252 L=0.747475 [SUS]
+    Step 1: R=0.00190976 L=0.434343
+    Step 2: R=0.001 L=0.747475
+    Step 3: R=0.001 L=0.737374
+    Step 4: R=3 L=0 [END]
+    Step 5: R=0.00263918 L=0.181818
+    Step 6: R=0.001 L=0.767677
+    Step 7: R=0.001 L=0.929293

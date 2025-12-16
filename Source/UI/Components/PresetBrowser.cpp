@@ -1,4 +1,5 @@
 #include "PresetBrowser.h"
+#include "../../State/PresetManager.h"
 
 namespace CZ101 {
 namespace UI {
@@ -13,6 +14,16 @@ PresetBrowser::PresetBrowser()
     prevButton.setButtonText("<");
     nextButton.setButtonText(">");
     menuButton.setButtonText("MENU");
+    
+    // High Visibility Colors
+    presetCombo.setColour(juce::ComboBox::backgroundColourId, juce::Colour(0xff202020));
+    presetCombo.setColour(juce::ComboBox::textColourId, juce::Colours::cyan);
+    presetCombo.setColour(juce::ComboBox::arrowColourId, juce::Colours::cyan);
+    presetCombo.setColour(juce::ComboBox::outlineColourId, juce::Colours::white.withAlpha(0.2f));
+    
+    prevButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    nextButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    menuButton.setColour(juce::TextButton::textColourOffId, juce::Colours::gold);
     
     // updatePresetList() cannot be called here yet as manager is null
     
@@ -68,15 +79,15 @@ void PresetBrowser::resized()
 {
     auto bounds = getLocalBounds().reduced(5);
     
-    // Left: MENU (60px)
-    menuButton.setBounds(bounds.removeFromLeft(60));
-    bounds.removeFromLeft(5);
+    // Left: MENU (Reduced 60 -> 40)
+    menuButton.setBounds(bounds.removeFromLeft(40));
+    bounds.removeFromLeft(2);
     
-    // Nav Buttons
-    prevButton.setBounds(bounds.removeFromLeft(30));
-    bounds.removeFromLeft(5);
-    nextButton.setBounds(bounds.removeFromRight(30));
-    bounds.removeFromRight(5);
+    // Nav Buttons (Reduced 30 -> 25)
+    prevButton.setBounds(bounds.removeFromLeft(25));
+    bounds.removeFromLeft(2);
+    nextButton.setBounds(bounds.removeFromRight(25));
+    bounds.removeFromRight(2);
     
     presetCombo.setBounds(bounds);
 }
@@ -129,8 +140,8 @@ void PresetBrowser::loadBank()
     if (!presetManager) return;
     fileChooser = std::make_unique<juce::FileChooser>("Load Bank", juce::File::getSpecialLocation(juce::File::userDocumentsDirectory), "*.json");
     
-    auto flags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
-    fileChooser->launchAsync(flags, [this](const juce::FileChooser& fc)
+    auto browserFlags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
+    fileChooser->launchAsync(browserFlags, [this](const juce::FileChooser& fc)
     {
         auto file = fc.getResult();
         if (file.existsAsFile())
@@ -147,8 +158,8 @@ void PresetBrowser::saveBank()
     if (!presetManager) return;
     fileChooser = std::make_unique<juce::FileChooser>("Save Bank", juce::File::getSpecialLocation(juce::File::userDocumentsDirectory), "*.json");
     
-    auto flags = juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::warnAboutOverwriting;
-    fileChooser->launchAsync(flags, [this](const juce::FileChooser& fc)
+    auto browserFlags = juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::warnAboutOverwriting;
+    fileChooser->launchAsync(browserFlags, [this](const juce::FileChooser& fc)
     {
         auto file = fc.getResult();
         if (file != juce::File())
@@ -170,7 +181,16 @@ void PresetBrowser::updatePresetList()
         presetCombo.addItem(presets[i].name, static_cast<int>(i) + 1);
     }
     
-    presetCombo.setSelectedItemIndex(0);
+    // Sync with current PresetManager index
+    int currentIdx = presetManager->getCurrentPresetIndex();
+    if (currentIdx >= 0 && currentIdx < presetCombo.getNumItems())
+    {
+        presetCombo.setSelectedItemIndex(currentIdx, juce::dontSendNotification);
+    }
+    else
+    {
+        presetCombo.setSelectedItemIndex(0, juce::dontSendNotification);
+    }
 }
 
 void PresetBrowser::selectPreset(int index)

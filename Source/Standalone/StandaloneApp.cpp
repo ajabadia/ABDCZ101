@@ -351,11 +351,9 @@ public:
         {
             juce::DocumentWindow::resized();
             // detailed positioning of button in title bar area? 
-            // DocumentWindow draws its own title bar. We can put the button in the content area top-right?
-            // Or overlay it?
-            // Standard JUCE "Options..." placement (Top Left content area)
-            // Typically just below the title bar if using native, or inside content.
-            settingsButton.setBounds(6, 6, 100, 24);
+            // Place at Top Right to avoid PresetBrowser (Top Left)
+            settingsButton.setBounds(getWidth() - 110, 6, 100, 24);
+            settingsButton.toFront(true);
         }
 
         ~MainWindow() override

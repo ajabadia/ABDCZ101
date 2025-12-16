@@ -90,7 +90,7 @@ void MIDIProcessor::handleControlChange(int cc, int value) noexcept
 void MIDIProcessor::handleSysEx(const void* data, int size) noexcept
 {
     if (sysExManager)
-        sysExManager->handleSysEx(data, size);
+        sysExManager->handleSysEx(data, size, "SysEx Import");
 }
 
 } // namespace MIDI

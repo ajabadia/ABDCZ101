@@ -1,6 +1,8 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_core/juce_core.h>
+#include <memory>
 #include "Utils/PerformanceMonitor.h"
 #include "Core/VoiceManager.h"
 #include "MIDI/MIDIProcessor.h"
@@ -72,7 +74,7 @@ private:
     CZ101::MIDI::MIDIProcessor midiProcessor;
     CZ101::State::Parameters parameters;
     CZ101::State::PresetManager presetManager;
-    CZ101::MIDI::SysExManager sysExManager{presetManager};
+    CZ101::MIDI::SysExManager sysExManager;
     
     CZ101::DSP::ResonantFilter filterL;
     CZ101::DSP::ResonantFilter filterR;
@@ -88,6 +90,8 @@ private:
     CZ101::Utils::PerformanceMonitor performanceMonitor;
     
     void updateParameters();
+
+    std::unique_ptr<juce::FileLogger> fileLogger;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CZ101AudioProcessor)
 };

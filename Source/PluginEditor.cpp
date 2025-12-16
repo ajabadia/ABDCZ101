@@ -37,19 +37,24 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
     
     // ========== HEADER ==========
     addAndMakeVisible(lcdDisplay);
-    lcdDisplay.setText("CZ-101 EMULATOR", "PRESET: INIT");
+    // Init LCD with correct layout (Name Top, Stats Bottom)
+    lcdDisplay.setText("Init", "CPU: 0.0%  SR: 44.1kHz  NOTE: --");
     
     addAndMakeVisible(presetBrowser);
     presetBrowser.setPresetManager(&audioProcessor.getPresetManager());
     presetBrowser.onPresetSelected = [this](int index) {
         juce::ignoreUnused(index);
         auto name = audioProcessor.getPresetManager().getCurrentPreset().name;
-        lcdDisplay.setText("CZ-101 EMULATOR", "PRESET: " + juce::String(name));
+        // Keep synced with Timer format (Name Top)
+        lcdDisplay.setText(juce::String(name), "LOADING...");
     };
 
     presetBrowser.onSaveRequested = [this]()
     {
-        auto currentName = audioProcessor.getPresetManager().getCurrentPreset().name;
+        auto currentName = juce::String(audioProcessor.getPresetManager().getCurrentPreset().name);
+        // Strip "(UNSAVED)" if present so the rename box is clean
+        currentName = currentName.replace(" (UNSAVED)", "");
+        
         nameOverlay.startRename(currentName, [this](const juce::String& newName)
         {
             auto& pm = audioProcessor.getPresetManager();
@@ -68,8 +73,15 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
             // We'll iterate to find name match OR just save to a default User slot if unclear.
             // **Correction**: PresetBrowser has getSelectedItemIndex! But we are in Editor.
             // We can ask the browser:
-            int idx = presetBrowser.getSelectedItemIndex(); // 1-based usually in ComboBox
-            int presetIndex = idx - 1; 
+            // 2. Save to internal memory (active slot)
+            // Use the authoritative index from PresetManager
+            int idx = pm.getCurrentPresetIndex(); 
+            // Note: PresetManager index is 0-based.
+            int presetIndex = idx; 
+            
+            // If checking Browser consistency:
+            // int browserIdx = presetBrowser.getSelectedItemIndex() - 1;
+            // if (browserIdx != presetIndex) { Logger::writeToLog("Warning: UI Index mismatch"); }
 
             if (presetIndex >= 0)
             {
@@ -84,8 +96,9 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
                 // 4. Update UI
                 audioProcessor.changeProgramName(presetIndex, newName);
                 presetBrowser.updatePresetList();
+                presetBrowser.updatePresetList();
                 presetBrowser.setSelectedItemIndex(idx); // restore selection
-                lcdDisplay.setText("CZ-101   SAVED", "PRESET: " + newName);
+                lcdDisplay.setText(newName, "SAVED OK");
             }
         });
         
@@ -136,25 +149,26 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
     addAndMakeVisible(envelopeTabs);
     
     // Envelope panels (content for tabs)
-    auto* pitchPanel = new juce::Component();
+    // Envelope panels (content for tabs)
+    auto pitchPanel = std::make_unique<juce::Component>();
     pitchPanel->addAndMakeVisible(pitchEditor);
-    envelopeTabs.addTab("PITCH", juce::Colours::magenta, pitchPanel, true);
+    envelopeTabs.addTab("PITCH", juce::Colours::magenta, pitchPanel.release(), true);
     
-    auto* dcwPanel = new juce::Component();
+    auto dcwPanel = std::make_unique<juce::Component>();
     dcwPanel->addAndMakeVisible(dcwEditor);
     dcwPanel->addAndMakeVisible(dcwAttackKnob);
     dcwPanel->addAndMakeVisible(dcwDecayKnob);
     dcwPanel->addAndMakeVisible(dcwSustainKnob);
     dcwPanel->addAndMakeVisible(dcwReleaseKnob);
-    envelopeTabs.addTab("DCW", juce::Colours::orange, dcwPanel, true);
+    envelopeTabs.addTab("DCW", juce::Colours::orange, dcwPanel.release(), true);
     
-    auto* dcaPanel = new juce::Component();
+    auto dcaPanel = std::make_unique<juce::Component>();
     dcaPanel->addAndMakeVisible(dcaEditor);
     dcaPanel->addAndMakeVisible(dcaAttackKnob);
     dcaPanel->addAndMakeVisible(dcaDecayKnob);
     dcaPanel->addAndMakeVisible(dcaSustainKnob);
     dcaPanel->addAndMakeVisible(dcaReleaseKnob);
-    envelopeTabs.addTab("DCA", juce::Colours::cyan, dcaPanel, true);
+    envelopeTabs.addTab("DCA", juce::Colours::cyan, dcaPanel.release(), true);
     
     // Effects (2x3 grid)
     addAndMakeVisible(delayTimeKnob);
@@ -269,166 +283,186 @@ void CZ101AudioProcessorEditor::paint(juce::Graphics& g)
     // Subtle grid lines
     g.setColour(juce::Colour(0xff1a2a3a).withAlpha(0.3f));
     for (int x = 0; x < getWidth(); x += 50)
-        g.drawVerticalLine(x, 0, getHeight());
+        g.drawVerticalLine((float)x, 0.0f, (float)getHeight());
 }
 
-void CZ101AudioProcessorEditor::resized()
+void CZ101AudioProcessorEditor::resized() 
 {
     auto area = getLocalBounds();
     
-    // ========== HEADER (45px) ==========
-    // ========== HEADER (60px - Bigger) ==========
-    auto headerArea = area.removeFromTop(60);
+    // ========== HEADER (40px) ==========
+    auto headerArea = area.removeFromTop(40);
     
-    // LCD Centered and Wider
-    // Left side: MIDI Controls
-    auto leftHeader = headerArea.removeFromLeft(200);
-    midiIndicator.setBounds(leftHeader.removeFromLeft(30).reduced(5));
-    midiOutputSelector.setBounds(leftHeader.reduced(5));
+    // LEFT: Preset selector - INCREASED WIDTH from 160 to 230 to fit Combo
+    auto leftHeader = headerArea.removeFromLeft(230); 
+    presetBrowser.setBounds(leftHeader.removeFromLeft(225).reduced(2));
     
-    // Right side: Browser & SysEx Buttons
-    auto rightHeader = headerArea.removeFromRight(250);
-    saveSysExButton.setBounds(rightHeader.removeFromRight(50).reduced(5));
-    loadSysExButton.setBounds(rightHeader.removeFromRight(70).reduced(5));
-    presetBrowser.setBounds(rightHeader.reduced(5));
+    headerArea.removeFromLeft(6);
     
-    // Center: LCD
-    lcdDisplay.setBounds(headerArea.reduced(5)); // Takes remaining center space
+    // CENTER-LEFT: Buttons
+    auto buttonArea = headerArea.removeFromLeft(120); // Reduced slightly from 180 to balance
+    loadSysExButton.setBounds(buttonArea.removeFromLeft(55).reduced(2));
+    // loadSysExButton.setButtonText("LOAD"); 
     
-    area.removeFromTop(3);
+    saveSysExButton.setBounds(buttonArea.removeFromLeft(55).reduced(2));
+    // saveSysExButton.setButtonText("SAVE"); 
     
-    // ========== MAIN CONTENT AREA (2 COLUMNS) ==========
-    int panelWidth = area.getWidth() / 2;
+    headerArea.removeFromLeft(6);
     
-    // LEFT PANEL
-    auto leftArea = area.removeFromLeft(panelWidth);
-    leftArea.removeFromTop(3);
+    // CENTER: LCD Display
+    auto centerHeader = headerArea.removeFromLeft(240); // Slightly reduced from 250
+    lcdDisplay.setBounds(centerHeader.reduced(2));
     
-    // --- Left: Oscillators ---
-    auto oscArea = leftArea.removeFromTop(80);
-    {
-        juce::FlexBox oscFlex;
-        oscFlex.flexWrap = juce::FlexBox::Wrap::wrap;
-        oscFlex.justifyContent = juce::FlexBox::JustifyContent::center;
-        oscFlex.alignContent = juce::FlexBox::AlignContent::center;
-        
-        oscFlex.items.add(juce::FlexItem(osc1WaveSelector).withWidth(70).withHeight(25).withMargin({2, 2, 2, 2}));
-        oscFlex.items.add(juce::FlexItem(osc1LevelKnob).withWidth(50).withHeight(50));
-        oscFlex.items.add(juce::FlexItem(osc2WaveSelector).withWidth(70).withHeight(25).withMargin({2, 2, 2, 2}));
-        oscFlex.items.add(juce::FlexItem(osc2LevelKnob).withWidth(50).withHeight(50));
-        oscFlex.items.add(juce::FlexItem(osc2DetuneKnob).withWidth(50).withHeight(50));
-        oscFlex.items.add(juce::FlexItem(hardSyncButton).withWidth(55).withHeight(25).withMargin({5, 2, 2, 2}));
-        oscFlex.items.add(juce::FlexItem(ringModButton).withWidth(55).withHeight(25).withMargin({5, 2, 2, 2}));
-        oscFlex.items.add(juce::FlexItem(glideKnob).withWidth(45).withHeight(50));
-        
-        oscFlex.performLayout(oscArea);
-    }
+    headerArea.removeFromLeft(6);
     
-    // --- Left: Waveform Display ---
-    auto waveArea = leftArea.removeFromTop(50);
-    waveformDisplay.setBounds(waveArea.reduced(3));
+    // RIGHT: MIDI + CPU
+    auto rightHeader = headerArea;
+    midiOutputSelector.setBounds(rightHeader.removeFromRight(90).reduced(2));
+    rightHeader.removeFromRight(4);
+    midiIndicator.setBounds(rightHeader.removeFromRight(30).reduced(2));
     
-    leftArea.removeFromTop(3);
+    area.removeFromTop(6);
     
-    // --- Left: Filter ---
-    auto filterArea = leftArea.removeFromTop(70);
-    {
-        juce::FlexBox filterFlex;
-        filterFlex.flexWrap = juce::FlexBox::Wrap::wrap;
-        filterFlex.justifyContent = juce::FlexBox::JustifyContent::center;
-        
-        filterFlex.items.add(juce::FlexItem(filterCutoffKnob).withWidth(50).withHeight(60));
-        filterFlex.items.add(juce::FlexItem(filterResonanceKnob).withWidth(50).withHeight(60));
-        
-        filterFlex.performLayout(filterArea);
-    }
+    // ========== MAIN: 3 COLUMNS ==========
+    int col1Width = area.getWidth() * 0.22f;
+    int col2Width = area.getWidth() * 0.32f;
+    // int col3Width = area.getWidth() - col1Width - col2Width;
     
-    leftArea.removeFromTop(3);
+    // --- COLUMN 1: OSCILLATORS ---
+    auto col1 = area.removeFromLeft(col1Width).reduced(3);
     
-    // --- Left: LFO ---
-    auto lfoArea = leftArea.removeFromTop(50);
-    lfoRateKnob.setBounds(lfoArea.removeFromLeft(70).reduced(3));
+    auto oscArea = col1.removeFromTop(100);
+    juce::FlexBox oscFlex;
+    oscFlex.flexWrap = juce::FlexBox::Wrap::wrap;
+    oscFlex.justifyContent = juce::FlexBox::JustifyContent::center;
     
-    // RIGHT PANEL
-    area.removeFromLeft(3);
-    auto rightArea = area;
-    rightArea.removeFromTop(3);
+    oscFlex.items.add(juce::FlexItem(osc1WaveSelector).withWidth(70).withHeight(22).withMargin(2));
+    oscFlex.items.add(juce::FlexItem(osc1LevelKnob).withWidth(50).withHeight(50).withMargin(2));
+    oscFlex.items.add(juce::FlexItem(osc2WaveSelector).withWidth(70).withHeight(22).withMargin(2));
+    oscFlex.items.add(juce::FlexItem(osc2LevelKnob).withWidth(50).withHeight(50).withMargin(2));
+    oscFlex.items.add(juce::FlexItem(osc2DetuneKnob).withWidth(50).withHeight(50).withMargin(2));
+    oscFlex.items.add(juce::FlexItem(hardSyncButton).withWidth(60).withHeight(22).withMargin(2));
+    oscFlex.items.add(juce::FlexItem(ringModButton).withWidth(60).withHeight(22).withMargin(2));
     
-    // --- Right: Envelope Tabs ---
-    auto envArea = rightArea.removeFromTop(200);
-    envelopeTabs.setBounds(envArea.reduced(3));
+    oscFlex.performLayout(oscArea);
     
-    // Resize envelope editor content inside tabs
-    for (int i = 0; i < envelopeTabs.getNumTabs(); ++i) {
-        if (auto* panel = dynamic_cast<juce::Component*>(envelopeTabs.getTabContentComponent(i))) {
+    col1.removeFromTop(3);
+    
+    auto filterArea = col1.removeFromTop(60);
+    juce::FlexBox filterFlex;
+    filterFlex.flexWrap = juce::FlexBox::Wrap::wrap;
+    filterFlex.justifyContent = juce::FlexBox::JustifyContent::center;
+    
+    filterFlex.items.add(juce::FlexItem(filterCutoffKnob).withWidth(50).withHeight(50).withMargin(2));
+    filterFlex.items.add(juce::FlexItem(filterResonanceKnob).withWidth(50).withHeight(50).withMargin(2));
+    
+    filterFlex.performLayout(filterArea);
+    
+    col1.removeFromTop(3);
+    
+    auto waveArea = col1;
+    waveformDisplay.setBounds(waveArea.reduced(2));
+    
+    // --- COLUMN 2: ENVELOPES ---
+    auto col2 = area.removeFromLeft(col2Width).reduced(3);
+    
+    envelopeTabs.setBounds(col2.reduced(2));
+    
+    for (int i = 0; i < envelopeTabs.getNumTabs(); i++) {
+        if (auto panel = dynamic_cast<juce::Component*>(envelopeTabs.getTabContentComponent(i))) {
             auto tabBounds = panel->getLocalBounds();
             
-            if (i == 0) { // PITCH - just editor
+            if (i == 0) { // PITCH - No ADSR Knobs, full editor
                 pitchEditor.setBounds(tabBounds.reduced(5));
             }
-            else if (i == 1) { // DCW - editor + knobs
+            else if (i == 1) { // DCW
                 auto editorArea = tabBounds.removeFromTop(100).reduced(5);
                 dcwEditor.setBounds(editorArea);
+                tabBounds.removeFromTop(3);
+                
+                auto adsrArea = tabBounds.reduced(5);
                 juce::FlexBox adsr;
                 adsr.flexWrap = juce::FlexBox::Wrap::wrap;
-                adsr.justifyContent = juce::FlexBox::JustifyContent::center;
-                adsr.items.add(juce::FlexItem(dcwAttackKnob).withWidth(35).withHeight(45));
-                adsr.items.add(juce::FlexItem(dcwDecayKnob).withWidth(35).withHeight(45));
-                adsr.items.add(juce::FlexItem(dcwSustainKnob).withWidth(35).withHeight(45));
-                adsr.items.add(juce::FlexItem(dcwReleaseKnob).withWidth(35).withHeight(45));
-                adsr.performLayout(tabBounds.reduced(5));
+                adsr.justifyContent = juce::FlexBox::JustifyContent::spaceBetween;
+                
+                adsr.items.add(juce::FlexItem(dcwAttackKnob).withWidth(35).withHeight(45).withMargin(2));
+                adsr.items.add(juce::FlexItem(dcwDecayKnob).withWidth(35).withHeight(45).withMargin(2));
+                adsr.items.add(juce::FlexItem(dcwSustainKnob).withWidth(35).withHeight(45).withMargin(2));
+                adsr.items.add(juce::FlexItem(dcwReleaseKnob).withWidth(35).withHeight(45).withMargin(2));
+                
+                adsr.performLayout(adsrArea);
             }
-            else if (i == 2) { // DCA - editor + knobs
+            else if (i == 2) { // DCA
                 auto editorArea = tabBounds.removeFromTop(100).reduced(5);
                 dcaEditor.setBounds(editorArea);
+                tabBounds.removeFromTop(3);
+                
+                auto adsrArea = tabBounds.reduced(5);
                 juce::FlexBox adsr;
                 adsr.flexWrap = juce::FlexBox::Wrap::wrap;
-                adsr.justifyContent = juce::FlexBox::JustifyContent::center;
-                adsr.items.add(juce::FlexItem(dcaAttackKnob).withWidth(35).withHeight(45));
-                adsr.items.add(juce::FlexItem(dcaDecayKnob).withWidth(35).withHeight(45));
-                adsr.items.add(juce::FlexItem(dcaSustainKnob).withWidth(35).withHeight(45));
-                adsr.items.add(juce::FlexItem(dcaReleaseKnob).withWidth(35).withHeight(45));
-                adsr.performLayout(tabBounds.reduced(5));
+                adsr.justifyContent = juce::FlexBox::JustifyContent::spaceBetween;
+                
+                adsr.items.add(juce::FlexItem(dcaAttackKnob).withWidth(35).withHeight(45).withMargin(2));
+                adsr.items.add(juce::FlexItem(dcaDecayKnob).withWidth(35).withHeight(45).withMargin(2));
+                adsr.items.add(juce::FlexItem(dcaSustainKnob).withWidth(35).withHeight(45).withMargin(2));
+                adsr.items.add(juce::FlexItem(dcaReleaseKnob).withWidth(35).withHeight(45).withMargin(2));
+                
+                adsr.performLayout(adsrArea);
             }
         }
     }
     
-    rightArea.removeFromTop(3);
+    // --- COLUMN 3: EFFECTS + LFO ---
+    auto col3 = area.reduced(3);
     
-    // --- Right: Effects Grid (2x3) ---
-    auto effectsArea = rightArea;
-    int fx_col_width = effectsArea.getWidth() / 3;
-    int fx_row_height = effectsArea.getHeight() / 3;
+    auto effectsArea = col3.removeFromTop(col3.getHeight() * 0.78f);
+    col3.removeFromTop(6);
+    auto lfoArea = col3;
     
-    // Row 1: DELAY
-    auto delayColArea = effectsArea.removeFromLeft(fx_col_width);
-    delayLabel.setBounds(delayColArea.removeFromTop(15).reduced(2));
-    auto delayGridArea = delayColArea.removeFromLeft(fx_col_width / 3);
-    delayTimeKnob.setBounds(delayGridArea.reduced(2));
-    delayGridArea = delayColArea.removeFromLeft(fx_col_width / 3);
-    delayFeedbackKnob.setBounds(delayGridArea.reduced(2));
-    delayGridArea = delayColArea;
-    delayMixKnob.setBounds(delayGridArea.reduced(2));
+    // EFFECTS GRID (2x3)
+    int fxColWidth = effectsArea.getWidth() / 2;
+    int fxRowHeight = effectsArea.getHeight() / 3;
     
-    // Row 2: CHORUS
-    auto chorusColArea = effectsArea.removeFromLeft(fx_col_width);
-    chorusLabel.setBounds(chorusColArea.removeFromTop(15).reduced(2));
-    auto chorusGridArea = chorusColArea.removeFromLeft(fx_col_width / 3);
-    chorusRateKnob.setBounds(chorusGridArea.reduced(2));
-    chorusGridArea = chorusColArea.removeFromLeft(fx_col_width / 3);
-    chorusDepthKnob.setBounds(chorusGridArea.reduced(2));
-    chorusGridArea = chorusColArea;
-    chorusMixKnob.setBounds(chorusGridArea.reduced(2));
+    auto row1 = effectsArea.removeFromTop(fxRowHeight);
     
-    // Row 3: REVERB
-    auto reverbColArea = effectsArea;
-    reverbLabel.setBounds(reverbColArea.removeFromTop(15).reduced(2));
-    auto reverbGridArea = reverbColArea.removeFromLeft(fx_col_width / 3);
-    reverbSizeKnob.setBounds(reverbGridArea.reduced(2));
-    reverbGridArea = reverbColArea.removeFromLeft(fx_col_width / 3);
-    reverbMixKnob.setBounds(reverbGridArea.reduced(2));
+    // DELAY
+    auto delayCol = row1.removeFromLeft(fxColWidth);
+    delayLabel.setBounds(delayCol.removeFromTop(15).reduced(2));
     
-    // ========== BOTTOM: KEYBOARD (80px) ==========
+    auto delayGrid = delayCol.reduced(5);
+    auto delayRow1 = delayGrid.removeFromTop(delayGrid.getHeight() / 2);
+    
+    delayTimeKnob.setBounds(delayRow1.removeFromLeft(fxColWidth / 2).reduced(2));
+    delayFeedbackKnob.setBounds(delayRow1.reduced(2));
+    delayMixKnob.setBounds(delayGrid.reduced(2));
+    
+    // CHORUS
+    auto chorusCol = row1;
+    chorusLabel.setBounds(chorusCol.removeFromTop(15).reduced(2));
+    
+    auto chorusGrid = chorusCol.reduced(5);
+    auto chorusRow1 = chorusGrid.removeFromTop(chorusGrid.getHeight() / 2);
+    
+    chorusRateKnob.setBounds(chorusRow1.removeFromLeft(fxColWidth / 2).reduced(2));
+    chorusDepthKnob.setBounds(chorusRow1.reduced(2));
+    chorusMixKnob.setBounds(chorusGrid.reduced(2));
+    
+    // REVERB
+    auto row2 = effectsArea;
+    reverbLabel.setBounds(row2.removeFromTop(15).reduced(2));
+    
+    auto reverbGrid = row2.reduced(5);
+    reverbSizeKnob.setBounds(reverbGrid.removeFromLeft(reverbGrid.getWidth() / 2).reduced(2));
+    reverbMixKnob.setBounds(reverbGrid.reduced(2));
+    
+    // LFO
+    auto lfoRateArea = lfoArea.removeFromLeft(lfoArea.getWidth() / 2);
+    lfoRateKnob.setBounds(lfoRateArea.reduced(2));
+    
+    auto glideArea = lfoArea;
+    glideKnob.setBounds(glideArea.reduced(2));
+    
+    // ========== KEYBOARD (80px) ==========
     auto keyboardArea = getLocalBounds().removeFromBottom(80);
     keyboardComponent.setBounds(keyboardArea.reduced(3));
 }
@@ -466,10 +500,11 @@ void CZ101AudioProcessorEditor::timerCallback()
     auto cpu = audioProcessor.getPerformanceMonitor().getAverageCpuUsage() * 100.0;
     auto preset = audioProcessor.getPresetManager().getCurrentPreset().name;
     
-    juce::String cpuStr = juce::String(cpu, 1) + "%";
-    while (cpuStr.length() < 5) cpuStr = " " + cpuStr;
+    juce::String cpuStr = "CPU: " + juce::String(cpu, 1) + "%";
+    while (cpuStr.length() < 12) cpuStr += " "; // Padding
     
-    lcdDisplay.setText("CPU: " + cpuStr, "PRESET: " + juce::String(preset));
+    // User requested Name on top, Stats on bottom
+    lcdDisplay.setText(juce::String(preset), cpuStr);
     // Pass real sample rate
     lcdDisplay.setSampleRate(audioProcessor.getSampleRate());
     lcdDisplay.setLastNote(audioProcessor.getVoiceManager().getCurrentNote()); // Assuming we expose this in VM or similar
@@ -533,8 +568,20 @@ void CZ101AudioProcessorEditor::filesDropped(const juce::StringArray& files, int
             juce::File file(path);
             juce::MemoryBlock sysexData;
             
+            // Security check: Limit SysEx import size to 64KB
+            if (file.getSize() > 65536)
+            {
+                juce::NativeMessageBox::showAsync(juce::MessageBoxOptions()
+                    .withIconType(juce::MessageBoxIconType::WarningIcon)
+                    .withTitle("File too large")
+                    .withMessage("SysEx files must be under 64KB. This file will not be loaded.")
+                    .withButton("OK"),
+                    nullptr);
+                continue;
+            }
+
             if (file.loadFileAsData(sysexData)) {
-                audioProcessor.getSysExManager().handleSysEx(sysexData.getData(), (int)sysexData.getSize(), file.getFileNameWithoutExtension());
+                audioProcessor.getSysExManager().handleSysEx(sysexData.getData(), (int)sysexData.getSize(), file.getFileNameWithoutExtension() + " (UNSAVED)");
                 timerCallback();
             }
         }
@@ -547,17 +594,29 @@ void CZ101AudioProcessorEditor::loadSysExFile()
         juce::File::getSpecialLocation(juce::File::userHomeDirectory),
         "*.syx");
 
-    auto flags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
+    auto browserFlags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
 
-    fileChooser->launchAsync(flags, [this](const juce::FileChooser& fc) {
+    fileChooser->launchAsync(browserFlags, [this](const juce::FileChooser& fc) {
         auto file = fc.getResult();
         if (file.existsAsFile()) 
         {
+            // Security check: Limit SysEx import size to 64KB
+            if (file.getSize() > 65536)
+            {
+                 juce::NativeMessageBox::showAsync(juce::MessageBoxOptions()
+                    .withIconType(juce::MessageBoxIconType::WarningIcon)
+                    .withTitle("File too large")
+                    .withMessage("SysEx files must be under 64KB.")
+                    .withButton("OK"),
+                    nullptr);
+                 return;
+            }
+
             juce::MemoryBlock sysexData;
             if (file.loadFileAsData(sysexData)) 
             {
                 // Ensure audioProcessor and SysExManager are accessible and handle the call
-                audioProcessor.getSysExManager().handleSysEx(sysexData.getData(), (int)sysexData.getSize(), file.getFileNameWithoutExtension());
+                audioProcessor.getSysExManager().handleSysEx(sysexData.getData(), (int)sysexData.getSize(), file.getFileNameWithoutExtension() + " (UNSAVED)");
                 timerCallback();
             }
         }
@@ -566,17 +625,34 @@ void CZ101AudioProcessorEditor::loadSysExFile()
 
 void CZ101AudioProcessorEditor::saveSysExFile()
 {
-    // Save current state to the current preset slot
+    // Patch 1: Deep Persistence (User Fix)
+    // 1. Capture current state from UI to preset
+    audioProcessor.getPresetManager().copyStateFromProcessor();
+    
+    // 2. Get current preset index
+    int idx = presetBrowser.getSelectedItemIndex();
+    if (idx < 0) idx = 0;
+    
     auto currentName = audioProcessor.getPresetManager().getCurrentPreset().name;
     
-    // For now, just save immediately. 
-    // Ideally we'd show a Rename dialog.
-    // Let's rely on the current name (which might have come from SysEx load).
+    // 3. Save to memory slot
+    audioProcessor.getPresetManager().savePreset(idx, currentName);
     
-    audioProcessor.saveCurrentPreset(currentName);
+    // 4. CRITICAL: Persist to Disk
+    juce::File presetsDir = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                            .getChildFile("CZ101Emulator");
     
-    // Feedback
-    lcdDisplay.setText("CZ-101   SAVED", "PRESET: " + juce::String(currentName));
+    if (!presetsDir.exists()) {
+        presetsDir.createDirectory();
+    }
     
-    // Also trigger a blip?
+    juce::File bankFile = presetsDir.getChildFile("userbank.json");
+    
+    audioProcessor.getPresetManager().saveBank(bankFile);
+    
+    // Assume success if no exception/crash
+    lcdDisplay.setPresetName("SAVED OK");
+    // juce::Logger::writeToLog("Preset saved to: " + bankFile.getFullPathName());
+    
+    presetBrowser.updatePresetList();
 }

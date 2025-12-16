@@ -1,44 +1,86 @@
+/*
+ * SysExManager.h - CZ-101 SysEx Parser Header
+ */
+
 #pragma once
 
-#include <juce_audio_basics/juce_audio_basics.h>
-#include "../State/PresetManager.h"
+//#include <JuceHeader.h>
+#include <juce_core/juce_core.h>
+#include <functional>
+#include <string>
+#include <array>
+#include "../State/PresetManager.h"  // Adjusted Include
 
 namespace CZ101 {
 namespace MIDI {
 
-class SysExManager
-{
+/**
+ * SysExManager
+ * 
+ * Parses CZ-101 SysEx messages according to Casio specification.
+ * 
+ * CZ-101 SysEx Format:
+ * F0 44 00 00 70+ch 10 program [256 bytes] F7
+ * 
+ * Where:
+ * - F0 = System Exclusive start
+ * - 44 00 00 = Casio manufacturer ID
+ * - 70+ch = Device ID (ch=0-15)
+ * - 10 = SEND request (CZ → Host)
+ * - 20 = RECEIVE request (Host → CZ)
+ * - program = 0x60 for edit buffer, 0x20-0x2F for internal, 0x40-0x4F for cartridge
+ * - [256 bytes] = Tone data (in NIBBLE format - half-bytes)
+ * - F7 = System Exclusive end
+ * 
+ * The 256 bytes are transmitted as pairs of NIBBLES (4-bit half-bytes).
+ * For example, byte 0x5F is transmitted as [0x0F, 0x05] (low nibble first).
+ */
+
+class SysExManager {
 public:
-    SysExManager(State::PresetManager& presetManager);
-    
-    // Main entry point for incoming SysEx data
-    // Option to provide a name (e.g. from filename)
-    void handleSysEx(const void* data, int size, juce::String presetName = "");
-    
-    // Create a dump message for a specific preset
-    juce::MidiMessage createDumpMessage(const State::Preset& preset);
-    
-    // Callback when a preset is parsed successfully
-    std::function<void(const State::Preset&)> onPresetParsed;
+    SysExManager() = default;
+    ~SysExManager() = default;
+
+    /**
+     * Parse and handle incoming SysEx message
+     * 
+     * @param data Pointer to SysEx data (including F0 and F7)
+     * @param size Size of SysEx data in bytes
+     * @param patchName Display name for the patch
+     */
+    void handleSysEx(
+        const void* data,
+        int size,
+        const juce::String& patchName);
+
+    /**
+     * Callback when preset is successfully parsed
+     * Usage: manager.onPresetParsed = [this](const auto& preset) { ... };
+     */
+    std::function<void(const CZ101::State::Preset&)> onPresetParsed;
 
 private:
-    State::PresetManager& presetManager;
-    
-    // Constants
-    static constexpr juce::uint8 SYSEX_START = 0xF0;
-    static constexpr juce::uint8 SYSEX_END = 0xF7;
-    static constexpr juce::uint8 MANU_ID_CASIO = 0x44;
-    
-    // Helpers for CZ Nibble format
-    juce::uint8 decodeByte(juce::uint8 lowNibble, juce::uint8 highNibble) const;
-    
-    // Parameter Mapping
-    void parseToneData(const juce::uint8* payload, int payloadSize);
-    
-    // Parameter Setters helpers
-    float mapRangeTo01(int value, int min, int max);
-    float mapRateToSeconds(int rate); // CZ 0-99 to seconds
+    // Helper functions are static - see .cpp for implementation
+
+    // Constants for SysEx header validation
+    static constexpr uint8_t SYSEX_START = 0xF0;
+    static constexpr uint8_t SYSEX_END = 0xF7;
+    static constexpr uint8_t MANUF_ID_1 = 0x44;  // Casio
+    static constexpr uint8_t MANUF_ID_2 = 0x00;
+    static constexpr uint8_t MANUF_ID_3 = 0x00;
+    static constexpr uint8_t DEVICE_ID_BASE = 0x70;  // +channel
+    static constexpr uint8_t FUNC_SEND = 0x10;       // CZ sends data
+    static constexpr uint8_t FUNC_RECV = 0x20;       // Host sends data
+
+    // Program codes
+    static constexpr uint8_t PROG_EDIT = 0x60;       // Edit buffer
+    static constexpr uint8_t PROG_INTERNAL_MIN = 0x20;  // Internal memory start
+    static constexpr uint8_t PROG_INTERNAL_MAX = 0x2F;  // Internal memory end
+    static constexpr uint8_t PROG_CART_MIN = 0x40;      // Cartridge start
+    static constexpr uint8_t PROG_CART_MAX = 0x4F;      // Cartridge end
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SysExManager)
 };
 
-} // namespace MIDI
-} // namespace CZ101
+}  // namespace MIDI
+}  // namespace CZ101
