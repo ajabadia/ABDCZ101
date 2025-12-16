@@ -595,72 +595,73 @@ void PresetManager::saveBank(const juce::File& file)
 
 void PresetManager::loadBank(const juce::File& file)
 {
-    juce::String jsonString = file.loadFileAsString();
-    juce::var parsedJson = juce::JSON::parse(jsonString);
+    if (!file.existsAsFile()) return;
     
-    if (!parsedJson.isArray())
-        return;
+    juce::var data = juce::JSON::parse(file);
+    if (!data.isArray()) return;
     
-    presets.clear();
+    presets.clear(); // Important: Clear definition
     
-    for (int i = 0; i < parsedJson.size(); ++i) {
-        Preset p;
-        juce::var obj = parsedJson[i];
+    // We expect 64 presets
+    for (int i = 0; i < data.size(); ++i) {
+        if (i >= 64) break;
         
-        // Name & params (EXISTENTE)
-        p.name = obj["name"].toString().toStdString();
-        juce::var paramsObj = obj["params"];
-        if (paramsObj.isObject()) {
-            auto properties = paramsObj.getDynamicObject()->getProperties();
-            for (int j = 0; j < properties.size(); ++j) {
-                juce::Identifier key(properties.getName(j));
-                p.parameters[key.toString().toStdString()] = (float)paramsObj[key];
+        const auto& presetVar = data[i];
+        if (presetVar.isObject()) {
+            Preset p;
+            p.name = presetVar["name"].toString().toStdString();
+            
+            // Params
+            if (auto* paramsObj = presetVar["params"].getDynamicObject()) {
+                auto props = paramsObj->getProperties();
+                for (auto& prop : props) {
+                    p.parameters[prop.name.toString().toStdString()] = static_cast<float>(prop.value);
+                }
             }
+            
+            // Helper to load 8-stage
+            auto loadEnv = [&](const juce::var& envVar, EnvelopeData& env) {
+                if (auto* obj = envVar.getDynamicObject()) {
+                    auto rates = obj->getProperty("rates");
+                    auto levels = obj->getProperty("levels");
+                    
+                    if (rates.isArray() && levels.isArray()) {
+                        for (int k=0; k<8; ++k) {
+                            env.rates[k] = static_cast<float>(rates[k]);
+                            env.levels[k] = static_cast<float>(levels[k]);
+                        }
+                    }
+                    env.sustainPoint = static_cast<int>(obj->getProperty("sustainPoint"));
+                    env.endPoint = static_cast<int>(obj->getProperty("endPoint"));
+                }
+            };
+            
+            loadEnv(presetVar["dcwEnv"], p.dcwEnv);
+            loadEnv(presetVar["dcaEnv"], p.dcaEnv);
+            loadEnv(presetVar["pitchEnv"], p.pitchEnv);
+            
+            presets.push_back(p);
         }
-        
-        // ✅ NUEVO: Load DCW Envelope
-        if (obj.hasProperty("dcwEnv")) {
-            juce::var dcwObj = obj["dcwEnv"];
-            juce::Array<juce::var> rates = dcwObj["rates"];
-            juce::Array<juce::var> levels = dcwObj["levels"];
-            for (int j = 0; j < 8 && j < rates.size() && j < levels.size(); ++j) {
-                p.dcwEnv.rates[j] = (float)rates[j];
-                p.dcwEnv.levels[j] = (float)levels[j];
-            }
-            p.dcwEnv.sustainPoint = (int)dcwObj["sustainPoint"];
-            p.dcwEnv.endPoint = (int)dcwObj["endPoint"];
-        }
-        
-        // ✅ NUEVO: Load DCA Envelope
-        if (obj.hasProperty("dcaEnv")) {
-            juce::var dcaObj = obj["dcaEnv"];
-            juce::Array<juce::var> rates = dcaObj["rates"];
-            juce::Array<juce::var> levels = dcaObj["levels"];
-            for (int j = 0; j < 8 && j < rates.size() && j < levels.size(); ++j) {
-                p.dcaEnv.rates[j] = (float)rates[j];
-                p.dcaEnv.levels[j] = (float)levels[j];
-            }
-            p.dcaEnv.sustainPoint = (int)dcaObj["sustainPoint"];
-            p.dcaEnv.endPoint = (int)dcaObj["endPoint"];
-        }
-        
-        // ✅ NUEVO: Load Pitch Envelope
-        if (obj.hasProperty("pitchEnv")) {
-            juce::var pitchObj = obj["pitchEnv"];
-            juce::Array<juce::var> rates = pitchObj["rates"];
-            juce::Array<juce::var> levels = pitchObj["levels"];
-            for (int j = 0; j < 8 && j < rates.size() && j < levels.size(); ++j) {
-                p.pitchEnv.rates[j] = (float)rates[j];
-                p.pitchEnv.levels[j] = (float)levels[j];
-            }
-            p.pitchEnv.sustainPoint = (int)pitchObj["sustainPoint"];
-            p.pitchEnv.endPoint = (int)pitchObj["endPoint"];
-        }
-        
-        presets.push_back(p);
     }
     
-    if (!presets.empty()) {
+    // Ensure 64 slots
+    while (presets.size() < 64) {
+        presets.push_back(Preset("Init User " + std::to_string(presets.size() + 1)));
+    }
+    
+    // Reload current index to refresh engine
+    loadPreset(currentPresetIndex);
+}
+
+void PresetManager::resetToFactory()
+{
+    // Clear existing presets and recreate factory defaults
+    presets.clear();
+    createFactoryPresets();
+
+    // Ensure we have at least one preset and set it as active
+    if (!presets.empty())
+    {
         currentPresetIndex = 0;
         currentPreset = presets[0];
         applyPresetToProcessor();

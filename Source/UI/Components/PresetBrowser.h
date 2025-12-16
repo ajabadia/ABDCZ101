@@ -30,6 +30,15 @@ private:
     juce::TextButton nextButton;
     juce::TextButton saveButton;
     
+    // Bank Management
+    juce::TextButton menuButton;
+    std::unique_ptr<juce::FileChooser> fileChooser;
+    
+    void showMenu();
+    void initBank();
+    void loadBank();
+    void saveBank();
+    
     // void updatePresetList(); // Moved to public
     void selectPreset(int index);
 };

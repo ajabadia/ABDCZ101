@@ -66,6 +66,9 @@ public:
     void saveBank(const juce::File& file);
     void loadBank(const juce::File& file);
     
+    // Reset entire bank to factory defaults
+    void resetToFactory();
+    
     const Preset& getCurrentPreset() const { return currentPreset; }
     const std::vector<Preset>& getPresets() const { return presets; }
     
