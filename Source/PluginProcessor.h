@@ -56,8 +56,11 @@ public:
     // For Editor Visualization
     // juce::AudioVisualiserComponent& getVisualiser() { return visualiser; } 
     
-    juce::AudioBuffer<float>& getVisualisationBuffer() { return visBuffer; }
-    juce::AbstractFifo& getVisualisationFifo() { return visFifo; }
+    // For Editor Visualization
+    // juce::AudioVisualiserComponent& getVisualiser() { return visualiser; } 
+    
+    juce::AudioBuffer<float>& getVisBuffer() { return visBuffer; }
+    juce::AbstractFifo& getVisFifo() { return visFifo; }
 
 private:
     // ...

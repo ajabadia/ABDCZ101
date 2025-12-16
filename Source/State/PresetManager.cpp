@@ -528,90 +528,142 @@ void PresetManager::renamePreset(int index, const std::string& newName)
 
 void PresetManager::saveBank(const juce::File& file)
 {
-    juce::var bankArray;
+    juce::Array<juce::var> bankArray;
     
-    for (const auto& preset : presets)
-    {
-        juce::DynamicObject* obj = new juce::DynamicObject();
+    for (const auto& preset : presets) {
+        juce::DynamicObject::Ptr obj = new juce::DynamicObject();
+        
+        // Name & params (EXISTENTE)
         obj->setProperty("name", juce::String(preset.name));
+        juce::DynamicObject::Ptr paramsObj = new juce::DynamicObject();
+        for (const auto& [id, val] : preset.parameters) {
+            paramsObj->setProperty(juce::Identifier(id), val);
+        }
+        obj->setProperty("params", juce::var(paramsObj.get()));
         
-        juce::DynamicObject* paramsObj = new juce::DynamicObject();
-        for (const auto& [id, val] : preset.parameters)
-            paramsObj->setProperty(juce::Identifier(id), val); // Convert std::string to Identifier
-        obj->setProperty("params", paramsObj);
+        // ✅ NUEVO: Serialize DCW Envelope (8-stage)
+        {
+            juce::DynamicObject::Ptr dcwObj = new juce::DynamicObject();
+            juce::Array<juce::var> ratesArray, levelsArray;
+            for (int i = 0; i < 8; ++i) {
+                ratesArray.add(preset.dcwEnv.rates[i]);
+                levelsArray.add(preset.dcwEnv.levels[i]);
+            }
+            dcwObj->setProperty("rates", ratesArray);
+            dcwObj->setProperty("levels", levelsArray);
+            dcwObj->setProperty("sustainPoint", preset.dcwEnv.sustainPoint);
+            dcwObj->setProperty("endPoint", preset.dcwEnv.endPoint);
+            obj->setProperty("dcwEnv", juce::var(dcwObj.get()));
+        }
         
-        // Serialize Envelopes (Pitch, DCW, DCA)
-        auto serializeEnv = [](const EnvelopeData& env, juce::DynamicObject* target, const juce::String& prefix) {
-            juce::var rates, levels;
-            for(int i=0; i<8; ++i) rates.append(env.rates[i]);
-            for(int i=0; i<8; ++i) levels.append(env.levels[i]);
-            
-            target->setProperty(prefix + "_rates", rates);
-            target->setProperty(prefix + "_levels", levels);
-            target->setProperty(prefix + "_sustain", env.sustainPoint);
-            target->setProperty(prefix + "_end", env.endPoint);
-        };
+        // ✅ NUEVO: Serialize DCA Envelope (8-stage)
+        {
+            juce::DynamicObject::Ptr dcaObj = new juce::DynamicObject();
+            juce::Array<juce::var> ratesArray, levelsArray;
+            for (int i = 0; i < 8; ++i) {
+                ratesArray.add(preset.dcaEnv.rates[i]);
+                levelsArray.add(preset.dcaEnv.levels[i]);
+            }
+            dcaObj->setProperty("rates", ratesArray);
+            dcaObj->setProperty("levels", levelsArray);
+            dcaObj->setProperty("sustainPoint", preset.dcaEnv.sustainPoint);
+            dcaObj->setProperty("endPoint", preset.dcaEnv.endPoint);
+            obj->setProperty("dcaEnv", juce::var(dcaObj.get()));
+        }
         
-        serializeEnv(preset.pitchEnv, obj, "pitch");
-        serializeEnv(preset.dcwEnv, obj, "dcw");
-        serializeEnv(preset.dcaEnv, obj, "dca");
+        // ✅ NUEVO: Serialize Pitch Envelope (8-stage)
+        {
+            juce::DynamicObject::Ptr pitchObj = new juce::DynamicObject();
+            juce::Array<juce::var> ratesArray, levelsArray;
+            for (int i = 0; i < 8; ++i) {
+                ratesArray.add(preset.pitchEnv.rates[i]);
+                levelsArray.add(preset.pitchEnv.levels[i]);
+            }
+            pitchObj->setProperty("rates", ratesArray);
+            pitchObj->setProperty("levels", levelsArray);
+            pitchObj->setProperty("sustainPoint", preset.pitchEnv.sustainPoint);
+            pitchObj->setProperty("endPoint", preset.pitchEnv.endPoint);
+            obj->setProperty("pitchEnv", juce::var(pitchObj.get()));
+        }
         
-        bankArray.append(obj);
+        bankArray.add(juce::var(obj.get()));
     }
     
-    juce::String jsonString = juce::JSON::toString(bankArray);
+    juce::String jsonString = juce::JSON::toString(bankArray, true);
     file.replaceWithText(jsonString);
 }
 
 void PresetManager::loadBank(const juce::File& file)
 {
     juce::String jsonString = file.loadFileAsString();
-    juce::var parsed = juce::JSON::parse(jsonString);
+    juce::var parsedJson = juce::JSON::parse(jsonString);
     
-    if (parsed.isArray())
-    {
-        presets.clear();
-        for (int i = 0; i < parsed.size() && i < 64; ++i)
-        {
-            auto obj = parsed[i];
-            Preset p;
-            p.name = obj["name"].toString().toStdString();
-            
-            auto paramsObj = obj["params"];
-            if (paramsObj.isObject())
-            {
-                auto& props = paramsObj.getDynamicObject()->getProperties();
-                for (auto& prop : props)
-                    p.parameters[prop.name.toString().toStdString()] = (float)prop.value;
+    if (!parsedJson.isArray())
+        return;
+    
+    presets.clear();
+    
+    for (int i = 0; i < parsedJson.size(); ++i) {
+        Preset p;
+        juce::var obj = parsedJson[i];
+        
+        // Name & params (EXISTENTE)
+        p.name = obj["name"].toString().toStdString();
+        juce::var paramsObj = obj["params"];
+        if (paramsObj.isObject()) {
+            auto properties = paramsObj.getDynamicObject()->getProperties();
+            for (int j = 0; j < properties.size(); ++j) {
+                juce::Identifier key(properties.getName(j));
+                p.parameters[key.toString().toStdString()] = (float)paramsObj[key];
             }
-            // Init default envelopes to avoid garbage
-            initEnvelopes(p);
-            
-            // Helper to parse Envelopes
-            auto parseEnv = [&](EnvelopeData& env, juce::DynamicObject* source, const juce::String& prefix) {
-                if (source->hasProperty(prefix + "_rates") && source->hasProperty(prefix + "_levels"))
-                {
-                    auto r = source->getProperty(prefix + "_rates");
-                    auto l = source->getProperty(prefix + "_levels");
-                    
-                    if (r.isArray() && l.isArray())
-                    {
-                        for (int k = 0; k < 8; ++k) {
-                            if (k < r.size()) env.rates[k] = (float)r[k];
-                            if (k < l.size()) env.levels[k] = (float)l[k];
-                        }
-                    }
-                    if (source->hasProperty(prefix + "_sustain")) env.sustainPoint = (int)source->getProperty(prefix + "_sustain");
-                    if (source->hasProperty(prefix + "_end")) env.endPoint = (int)source->getProperty(prefix + "_end");
-                }
-            };
-            
-            parseEnv(p.pitchEnv, obj.getDynamicObject(), "pitch");
-            parseEnv(p.dcwEnv, obj.getDynamicObject(), "dcw");
-            parseEnv(p.dcaEnv, obj.getDynamicObject(), "dca");
-
-            presets.push_back(p);
         }
+        
+        // ✅ NUEVO: Load DCW Envelope
+        if (obj.hasProperty("dcwEnv")) {
+            juce::var dcwObj = obj["dcwEnv"];
+            juce::Array<juce::var> rates = dcwObj["rates"];
+            juce::Array<juce::var> levels = dcwObj["levels"];
+            for (int j = 0; j < 8 && j < rates.size() && j < levels.size(); ++j) {
+                p.dcwEnv.rates[j] = (float)rates[j];
+                p.dcwEnv.levels[j] = (float)levels[j];
+            }
+            p.dcwEnv.sustainPoint = (int)dcwObj["sustainPoint"];
+            p.dcwEnv.endPoint = (int)dcwObj["endPoint"];
+        }
+        
+        // ✅ NUEVO: Load DCA Envelope
+        if (obj.hasProperty("dcaEnv")) {
+            juce::var dcaObj = obj["dcaEnv"];
+            juce::Array<juce::var> rates = dcaObj["rates"];
+            juce::Array<juce::var> levels = dcaObj["levels"];
+            for (int j = 0; j < 8 && j < rates.size() && j < levels.size(); ++j) {
+                p.dcaEnv.rates[j] = (float)rates[j];
+                p.dcaEnv.levels[j] = (float)levels[j];
+            }
+            p.dcaEnv.sustainPoint = (int)dcaObj["sustainPoint"];
+            p.dcaEnv.endPoint = (int)dcaObj["endPoint"];
+        }
+        
+        // ✅ NUEVO: Load Pitch Envelope
+        if (obj.hasProperty("pitchEnv")) {
+            juce::var pitchObj = obj["pitchEnv"];
+            juce::Array<juce::var> rates = pitchObj["rates"];
+            juce::Array<juce::var> levels = pitchObj["levels"];
+            for (int j = 0; j < 8 && j < rates.size() && j < levels.size(); ++j) {
+                p.pitchEnv.rates[j] = (float)rates[j];
+                p.pitchEnv.levels[j] = (float)levels[j];
+            }
+            p.pitchEnv.sustainPoint = (int)pitchObj["sustainPoint"];
+            p.pitchEnv.endPoint = (int)pitchObj["endPoint"];
+        }
+        
+        presets.push_back(p);
+    }
+    
+    if (!presets.empty()) {
+        currentPresetIndex = 0;
+        currentPreset = presets[0];
+        applyPresetToProcessor();
     }
 }
 

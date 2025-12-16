@@ -94,10 +94,12 @@ public:
     void renderNextBlock(float* outputL, float* outputR, int numSamples) noexcept;
     
     int getActiveVoiceCount() const noexcept;
+    int getCurrentNote() const noexcept { return lastMidiNote; }
     
 private:
     std::array<Voice, MAX_VOICES> voices;
     VoiceStealingMode stealingMode = RELEASE_PHASE;
+    int lastMidiNote = -1;
     
     int findFreeVoice() const noexcept;
     int findVoiceToSteal() const noexcept;

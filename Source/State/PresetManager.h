@@ -72,6 +72,7 @@ public:
 private:
     std::vector<Preset> presets;
     Preset currentPreset;
+    int currentPresetIndex = 0; // Added for tracking
     Parameters* parameters = nullptr;
     Core::VoiceManager* voiceManager = nullptr;
     

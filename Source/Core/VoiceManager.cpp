@@ -90,6 +90,8 @@ void VoiceManager::updateLFO(float val) noexcept { for (auto& v : voices) v.setL
 
 void VoiceManager::noteOn(int midiNote, float velocity) noexcept
 {
+    lastMidiNote = midiNote;
+
     // Check if any voice is already playing this note (e.g. still in release phase)
     // If so, steal it (monophonic retrigger per key) to prevent duplicate voices for same note
     int voiceIndex = findVoicePlayingNote(midiNote);

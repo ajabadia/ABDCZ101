@@ -277,16 +277,23 @@ void CZ101AudioProcessorEditor::resized()
     auto area = getLocalBounds();
     
     // ========== HEADER (45px) ==========
-    auto headerArea = area.removeFromTop(45);
-    lcdDisplay.setBounds(headerArea.removeFromLeft(200).reduced(3));
-    midiIndicator.setBounds(headerArea.removeFromRight(30).reduced(3));
-    midiOutputSelector.setBounds(headerArea.removeFromRight(100).reduced(3));
+    // ========== HEADER (60px - Bigger) ==========
+    auto headerArea = area.removeFromTop(60);
     
-    // Save/Load Buttons
-    saveSysExButton.setBounds(headerArea.removeFromRight(50).reduced(3));
-    loadSysExButton.setBounds(headerArea.removeFromRight(70).reduced(3));
+    // LCD Centered and Wider
+    // Left side: MIDI Controls
+    auto leftHeader = headerArea.removeFromLeft(200);
+    midiIndicator.setBounds(leftHeader.removeFromLeft(30).reduced(5));
+    midiOutputSelector.setBounds(leftHeader.reduced(5));
     
-    presetBrowser.setBounds(headerArea.reduced(3));
+    // Right side: Browser & SysEx Buttons
+    auto rightHeader = headerArea.removeFromRight(250);
+    saveSysExButton.setBounds(rightHeader.removeFromRight(50).reduced(5));
+    loadSysExButton.setBounds(rightHeader.removeFromRight(70).reduced(5));
+    presetBrowser.setBounds(rightHeader.reduced(5));
+    
+    // Center: LCD
+    lcdDisplay.setBounds(headerArea.reduced(5)); // Takes remaining center space
     
     area.removeFromTop(3);
     
@@ -462,7 +469,46 @@ void CZ101AudioProcessorEditor::timerCallback()
     juce::String cpuStr = juce::String(cpu, 1) + "%";
     while (cpuStr.length() < 5) cpuStr = " " + cpuStr;
     
-    lcdDisplay.setText("CZ-101   CPU:" + cpuStr, "PRESET: " + juce::String(preset));
+    lcdDisplay.setText("CPU: " + cpuStr, "PRESET: " + juce::String(preset));
+    // Pass real sample rate
+    lcdDisplay.setSampleRate(audioProcessor.getSampleRate());
+    lcdDisplay.setLastNote(audioProcessor.getVoiceManager().getCurrentNote()); // Assuming we expose this in VM or similar
+    
+    // Transfer Audio Data for Oscilloscope
+    auto& fifo = audioProcessor.getVisFifo();
+    auto& buffer = audioProcessor.getVisBuffer();
+    
+    if (fifo.getNumReady() > 0)
+    {
+        int start1, size1, start2, size2;
+        fifo.prepareToRead(buffer.getNumSamples(), start1, size1, start2, size2);
+        
+        // Construct temp buffer to push to display
+        // Actually WaveformDisplay might want a vector or just samples?
+        // It accepts AudioBuffer. Let's create a temp wrapper or just copy.
+        // For simplicity, let's just push the block we read.
+        
+        if (size1 > 0)
+        {
+            // Just wrap the raw pointers in a temporary buffer to avoid copying if possible, 
+            // BUT WaveformDisplay inputs const AudioBuffer&.
+            // We can't easily wrap ring buffer parts.
+            // Let's copy to a temp buffer.
+            juce::AudioBuffer<float> temp(1, size1 + size2);
+            
+            // Part 1
+            if (size1 > 0) {
+                temp.copyFrom(0, 0, buffer.getReadPointer(0, start1), size1);
+            }
+            // Part 2
+            if (size2 > 0) {
+               temp.copyFrom(0, size1, buffer.getReadPointer(0, start2), size2);
+            }
+            
+            waveformDisplay.pushBuffer(temp);
+            fifo.finishedRead(size1 + size2);
+        }
+    }
     
     waveformDisplay.repaint();
     pitchEditor.updateData();
