@@ -61,6 +61,9 @@ public:
     // Get parameter by ID helper
     juce::RangedAudioParameter* getParameter(const juce::String& paramId) const;
     
+    // Expose map for iteration (Saving)
+    const std::map<juce::String, juce::RangedAudioParameter*>& getParameterMap() const { return parameterMap; }
+    
 private:
     juce::AudioProcessor& audioProcessor;
     std::map<juce::String, juce::RangedAudioParameter*> parameterMap;

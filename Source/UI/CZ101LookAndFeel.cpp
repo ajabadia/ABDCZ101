@@ -48,6 +48,37 @@ void CZ101LookAndFeel::drawRotarySlider(juce::Graphics& g,
     g.setColour(secondaryColour);
     g.fillPath(p);
 }
+void CZ101LookAndFeel::drawButtonBackground(juce::Graphics& g,
+                                        juce::Button& button,
+                                        const juce::Colour& backgroundColour,
+                                        bool isMouseOver,
+                                        bool isButtonDown)
+{
+    // Base background
+    g.setColour(backgroundColour);
+    auto bounds = button.getLocalBounds().toFloat();
+
+    // Hover scaling effect
+    if (isMouseOver && !isButtonDown)
+    {
+        // Slightly enlarge the button background (2% increase)
+        auto scale = 1.02f;
+        auto centre = bounds.getCentre();
+        bounds = bounds.withSizeKeepingCentre(bounds.getWidth() * scale,
+                                             bounds.getHeight() * scale);
+    }
+    else if (isButtonDown)
+    {
+        // Slightly shrink when pressed (2% decrease)
+        auto scale = 0.98f;
+        auto centre = bounds.getCentre();
+        bounds = bounds.withSizeKeepingCentre(bounds.getWidth() * scale,
+                                             bounds.getHeight() * scale);
+    }
+
+    // Draw rounded rectangle for button background
+    g.fillRoundedRectangle(bounds, 4.0f);
+}
 
 } // namespace UI
 } // namespace CZ101

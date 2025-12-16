@@ -17,6 +17,12 @@ public:
                          float rotaryEndAngle,
                          juce::Slider& slider) override;
     
+    // Custom button drawing with hover effect
+    void drawButtonBackground(juce::Graphics& g,
+                              juce::Button& button,
+                              const juce::Colour& backgroundColour,
+                              bool isMouseOver,
+                              bool isButtonDown) override;
 private:
     juce::Colour primaryColour;
     juce::Colour secondaryColour;

@@ -1,9 +1,12 @@
 #pragma once
 
 #include "Voice.h"
-#include <array>
+#include <vector>
 
 namespace CZ101 {
+
+namespace DSP { class LFO; } // Forward declaration of LFO
+
 namespace Core {
 
 class VoiceManager
@@ -13,6 +16,7 @@ public:
     
     enum VoiceStealingMode
     {
+        NONE,
         OLDEST,
         QUIETEST,
         RELEASE_PHASE
@@ -90,14 +94,15 @@ public:
     void noteOn(int midiNote, float velocity) noexcept;
     void noteOff(int midiNote) noexcept;
     void allNotesOff() noexcept;
-    
-    void renderNextBlock(float* outputL, float* outputR, int numSamples) noexcept;
+    // Audio Processing
+    // Added LFO* to enable per-sample update
+    void renderNextBlock(float* outputL, float* outputR, int numSamples, DSP::LFO* lfo = nullptr) noexcept;
     
     int getActiveVoiceCount() const noexcept;
     int getCurrentNote() const noexcept { return lastMidiNote; }
-    
+
 private:
-    std::array<Voice, MAX_VOICES> voices;
+    std::vector<Voice> voices; // Dynamic vector for voice pool
     VoiceStealingMode stealingMode = RELEASE_PHASE;
     int lastMidiNote = -1;
     

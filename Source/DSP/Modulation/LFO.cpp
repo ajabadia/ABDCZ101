@@ -1,6 +1,8 @@
 #include "LFO.h"
 #include <algorithm>
 #include <random>
+#include <mutex>
+#include <array>
 
 namespace CZ101 {
 namespace DSP {
@@ -32,6 +34,11 @@ void LFO::reset() noexcept
     phase = 0.0f;
 }
 
+// Static LFO Table
+constexpr int LFO_TABLE_SIZE = 2048;
+static std::array<float, LFO_TABLE_SIZE> lfoSineTable;
+static std::once_flag lfoTableFlag;
+
 void LFO::updatePhaseIncrement() noexcept
 {
     phaseIncrement = frequency / static_cast<float>(sampleRate);
@@ -60,8 +67,28 @@ float LFO::getNextValue() noexcept
 
 float LFO::renderSine() noexcept
 {
-    constexpr float TWO_PI = 6.28318530718f;
-    return std::sin(TWO_PI * phase);
+    // Initialize table once
+    std::call_once(lfoTableFlag, [](){
+        constexpr float TWO_PI = 6.28318530718f;
+        for (int i = 0; i < LFO_TABLE_SIZE; ++i) {
+            lfoSineTable[i] = std::sin(TWO_PI * (static_cast<float>(i) / LFO_TABLE_SIZE));
+        }
+    });
+
+    float indexF = phase * static_cast<float>(LFO_TABLE_SIZE);
+    int index = static_cast<int>(indexF);
+    float frac = indexF - static_cast<float>(index);
+    
+    // Safety wrap (phase is 0..1 but float math)
+    if (index >= LFO_TABLE_SIZE) index = 0;
+    
+    int nextIndex = index + 1;
+    if (nextIndex >= LFO_TABLE_SIZE) nextIndex = 0;
+    
+    float val1 = lfoSineTable[index];
+    float val2 = lfoSineTable[nextIndex];
+    
+    return val1 + frac * (val2 - val1);
 }
 
 float LFO::renderTriangle() noexcept

@@ -47,7 +47,21 @@ void PresetBrowser::setPresetManager(State::PresetManager* pm)
 
 void PresetBrowser::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(0xff2a2a2a));
+    auto bounds = getLocalBounds().toFloat();
+    
+    // Glass-morphism Effect
+    g.setColour(juce::Colour(0xff1a1a1a).withAlpha(0.8f));
+    g.fillRoundedRectangle(bounds, 6.0f);
+    
+    // Gradient Sheen
+    juce::ColourGradient sheen(juce::Colours::white.withAlpha(0.1f), 0.0f, 0.0f,
+                               juce::Colours::transparentWhite, 0.0f, bounds.getHeight() * 0.5f, false);
+    g.setGradientFill(sheen);
+    g.fillRoundedRectangle(bounds, 6.0f);
+    
+    // Border
+    g.setColour(juce::Colours::white.withAlpha(0.15f));
+    g.drawRoundedRectangle(bounds, 6.0f, 1.0f);
 }
 
 void PresetBrowser::resized()

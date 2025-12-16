@@ -21,14 +21,15 @@ public:
     LCDDisplay()
     {
         setOpaque(true);
-        startTimer(3000); // Cycle every 3 seconds
+        startTimerHz(60); // 60 FPS for smooth animation
     }
 
     void setText(const juce::String& cpu, const juce::String& preset)
     {
         m_cpuInfo = cpu;
         m_presetName = preset;
-        repaint();
+        // Don't repaint here unconditionally to avoid interfering with animation timing, 
+        // but updating data is fine.
     }
     
     void setSampleRate(double sr) { m_sampleRate = sr; }
@@ -36,8 +37,37 @@ public:
 
     void timerCallback() override
     {
-        m_carouselIndex = (m_carouselIndex + 1) % 3;
-        repaint();
+        if (m_transitionProgress < 1.0f)
+        {
+            m_transitionProgress += 0.05f;
+            if (m_transitionProgress >= 1.0f) {
+                m_transitionProgress = 1.0f;
+                m_currentIndex = m_nextIndex;
+            }
+            repaint();
+        }
+        else
+        {
+            m_framesCounts++;
+            if (m_framesCounts > 240) // 4 seconds hold
+            {
+                m_framesCounts = 0;
+                m_nextIndex = (m_currentIndex + 1) % 3;
+                m_transitionProgress = 0.0f;
+                repaint();
+            }
+        }
+    }
+    
+    juce::String getTextForIndex(int index)
+    {
+        switch (index)
+        {
+            case 0: return m_presetName;
+            case 1: return m_cpuInfo + "  " + juce::String(m_sampleRate/1000.0, 1) + "k";
+            case 2: return (m_lastNote > 0) ? "NOTE: " + juce::String(m_lastNote) : "MIDI: Idle";
+            default: return {};
+        }
     }
 
     void paint(juce::Graphics& g) override
@@ -46,7 +76,7 @@ public:
         
         // Background (Dark Blue/Black)
         g.setFillType(juce::Colour(0xFF081018)); 
-        g.fillRoundedRectangle(bounds, 8.0f); // More rounded
+        g.fillRoundedRectangle(bounds, 8.0f); 
         
         // Inner Bezel / Glow
         g.setColour(juce::Colour(0xFF304050));
@@ -54,42 +84,39 @@ public:
         
         // Text (LCD Bright Blue)
         g.setColour(juce::Colour(0xFF00E0FF)); 
-        g.setFont(juce::FontOptions("Courier New", 22.0f, juce::Font::bold)); // Bigger font
+        g.setFont(juce::FontOptions("Courier New", 22.0f, juce::Font::bold));
         
-        juce::String line1, line2;
-        
-        // Always show Preset on Line 2? 
-        // Or cycle?
-        // User asked for "Carousel with data".
-        
-        // Line 1: Main Title or Context
-        line1 = "CZ-101 EMULATOR";
-        
-        // Line 2: Carousel
-        switch (m_carouselIndex)
-        {
-            case 0: // Preset
-                line2 = m_presetName;
-                break;
-            case 1: // Stats
-                line2 = m_cpuInfo + "  " + juce::String(m_sampleRate/1000.0, 1) + "k";
-                break;
-            case 2: // MIDI
-                line2 = (m_lastNote > 0) ? "NOTE: " + juce::String(m_lastNote) : "MIDI: Idle";
-                break;
-        }
-
-        // Draw lines
         auto textField = bounds.reduced(15, 5);
-        g.drawText(line1, textField.removeFromTop(bounds.getHeight() / 2), juce::Justification::centred, true);
-        g.drawText(line2, textField, juce::Justification::centred, true);
+        auto line1Rect = textField.removeFromTop(bounds.getHeight() / 2);
         
-        // Imitate pixel grid (scanlines)
-        g.setColour(juce::Colours::black.withAlpha(0.15f));
-        for (int y = 0; y < getHeight(); y += 3)
-            g.fillRect(0, y, getWidth(), 1);
-        for (int x = 0; x < getWidth(); x += 3)
-            g.fillRect(x, 0, 1, getHeight());
+        // Line 1: Header
+        g.drawText("CZ-101 EMULATOR", line1Rect, juce::Justification::centred, true);
+        
+        // Line 2: Carousel with Clip
+        juce::Graphics::ScopedSaveState s(g);
+        g.reduceClipRegion(textField.toNearestInt());
+        
+        if (m_transitionProgress >= 1.0f)
+        {
+            g.drawText(getTextForIndex(m_currentIndex), textField, juce::Justification::centred, true);
+        }
+        else
+        {
+            float w = bounds.getWidth();
+            // Old slide out to Left
+            g.drawText(getTextForIndex(m_currentIndex), 
+                       textField.translated(-w * m_transitionProgress, 0), 
+                       juce::Justification::centred, true);
+                       
+            // New slide in from Right
+            g.drawText(getTextForIndex(m_nextIndex), 
+                       textField.translated(w * (1.0f - m_transitionProgress), 0), 
+                       juce::Justification::centred, true);
+        }
+        
+        // Restore context to draw grid over everything? 
+        // Or keep grid under? Original code had grid over.
+        // Let's draw grid manually here if we want it on top (after ScopedSaveChanges)
     }
 
     // Deprecated helpers maintained for compatibility but redirected
@@ -103,12 +130,16 @@ public:
     }
 
 private:
-private:
     juce::String m_cpuInfo = "CPU: 0%";
     juce::String m_presetName = "PRESET: Init";
     double m_sampleRate = 44100.0;
     int m_lastNote = -1;
-    int m_carouselIndex = 0;
+    
+    // Animation State
+    int m_currentIndex = 0;
+    int m_nextIndex = 0;
+    float m_transitionProgress = 1.0f;
+    int m_framesCounts = 0;
 };
 
 } // namespace UI

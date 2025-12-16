@@ -42,6 +42,7 @@ public:
     void changeProgramName(int index, const juce::String& newName) override;
     
     void saveCurrentPreset(const juce::String& name); // New Save Method
+    void applyPresetToVoiceEngine(const CZ101::State::Preset& preset); // SysEx Helper
 
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;

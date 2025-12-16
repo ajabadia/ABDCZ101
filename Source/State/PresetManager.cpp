@@ -9,6 +9,10 @@ namespace State {
 PresetManager::PresetManager(Parameters* parameters, Core::VoiceManager* vm)
     : parameters(parameters), voiceManager(vm)
 {
+    // Validate pointers
+    jassert(parameters != nullptr);
+    jassert(voiceManager != nullptr);
+
     createFactoryPresets();
     // Default to first preset logic moved to PluginProcessor init
 }
@@ -91,36 +95,31 @@ void PresetManager::copyStateFromProcessor()
     // 1. Capture Parameters (Denormalized)
     if (parameters)
     {
-        // Iterate over existing keys in currentPreset to know what to fetch
-        // (Assuming currentPreset has all valid keys initialized)
-        for (auto& [key, val] : currentPreset.parameters)
+        // Iterate over ALL defined parameters using the new getter
+        const auto& map = parameters->getParameterMap();
+        for (const auto& pair : map) // use pair to avoid structured binding confusion if const ref issues
         {
-            if (auto* param = parameters->getParameter(key))
+            const juce::String& key = pair.first;
+            juce::RangedAudioParameter* param = pair.second;
+            
+            // Convert juce::String key to std::string for the std::map index
+            std::string stdKey = key.toStdString();
+
+            if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(param))
             {
-                // Convert normalized 0..1 back to real world value
-                // We don't have getNormalisableRange exposed easily on AudioParameterFloat?
-                // Actually Parameters::getParameter returns AudioParameterFloat* which has ranges.
-                // But we need the range to convert?
-                // `param->range.convertFrom0to1(param->getValue())`
-                // Let's assume Parameters wrapper gives us access or we use the JUCE param directly.
-                // Casting to RangedAudioParameter check.
-                if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(param))
-                {
-                    currentPreset.parameters[key] = p->range.convertFrom0to1(p->get());
-                }
-                else if (auto* pInt = dynamic_cast<juce::AudioParameterInt*>(param))
-                {
-                     currentPreset.parameters[key] = (float)pInt->get();
-                }
-                else if (auto* pChoice = dynamic_cast<juce::AudioParameterChoice*>(param))
-                {
-                     // Choice usually stored as float index (0.0, 1.0)
-                     currentPreset.parameters[key] = (float)pChoice->getIndex();
-                }
-                 else if (auto* pBool = dynamic_cast<juce::AudioParameterBool*>(param))
-                {
-                     currentPreset.parameters[key] = pBool->get() ? 1.0f : 0.0f;
-                }
+                currentPreset.parameters[stdKey] = p->get();
+            }
+            else if (auto* pInt = dynamic_cast<juce::AudioParameterInt*>(param))
+            {
+                 currentPreset.parameters[stdKey] = (float)pInt->get();
+            }
+            else if (auto* pChoice = dynamic_cast<juce::AudioParameterChoice*>(param))
+            {
+                 currentPreset.parameters[stdKey] = (float)pChoice->getIndex();
+            }
+             else if (auto* pBool = dynamic_cast<juce::AudioParameterBool*>(param))
+            {
+                 currentPreset.parameters[stdKey] = pBool->get() ? 1.0f : 0.0f;
             }
         }
     }

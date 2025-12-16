@@ -17,6 +17,9 @@ public:
     
     // Create a dump message for a specific preset
     juce::MidiMessage createDumpMessage(const State::Preset& preset);
+    
+    // Callback when a preset is parsed successfully
+    std::function<void(const State::Preset&)> onPresetParsed;
 
 private:
     State::PresetManager& presetManager;

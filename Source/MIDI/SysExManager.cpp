@@ -53,6 +53,9 @@ void SysExManager::handleSysEx(const void* data, int size, juce::String presetNa
              p.name = presetName.toStdString();
              presetManager.loadPresetFromStruct(p);
          }
+         
+         if (onPresetParsed)
+             onPresetParsed(presetManager.getCurrentPreset());
     }
 }
 
@@ -101,9 +104,9 @@ void SysExManager::parseToneData(const juce::uint8* payload, int payloadSize)
     
     int currentByte = 0;
     auto getNextByte = [&]() -> juce::uint8 {
-        if (currentByte + 1 >= payloadSize) return 0;
-        juce::uint8 v = decodeByte(payload[currentByte], payload[currentByte+1]);
-        currentByte += 2;
+        if (currentByte >= payloadSize) return 0;
+        juce::uint8 v = payload[currentByte];
+        currentByte += 1;
         return v;
     };
     

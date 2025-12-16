@@ -12,11 +12,43 @@ CZ101AudioProcessor::CZ101AudioProcessor()
 {
     parameters.createParameters();
     
+    // Bind SysEx Callback
+    sysExManager.onPresetParsed = [this](const CZ101::State::Preset& p) {
+        applyPresetToVoiceEngine(p);
+    };
+    
     midiProcessor.setSysExManager(&sysExManager);
     
     // Load default preset once parameters are ready
     if (!presetManager.getPresets().empty())
         presetManager.loadPreset(0);
+}
+
+void CZ101AudioProcessor::applyPresetToVoiceEngine(const CZ101::State::Preset& preset)
+{
+    // Apply Pitch Envelope
+    for (int i = 0; i < 8; i++) {
+        voiceManager.setPitchStage(i, preset.pitchEnv.rates[i], 
+                                  preset.pitchEnv.levels[i]);
+    }
+    voiceManager.setPitchSustainPoint(preset.pitchEnv.sustainPoint);
+    voiceManager.setPitchEndPoint(preset.pitchEnv.endPoint);
+    
+    // Apply DCW Envelope
+    for (int i = 0; i < 8; i++) {
+        voiceManager.setDCWStage(i, preset.dcwEnv.rates[i], 
+                                preset.dcwEnv.levels[i]);
+    }
+    voiceManager.setDCWSustainPoint(preset.dcwEnv.sustainPoint);
+    voiceManager.setDCWEndPoint(preset.dcwEnv.endPoint);
+    
+    // Apply DCA Envelope
+    for (int i = 0; i < 8; i++) {
+        voiceManager.setDCAStage(i, preset.dcaEnv.rates[i], 
+                                preset.dcaEnv.levels[i]);
+    }
+    voiceManager.setDCASustainPoint(preset.dcaEnv.sustainPoint);
+    voiceManager.setDCAEndPoint(preset.dcaEnv.endPoint);
 }
 
 CZ101AudioProcessor::~CZ101AudioProcessor()
@@ -139,10 +171,11 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     auto* channelDataL = buffer.getWritePointer(0);
     auto* channelDataR = buffer.getWritePointer(1);
     
-    float lfoVal = lfo.getNextValue();
-    voiceManager.updateLFO(lfoVal);
+    // float lfoVal = lfo.getNextValue(); // Removed block-level update
+    // voiceManager.updateLFO(lfoVal);
     
-    voiceManager.renderNextBlock(channelDataL, channelDataR, buffer.getNumSamples());
+    // Pass LFO to renderNextBlock for sample-accurate modulation
+    voiceManager.renderNextBlock(channelDataL, channelDataR, buffer.getNumSamples(), &lfo);
     
     for (int i = 0; i < buffer.getNumSamples(); ++i)
     {
@@ -298,6 +331,12 @@ void CZ101AudioProcessor::updateParameters()
     if (parameters.lfoRate)
     {
         lfo.setFrequency(parameters.lfoRate->get());
+    }
+    
+    if (parameters.lfoWaveform)
+    {
+        // Cast int/index to Waveform enum
+        lfo.setWaveform(static_cast<CZ101::DSP::LFO::Waveform>(parameters.lfoWaveform->getIndex()));
     }
     
     if (parameters.lfoDepth)

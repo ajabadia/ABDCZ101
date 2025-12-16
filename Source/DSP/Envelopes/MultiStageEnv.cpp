@@ -53,19 +53,18 @@ void MultiStageEnvelope::setEndPoint(int stageIndex) noexcept
 void MultiStageEnvelope::noteOn() noexcept
 {
     currentStage = 0;
-    currentValue = 0.0f; // CZ starts from 0 (or previous value in advanced modes, but 0 simplify)
-    targetValue = stages[0].level;
-    
-    float seconds = rateToSeconds(stages[0].rate);
-    float samples = static_cast<float>(seconds * sampleRate);
-    
-    if (samples < 1.0f) samples = 1.0f;
-    
-    // Calculate linear increment
-    currentIncrement = (targetValue - currentValue) / samples;
-    
     active = true;
     released = false;
+    
+    // Start from 0
+    float startVal = 0.0f;
+    smoother.setCurrentAndTargetValue(startVal);
+    
+    // Setup first stage
+    float seconds = rateToSeconds(stages[0].rate);
+    smoother.reset(sampleRate, seconds > 0.001f ? seconds : 0.001f); 
+    smoother.setCurrentAndTargetValue(startVal);
+    smoother.setTargetValue(stages[0].level);
 }
 
 void MultiStageEnvelope::noteOff() noexcept
@@ -83,13 +82,13 @@ void MultiStageEnvelope::noteOff() noexcept
             return;
         }
         
-        // Setup next stage
-        targetValue = stages[currentStage].level;
+        // Setup next stage from current value
+        float currentVal = smoother.getCurrentValue();
         float seconds = rateToSeconds(stages[currentStage].rate);
-        float samples = static_cast<float>(seconds * sampleRate);
-        if (samples < 1.0f) samples = 1.0f;
         
-        currentIncrement = (targetValue - currentValue) / samples;
+        smoother.reset(sampleRate, seconds > 0.001f ? seconds : 0.001f);
+        smoother.setCurrentAndTargetValue(currentVal);
+        smoother.setTargetValue(stages[currentStage].level);
     }
 }
 
@@ -97,40 +96,32 @@ void MultiStageEnvelope::reset() noexcept
 {
     active = false;
     currentStage = 0;
-    currentValue = 0.0f;
-    currentIncrement = 0.0f;
+    smoother.setCurrentAndTargetValue(0.0f);
 }
 
 float MultiStageEnvelope::getNextValue() noexcept
 {
-    if (!active) return currentValue;
+    if (!active) return 0.0f;
     
-    // Apply increment
-    currentValue += currentIncrement;
+    float val = smoother.getNextValue();
     
-    // Check if we reached target (or crossed it)
-    bool reached = false;
-    if (currentIncrement > 0.0f && currentValue >= targetValue) reached = true;
-    else if (currentIncrement < 0.0f && currentValue <= targetValue) reached = true;
-    else if (currentIncrement == 0.0f) reached = true; // Special case
-    
-    if (reached)
+    // Check if stage finished
+    if (!smoother.isSmoothing())
     {
-        currentValue = targetValue; // Snap to target
-        
-        // Logic for Sustain / End
+        val = smoother.getTargetValue(); // Ensure snap
         
         // Are we at Sustain Point?
         if (currentStage == sustainPoint && !released)
         {
             // Hold here until Note Off
-            currentIncrement = 0.0f;
+            // Do nothing, just return val
         }
-        else if (currentStage == endPoint)
+        else if (currentStage >= endPoint)
         {
             // End of envelope
+            // If released or no sustain, we are done
+            // If we are sustaining at end (unlikely for CZ architecture, end is end), disable.
             active = false;
-            currentIncrement = 0.0f;
         }
         else
         {
@@ -139,21 +130,20 @@ float MultiStageEnvelope::getNextValue() noexcept
             
             if (currentStage < MAX_STAGES)
             {
-                targetValue = stages[currentStage].level;
+                float currentVal = val;
                 float seconds = rateToSeconds(stages[currentStage].rate);
-                float samples = static_cast<float>(seconds * sampleRate);
-                if (samples < 1.0f) samples = 1.0f;
-                
-                currentIncrement = (targetValue - currentValue) / samples;
+                smoother.reset(sampleRate, seconds > 0.001f ? seconds : 0.001f);
+                smoother.setCurrentAndTargetValue(currentVal);
+                smoother.setTargetValue(stages[currentStage].level);
             }
             else
             {
-                active = false; // Safety
+                active = false;
             }
         }
     }
     
-    return currentValue;
+    return val;
 }
 
 float MultiStageEnvelope::rateToSeconds(float rate) const noexcept

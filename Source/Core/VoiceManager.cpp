@@ -1,4 +1,5 @@
 #include "VoiceManager.h"
+#include "../DSP/Modulation/LFO.h"
 #include <algorithm>
 
 namespace CZ101 {
@@ -6,6 +7,7 @@ namespace Core {
 
 VoiceManager::VoiceManager()
 {
+    voices.resize(MAX_VOICES);
 }
 
 void VoiceManager::setSampleRate(double sampleRate) noexcept
@@ -124,13 +126,31 @@ void VoiceManager::allNotesOff() noexcept
         voice.noteOff();
 }
 
-void VoiceManager::renderNextBlock(float* outputL, float* outputR, int numSamples) noexcept
+
+void VoiceManager::renderNextBlock(float* outputL, float* outputR, int numSamples, DSP::LFO* lfo) noexcept
 {
+    // Local LFO caching variables if we didn't want to call getNextValue per sample for optimization, 
+    // but the request is specific: LFO IS broken because it's block rate.
+    
     for (int i = 0; i < numSamples; ++i)
     {
+        // Update LFO if provided
+        if (lfo)
+        {
+            float lfoVal = lfo->getNextValue();
+            for (auto& voice : voices)
+                voice.setLFOValue(lfoVal); // Direct setter to avoid vtable overhead if possible, but here virtual
+                // Actually updateLFO was iterating voices. Here we do it per sample.
+                // Optim: This is O(N_Voices * N_Samples). 64 voices * 44100 = 2.8M iterations/sec. 
+                // Acceptable for modern CPU.
+        }
+        
         float sample = 0.0f;
         for (auto& voice : voices)
-            sample += voice.renderNextSample();
+        {
+            if (voice.isActive()) // Optimization: Only render active voices
+                sample += voice.renderNextSample();
+        }
         
         outputL[i] = sample;
         outputR[i] = sample;
@@ -148,26 +168,26 @@ int VoiceManager::getActiveVoiceCount() const noexcept
 
 int VoiceManager::findFreeVoice() const noexcept
 {
-    for (int i = 0; i < MAX_VOICES; ++i)
+    for (size_t i = 0; i < voices.size(); ++i)
         if (!voices[i].isActive())
-            return i;
+            return static_cast<int>(i);
     return -1;
 }
 
 int VoiceManager::findVoiceToSteal() const noexcept
 {
-    // Simple: steal oldest (first active voice)
-    for (int i = 0; i < MAX_VOICES; ++i)
+    // Simple: steal first active voice (oldest)
+    for (size_t i = 0; i < voices.size(); ++i)
         if (voices[i].isActive())
-            return i;
+            return static_cast<int>(i);
     return 0;
 }
 
 int VoiceManager::findVoicePlayingNote(int midiNote) const noexcept
 {
-    for (int i = 0; i < MAX_VOICES; ++i)
+    for (size_t i = 0; i < voices.size(); ++i)
         if (voices[i].getCurrentNote() == midiNote)
-            return i;
+            return static_cast<int>(i);
     return -1;
 }
 

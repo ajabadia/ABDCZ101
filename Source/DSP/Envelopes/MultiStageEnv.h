@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cmath>
+#include <juce_audio_basics/juce_audio_basics.h>
 
 namespace CZ101 {
 namespace DSP {
@@ -56,10 +57,11 @@ private:
     double sampleRate = 44100.0;
     std::array<Stage, MAX_STAGES> stages;
     
+    // Envelope Smoother
+    juce::LinearSmoothedValue<float> smoother;
+    
     int currentStage = 0;
-    float currentValue = 0.0f;
-    float currentIncrement = 0.0f;
-    float targetValue = 0.0f;
+    // Removed manual currentValue/Increment/targetValue as smoother handles it
     
     int sustainPoint = -1;  // -1 = no sustain (or one-shot)
     int endPoint = 7;       // Default to using all 8 stages
