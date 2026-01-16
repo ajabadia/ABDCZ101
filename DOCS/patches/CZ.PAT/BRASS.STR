@@ -1,0 +1,40 @@
+Tone Name:         Brass Strings
+
+Line Select:       1+2'
+Modulation:        Ring   = OFF   Noise = OFF
+Detune:            Octave = 0     Note  = 0      Fine = +6
+Vibrato:           Wave   = 1     Delay = 28     Rate = 52      Depth = 11
+Octave:            
+
+
+DCO1                                   DCO2
+----                                   ----
+
+First = 1     Second = 5               First = 1      Second = 3
+
+Rate:         99 99                    Rate:          99 68
+Level:        66 00                    Level:         33 00
+Sus/End:         E                     Sus/End:          E
+
+DCW1                                   DCW2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    0
+
+Rate:         99 00                    Rate:          80 47 37 26
+Level:        90 00                    Level:         99 96 52 00
+Sus/End:      S  E                     Sus/End:             S  E
+
+DCA1                                   DCA2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    0
+
+Rate:         92 95 92 99 45           Rate:          99 77 67 79 33
+Level:        99 87 99 88 00           Level:         50 99 91 59 00
+Sus/End:               S  E            Sus/End:             S     E
+
+Comment: This patch started as a combination of the Synth Strings preset and
+Synth Brass 1.  It works well for lead lines on the upper half of the keyboard.
+
+--------------------

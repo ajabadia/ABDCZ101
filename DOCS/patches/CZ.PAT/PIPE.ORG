@@ -1,0 +1,57 @@
+    TONE Name - Pipe Organ             CARTRIDGE NO.           TONE NO.
+ 
+PARAMETER
+ 
+ LINE SELECT   MODULATION         DETUNE            VIBRATO        OCTAVE
+|1,2,12',11'| |ring|noise| |+/-|oct|note|fine| |wave|dly|rt|dep| |+/-|range|
+|    12'    | | no |  no | | + | 0 | 0  | 02 | |  1 | 0 | 0| 0 | |   |  0  |
+|___________| |____|_____| |___|___|____|____| |____|___|__|___| |___|_____|
+ 
+************************************    ************************************
+(1)                                     (2)
+DCO 1                                   DCO 2
+  WAVE FORM                               WAVE FORM
+|first|second|                          |first|second|
+|  4  |  4   |                          |  2  |   1  |                      
+|_____|______|                          |_____|______|                        
+ (1-8)  (0-8)                            (1-8)  (0-8)  
+               ENV(PITCH)                             ENV(PITCH)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate| 99| 00| 00|   |   |   |   |   |0-99 rate| 99|   |   |   |   |   |   |   |
+levl| 66| 66| 00|   |   |   |   |   |0-99 levl| 00|   |   |   |   |   |   |   |
+s/e | s |   | e |   |   |   |   |   |     s/e | e |   |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCW 1                                   DCW 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     0     |(0-9)                      |     0     |(0-9)
+|___________|                           |___________|
+ 
+               ENV(WAVE)                             ENV(WAVE)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate| 99| 0 |   |   |   |   |   |   |0-99 rate| 99| 0 |   |   |   |   |   |   |
+levl| 50| 0 |   |   |   |   |   |   |0-99 levl| 83| 0 |   |   |   |   |   |   |
+s/e | s | e |   |   |   |   |   |   |     s/e | s | e |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCA 1                                   DCA 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     0     |(0-9)                      |     0     |(0-9)
+|___________|                           |___________|
+ 
+               ENV(AMP)                             ENV(AMP)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate| 90| 60|   |   |   |   |   |   |0-99 rate| 90| 60|   |   |   |   |   |   |
+levl| 99| 0 |   |   |   |   |   |   |0-99 levl| 99| 0 |   |   |   |   |   |   |
+s/e | s | e |   |   |   |   |   |   |     s/e | s | e |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+
+Comments:  The heart of the pipe organ sound is the doubling a couple of 
+octaves up.  I chose to do that in this patch by using the DCO pitch
+envelope rather than the detune parameters (I had a good reason at the 
+time, I don't remember what it was).  The modest detuning fattens the 
+sound a little, so it sounds like more than one pipe.  Overall this is
+a very simple but effective patch.  You can manipulate the timbre to 
+your liking by changing the DCW envelope levels.  The noninstantaneous
+DCA envelope rates soften the onset and simulate some hall ambience.
+A good reverb still helps enormously.

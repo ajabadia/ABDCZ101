@@ -58,8 +58,34 @@ public:
      * Usage: manager.onPresetParsed = [this](const auto& preset) { ... };
      */
     std::function<void(const CZ101::State::Preset&)> onPresetParsed;
+    
+    /**
+     * Decode a single SysEx patch (264 bytes including F0/F7)
+     * @param data Pointer to 264 bytes of SysEx data
+     * @param preset The target preset to populate
+     * @return true if decoding was successful
+     */
+    static bool decodePatch(const uint8_t* data, CZ101::State::Preset& preset);
+    
+    /**
+     * Create a SysEx dump (264 bytes) from a Preset.
+     * @param preset The preset to encode.
+     * @return MemoryBlock containing the SysEx message.
+     */
+    juce::MemoryBlock createPatchDump(const CZ101::State::Preset& preset);
+    
+    // Protection State
+    void setProtectionState(bool protectedMem, bool prgEnabled) {
+        memoryProtected = protectedMem;
+        programChangeEnabled = prgEnabled;
+    }
 
 private:
+    bool memoryProtected = true;
+    bool programChangeEnabled = false;
+    
+    juce::MemoryBlock fragmentBuffer; // Audit Fix 4.3: Persistent buffer for fragmented SysEx
+
     // Helper functions are static - see .cpp for implementation
 
     // Constants for SysEx header validation

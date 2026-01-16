@@ -1,0 +1,20 @@
+16 lead sounds for the CZ-101, 1K, 3K, 5K.
+Most of these sounds are not my own, but tweaked 
+versions of sounds found on the net.
+
+1 HAMMER LEAD
+2 HAMMER 2
+3 HAMMER 3
+4 HORN LEAD
+5 MINI LIKE
+6 NASTY LEAD
+7 SCREAMMER
+8 SOFT LEAD
+9 FADE LEAD
+10 SQUARE MOOG
+11 SYNTH FLUTE
+12 GUITAR REZ
+13 GRUNGE LEAD
+14 BRASSY LEAD
+15 HAMMER 4
+16 SQUARE SNAP

@@ -1,0 +1,55 @@
+Name: ArtoNoise Trumpet (#3)
+
+line    mod     detune          vibrato         octave
+1+2     ring                    1 27 49 11      +1
+
+DCO 1
+wave 
+3 0
+rate    level
+00      00e
+
+DCW 1
+key 
+4
+rate    level
+67      79
+00      00e
+
+DCA 1
+key 
+2
+rate    level
+70      91
+70      67
+70      96
+70      77
+70      99s
+56      00e
+
+DCO 2
+wave 
+4 0
+rate    level
+00      00e
+
+DCW 2
+key 
+4
+rate    level
+72      79
+00      00e
+
+DCA 2
+key 
+2
+rate    level
+70      91
+70      67
+70      97
+70      77
+70      99s
+48      00e
+
+Comments: Mix with Casio Preset turmpet.  You can set Bend Range to
+12 and go a whole octave higher still sounding great.

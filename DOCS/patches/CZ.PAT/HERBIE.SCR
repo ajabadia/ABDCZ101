@@ -1,0 +1,52 @@
+Name: Herbie Scratch
+
+line    mod     detune          vibrato         octave
+1+1'            + 0 02 00       1 00 54 88      +1
+
+DCO 1
+wave 
+3 4
+rate    level
+47      99
+99      00e
+
+DCW 1
+key 
+0
+rate    level
+80      99
+47      96
+38      85s
+26      00e
+
+DCA 1
+key 
+2
+rate    level
+99      90
+85      65
+85      95
+78      75
+78      99
+01      98
+99      00e
+
+DCO 2
+wave 
+
+rate    level
+
+
+DCW 2
+key 
+
+rate    level
+
+
+DCA 2
+key 
+
+rate    level
+
+
+Comments: In lieu of having a record to scratch...

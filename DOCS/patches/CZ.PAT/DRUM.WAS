@@ -1,0 +1,52 @@
+Name: drum wash
+
+line    mod     detune          vibrato         octave
+1+1'    noise   + (1,2,3) 03 08 1 00 38 15      -1
+
+DCO 1
+wave 
+5 0
+rate    level
+99      62
+76      00e
+
+DCW 1
+key 
+0
+rate    level
+99      83
+99      00e
+
+DCA 1
+key 
+6
+rate    level
+99      99
+38      51
+53      00e
+
+DCO 2
+wave 
+
+rate    level
+
+
+DCW 2
+key 
+
+rate    level
+
+
+DCA 2
+key 
+
+rate    level
+
+
+Comments: I put the three different versions (different detune octave
+settings) on adjacent Internal memory keys , and by switching back
+and forth between beats (it takes practice) I got a "drum kit", and
+even gated off some of the hits by switching to the next sound before
+the note had died out.  Primitive, but it got on the local college
+station a few times.  This is one of those sounds that sounds really
+big on tape.

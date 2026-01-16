@@ -1,0 +1,60 @@
+
+
+Name: Wild Kingdom
+
+line    mod     detune          vibrato         octave
+1+2     ring    + 1 00 01       1 15 28 06      0
+
+DCO 1
+wave 
+2 0
+rate    level
+99      33
+68      00e
+
+DCW 1
+key 
+2
+rate    level
+67      99
+47      96
+37      52s
+26      00e
+
+DCA 1
+key 
+2
+rate    level
+90      99
+36      91s
+79      59
+55      00e
+
+DCO 2
+wave 
+5 0
+rate    level
+99      33
+68      00e
+
+DCW 2
+key 
+2
+rate    level
+63      99
+66      96
+37      52s
+26      00e
+
+DCA 2
+key 
+2
+rate    level
+70      99
+36      75s
+79      55
+55      00e
+
+Comments: I called this "Wild Kingdom" because it's sounds like a
+nature TV show patch.  The patch is based on CZ-101 patch #1 (Brass
+ens. 1).  The slow vibrato is critical for this patch.

@@ -1,0 +1,34 @@
+Here is a patch from the "Insider's Guide to the Casio CZ" That they
+claim sounds like a Simmons tom sound.  You be the judge.
+
+Line Select: 1+2 
+Ring/Noise: Noise
+Detune: +3 5 0
+Vibrato: None
+Octave: -1
+
+DCO1
+Waveform: 2,0
+Envelope (rate/level): (99/69),(50/61),(54,00,END)
+
+DCW 1
+Key Follow: 0
+Envelope (rate/level): (99,99),(50,00,END)
+
+DCA 1
+Key Follow: 0
+Envelope (rate/level): (99,95),(35,0),(51,00,END)
+
+DCO2
+Waveform: 1,4
+Envelope (rate/level): (50,00,END)
+
+DCW 2
+Key Follow: 0
+Envelope (rate/level): (99,99),(32,00,END)
+
+DCA 2
+Key Follow: 0
+Envelope (rate/level): (99,99),(58,00,END)
+
+

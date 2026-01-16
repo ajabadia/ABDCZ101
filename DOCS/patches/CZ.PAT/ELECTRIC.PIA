@@ -1,0 +1,14 @@
+Name: Electric Piano
+By: Miles Bader
+Vibr: -
+Oct: 0
+Line: 1
+Mod: -
+DCO1: WF: 1,0  Env: 0/e
+DCW1: KF: 5    Env: 99/95, 32/85/s, 38/0/e
+DCA1: KF: 5    Env: 99/99, 30/0/s, 40/0/e
+Vel1: A: 7  W: 0  P: 0
+Comments: It's been years since I've heard a real electric piano,
+        but hey, it sounds "electric" to me!
+
+

@@ -1,0 +1,43 @@
+Name: Sampled Snap
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line    mod     detune          vibrato         octave
+1+2     noise   + 1 07 00       1 00 67 09      0
+DCO1
+wave
+5 0
+rt lv
+96 75
+99 00e
+DCO1
+key
+0
+rt lv
+91 66
+93 00e
+DCA1
+key
+0
+rt lv
+93 99
+54 00e
+DCO2
+wave
+2 0
+rt lv
+97 74
+93 00e
+DCW2
+key
+0
+rt lv
+93 41
+64 00e
+DCA2
+key
+0
+rt lv
+94 99
+49 00e
+
+Comments:  Any resemblance to snare #1 is purely intentional.

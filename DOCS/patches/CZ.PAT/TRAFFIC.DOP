@@ -1,0 +1,40 @@
+Name: Traffic Doppler (Barry Kirsch, modified by me)
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line    mod     detune          vibrato         octave
+1+1     noise   + 00 03 00      1 00 00 97      -1
+DCO1
+wave
+7 0
+rt lv
+99 15s
+16 00e
+DCO1
+key
+0
+rt lv
+00 00e
+DCA1
+key
+0
+rt lv
+35 99
+00 00
+30 00e
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:  Hold the key down and wait.  I like clusters of low notes best

@@ -1,0 +1,60 @@
+
+Tone Name: Reverb Strings
+
+Line Select:  1 + 1'
+Modulation: none
+
+Detune     (+)       oct:  0
+         Note: 00   fine: 10
+
+Vibrato  wave:  1   delay: 28
+         rate: 52   depth: 11
+
+Octave  +1
+
+DCO1  wave   1st: 1   2nd: 3
+step       1   2
+rate      99  99
+level     66  00
+sus/end      end
+
+DCW1  key follow: 0
+step       1   2
+rate      99  00
+level     99  00
+sus/end  sus end
+
+DCA1  key follow: 4
+step       1   2   3   4   5   6   7
+rate      64  95  75  75  79  63  26
+level     99  99  76  76  33  87  00
+sus/end          sus             end
+
+DCO2  wave   1st: 1   2nd: 3
+step       1   2
+rate      99  99                  (Same as DCO1)
+level     66  00
+sus/end      end
+
+DCW2  key follow: 0
+step       1   2
+rate      99  00                  (Same as DCW1)
+level     99  00
+sus/end  sus end
+
+DCA2  key follow: 0
+step       1   2   3   4   5
+rate      92  95  92  99  32
+level     99  87  99  88  00
+sus/end              sus end
+
+Comments:  "Reverb Strings" is a modification of the preset "Synth
+           Strings". The "reverb" comes from playing the note not
+           only when a key is pressed, but also when the key is 
+           released. Try holding a chord and then letting off the
+           keys one at a time, and you will hear the effect. With
+           a little practice on the timing of pressing and releasing
+           the keys, you can get some interesting effects such as
+           eight eighth notes when only when four eighth notes
+           separated by eighth rests are played.
+---------------------------------------------------------------------

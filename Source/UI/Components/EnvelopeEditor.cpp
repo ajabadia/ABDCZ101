@@ -1,198 +1,245 @@
+#include <JuceHeader.h>
 #include "EnvelopeEditor.h"
+#include <cmath>
+#include "../SkinManager.h"
+#include "../DesignTokens.h"
+#include "../CZ101LookAndFeel.h"
 
 namespace CZ101 {
 namespace UI {
 
-EnvelopeEditor::EnvelopeEditor(CZ101AudioProcessor& processor, EnvelopeType type)
-    : audioProcessor(processor), envType(type)
+EnvelopeEditor::ClipboardData EnvelopeEditor::clipboard;
+
+// --- VerticalButton Implementation ---
+EnvelopeEditor::VerticalButton::VerticalButton(const juce::String& name, const juce::String& text)
+    : juce::Button(name), buttonText(text)
+{}
+
+void EnvelopeEditor::VerticalButton::paintButton(juce::Graphics& g, bool isMouseOver, bool isButtonDown)
 {
-    // Initialize with dummy default data
-    for (int i = 0; i < 8; ++i)
-    {
-        rates[i] = 0.5f;
-        levels[i] = (i % 2 == 0) ? 1.0f : 0.0f;
-    }
+    auto& palette = SkinManager::getInstance().getCurrentPalette();
     
+    // Background - Use surfaceLight for hover
+    juce::Colour bg = isButtonDown ? palette.accentCyan : (isMouseOver ? palette.surfaceLight : palette.surface);
+    if (!isEnabled()) bg = palette.surface.darker(0.1f);
+    
+    g.setColour(bg);
+    g.fillAll();
+    
+    g.setColour(palette.border);
+    g.drawRect(getLocalBounds());
+
+    // Text (Rotated -90 degrees)
+    g.setColour(isButtonDown ? juce::Colours::white : (isEnabled() ? palette.textPrimary : palette.textSecondary));
+    
+    // Find parent EnvelopeEditor to get scale
+    float scale = 1.0f;
+    if (auto* ee = findParentComponentOfClass<EnvelopeEditor>()) scale = ee->getUiScale();
+    g.setFont(12.0f * scale);
+    
+    auto bounds = getLocalBounds().toFloat();
+    float cx = bounds.getCentreX();
+    float cy = bounds.getCentreY();
+    
+    g.saveState();
+    g.addTransform(juce::AffineTransform::rotation(-juce::MathConstants<float>::halfPi, cx, cy));
+    g.drawText(buttonText, bounds.withWidth(bounds.getHeight()).withHeight(bounds.getWidth()).withCentre({cx, cy}), juce::Justification::centred, false);
+    g.restoreState();
+}
+
+// --- Undo Action ---
+class EnvelopeChangeAction : public juce::UndoableAction
+{
+public:
+    EnvelopeChangeAction(CZ101AudioProcessor& proc, int type, int line, int stage, 
+                         float oldR, float oldL, float newR, float newL)
+        : processor(proc), envType(type), lineIndex(line), stageIndex(stage),
+          oldRate(oldR), oldLevel(oldL), newRate(newR), newLevel(newL)
+    {}
+
+    bool perform() override { sendUpdate(newRate, newLevel); return true; }
+    bool undo() override    { sendUpdate(oldRate, oldLevel); return true; }
+    int getSizeInUnits() override { return sizeof(*this); }
+
+private:
+    void sendUpdate(float r, float l)
+    {
+        EnvelopeUpdateCommand cmd;
+        if (envType == 1) cmd.type = EnvelopeUpdateCommand::DCA_STAGE;
+        else if (envType == 0) cmd.type = EnvelopeUpdateCommand::DCW_STAGE;
+        else cmd.type = EnvelopeUpdateCommand::PITCH_STAGE;
+
+        cmd.line = lineIndex;
+        cmd.index = stageIndex;
+        cmd.rate = r;
+        cmd.level = l;
+        processor.scheduleEnvelopeUpdate(cmd);
+    }
+
+    CZ101AudioProcessor& processor;
+    int envType, lineIndex, stageIndex;
+    float oldRate, oldLevel, newRate, newLevel;
+};
+
+// --- Main Editor ---
+EnvelopeEditor::EnvelopeEditor(CZ101AudioProcessor& processor, EnvelopeType type)
+    : audioProcessor(processor), envType(type),
+      copyButton("Copy", "COPY"), pasteButton("Paste", "PASTE")
+{
+    addAndMakeVisible(copyButton);
+    addAndMakeVisible(pasteButton);
+    
+    copyButton.setTooltip("Copy Envelope Data");
+    pasteButton.setTooltip("Paste Envelope Data");
+    
+    copyButton.onClick = [this]() { performCopy(); };
+    pasteButton.onClick = [this]() { performPaste(); };
+    
+    pasteButton.setEnabled(clipboard.active);
     updateData();
 }
 
-EnvelopeEditor::~EnvelopeEditor()
-{
-}
+EnvelopeEditor::~EnvelopeEditor() {}
 
 void EnvelopeEditor::updateData()
 {
     auto& vm = audioProcessor.getVoiceManager();
-    
-    for (int i = 0; i < 8; ++i)
-    {
-        float r = 0.5f;
-        float l = 0.0f;
-        
-        if (envType == EnvelopeType::DCA)
-            vm.getDCAStage(i, r, l);
-        else if (envType == EnvelopeType::DCW)
-            vm.getDCWStage(i, r, l);
-        else if (envType == EnvelopeType::PITCH)
-            vm.getPitchStage(i, r, l);
-            
-        rates[i] = r;
-        levels[i] = l;
+    for (int i = 0; i < 8; ++i) {
+        float r = 0.5f, l = 0.0f;
+        if (envType == EnvelopeType::DCA)      vm.getDCAStage(currentLine, i, r, l);
+        else if (envType == EnvelopeType::DCW) vm.getDCWStage(currentLine, i, r, l);
+        else if (envType == EnvelopeType::PITCH) vm.getPitchStage(currentLine, i, r, l);
+        rates[i] = r; levels[i] = l;
     }
     
-    if (envType == EnvelopeType::DCA)
-    {
-        sustainPoint = vm.getDCASustainPoint();
-        endPoint = vm.getDCAEndPoint();
+    if (envType == EnvelopeType::DCA) {
+        sustainPoint = vm.getDCASustainPoint(currentLine);
+        endPoint = vm.getDCAEndPoint(currentLine);
+    } else if (envType == EnvelopeType::DCW) {
+        sustainPoint = vm.getDCWSustainPoint(currentLine);
+        endPoint = vm.getDCWEndPoint(currentLine);
+    } else if (envType == EnvelopeType::PITCH) {
+        sustainPoint = vm.getPitchSustainPoint(currentLine);
+        endPoint = vm.getPitchEndPoint(currentLine);
     }
-    else if (envType == EnvelopeType::DCW)
-    {
-        sustainPoint = vm.getDCWSustainPoint();
-        endPoint = vm.getDCWEndPoint();
-    }
-    else if (envType == EnvelopeType::PITCH)
-    {
-        sustainPoint = vm.getPitchSustainPoint();
-        endPoint = vm.getPitchEndPoint();
-    }
-    
     repaint();
 }
 
+void EnvelopeEditor::setLine(int line) { currentLine = line; updateData(); }
+
 void EnvelopeEditor::paint(juce::Graphics& g)
 {
-    // Background
-    g.fillAll(juce::Colours::black.withAlpha(0.8f));
-    g.setColour(juce::Colours::darkgrey);
-    g.drawRect(getLocalBounds(), 1);
+    auto& palette = SkinManager::getInstance().getCurrentPalette();
+    auto* lf = dynamic_cast<CZ101LookAndFeel*>(&getLookAndFeel());
+    
+    g.fillAll(palette.surface);
     
     auto bounds = getLocalBounds().toFloat();
-    float w = bounds.getWidth();
+    float w = bounds.getWidth() - 26; // Account for vertical buttons
     float h = bounds.getHeight();
-    
-    // Draw grid/guides
-    g.setColour(juce::Colours::white.withAlpha(0.1f));
-    for (int i = 0; i < 8; ++i)
-    {
-        float x = w * (static_cast<float>(i) / 8.0f);
-        g.drawVerticalLine(static_cast<int>(x), 0.0f, h);
-    }
-    
-    // Draw Path
-    juce::Colour pathColour;
-    if (envType == EnvelopeType::DCA) pathColour = juce::Colours::cyan;
-    else if (envType == EnvelopeType::DCW) pathColour = juce::Colours::orange;
-    else pathColour = juce::Colours::magenta; // PITCH
-
-    g.setColour(pathColour);
-    juce::Path p;
-    
-    // Start at 0,0 (bottom left-ish logic, but CZ starts at previous level. Assume 0 for start)
-    // Actually CZ starts at 'Level' of current step? No, it moves TO Level.
-    // Stage I: Start Level -> Target Level at Rate.
-    // We need to simulate the path for visualization.
-    
-    float currentX = 0.0f;
-    float currentY = h; // 0 level is bottom
-    
-    p.startNewSubPath(currentX, currentY);
-    
-    // We visualize cumulative time on X axis?
-    // Or constant width per stage? 
-    // Constant width per stage is easier to edit. Time-based is hard if rate is 0 (long time).
-    // Let's use constant width for editing (CZ-101 LCD style).
-    
     float stepWidth = w / 8.0f;
-    
-    for (int i = 0; i < 8; ++i)
+
+    // Grid
+    g.setColour(palette.textPrimary.withAlpha(0.15f));
+    for (int i = 1; i < 8; ++i) g.drawVerticalLine((int)(i * stepWidth), 0, h);
+    g.setColour(palette.textPrimary.withAlpha(0.05f));
+    for (int i = 1; i < 4; ++i) g.drawHorizontalLine((int)(i * h / 4.0f), 0, w);
+
+    // Path
+    juce::Colour accent = (envType == EnvelopeType::DCA) ? palette.accentCyan : 
+                         (envType == EnvelopeType::DCW) ? palette.accentOrange : 
+                          palette.accentTertiary;
+
+    juce::Path p;
+    p.startNewSubPath(0.0f, h);
+    for (int i = 0; i < 8; ++i) p.lineTo((i + 1) * stepWidth, h - (levels[i] * h));
+
+    // Glow Effect
+    if (palette.glowColor != juce::Colours::transparentBlack && lf)
     {
-        float nextX = (i + 1) * stepWidth;
-        // Level 0..1 -> h..0
-        float val = levels[i];
-        float nextY = h - (val * h);
-        
-        // Rate affects slope, but here X is fixed stages. 
-        // We can visualize Rate as the steepness? No, X is time.
-        // Let's draw the target point.
-        
-        p.lineTo(nextX, nextY);
-        
-        // Dotted line for sustain point
-        if (i == sustainPoint)
-        {
-            g.setColour(juce::Colours::yellow);
-            g.drawVerticalLine(static_cast<int>(nextX), 0.0f, h);
-            g.drawText("SUS", static_cast<int>(nextX) - 20, 0, 40, 15, juce::Justification::centred);
-        }
-        if (i == endPoint)
-        {
-            g.setColour(juce::Colours::red);
-            g.drawVerticalLine(static_cast<int>(nextX), 0.0f, h);
-            g.drawText("END", static_cast<int>(nextX) - 20, 15, 40, 15, juce::Justification::centred);
-        }
-        
-        // Draw Handle
-        g.setColour(i == selectedStage ? juce::Colours::white : juce::Colours::lightgrey);
-        g.fillEllipse(nextX - 4, nextY - 4, 8, 8);
-        
-        // Revert color for path
-        // Revert color for path
-        g.setColour(pathColour);
+        lf->applyGlow(g, p, palette.glowColor, 3.0f);
+    }
+    else
+    {
+        g.setColour(accent.withAlpha(0.2f));
+        g.strokePath(p, juce::PathStrokeType(4.0f));
     }
     
-    g.strokePath(p, juce::PathStrokeType(2.0f));
-    
-    // Add help text at bottom
-    g.setColour(juce::Colours::white.withAlpha(0.3f));
-    g.setFont(10.0f);
-    g.drawText("Drag: Level | Shift+Drag: Rate", 
-               getLocalBounds().reduced(5).withHeight(15),
-               juce::Justification::centredBottom, false);
+    g.setColour(accent);
+    float strokeThickness = 1.5f * getUiScale();
+    g.strokePath(p, juce::PathStrokeType(strokeThickness));
+
+    // Scanlines Overlay
+    if (palette.effect == DesignTokens::Colors::VisualEffect::Scanlines && lf)
+    {
+        lf->drawScanlines(g, bounds, 0.05f);
+    }
+
+    // Handles
+    for (int i = 0; i < 8; ++i) {
+        float x = (i + 1) * stepWidth;
+        float y = h - (levels[i] * h);
+        
+        if (i == sustainPoint) {
+            g.setColour(juce::Colours::yellow.withAlpha(0.3f));
+            g.drawVerticalLine((int)x, 0, h);
+        }
+        if (i == endPoint) {
+            g.setColour(juce::Colours::red.withAlpha(0.3f));
+            g.drawVerticalLine((int)x, 0, h);
+        }
+
+        g.setColour( (i == selectedStage) ? juce::Colours::white : accent.brighter(0.2f));
+        float handleSize = 7.0f * getUiScale();
+        g.fillEllipse(x - handleSize * 0.5f, y - handleSize * 0.5f, handleSize, handleSize);
+        
+        if (palette.glowColor != juce::Colours::transparentBlack)
+        {
+            g.setColour(palette.glowColor.withAlpha(0.4f));
+            float outerSize = 9.0f * getUiScale();
+            g.drawEllipse(x - outerSize * 0.5f, y - outerSize * 0.5f, outerSize, outerSize, 1.0f);
+        }
+    }
 }
 
 void EnvelopeEditor::resized()
 {
+    auto area = getLocalBounds();
+    float scale = getUiScale();
+    auto buttonsArea = area.removeFromRight((int)(26 * scale));
+    int bh = buttonsArea.getHeight() / 2;
+    copyButton.setBounds(buttonsArea.removeFromTop(bh).reduced(1));
+    pasteButton.setBounds(buttonsArea.reduced(1));
+    
+    // Refresh for VerticalButton scaling if needed (they use EE's scale)
+    copyButton.repaint();
+    pasteButton.repaint();
 }
 
 void EnvelopeEditor::mouseDown(const juce::MouseEvent& e)
 {
-    float w = static_cast<float>(getWidth());
+    float w = getWidth() - 26.0f;
     float stepWidth = w / 8.0f;
-    
-    // Find clicked stage
-    int stage = static_cast<int>(e.position.x / stepWidth);
-    if (stage >= 0 && stage < 8)
-    {
+    int stage = (int)((e.position.x + stepWidth * 0.5f) / stepWidth) - 1;
+    if (stage >= 0 && stage < 8) {
         selectedStage = stage;
+        startDragRate = rates[stage];
+        startDragLevel = levels[stage];
+        audioProcessor.getUndoManager().beginNewTransaction();
         repaint();
     }
 }
 
 void EnvelopeEditor::mouseDrag(const juce::MouseEvent& e)
 {
-    if (selectedStage >= 0 && selectedStage < 8)
-    {
-        if (e.mods.isShiftDown())
-        {
-            // SHIFT+DRAG = Rate (horizontal)
-            // Range 0..1 based on position within the step width
-            float w = static_cast<float>(getWidth());
+    if (selectedStage >= 0 && selectedStage < 8) {
+        if (e.mods.isShiftDown()) {
+            float w = getWidth() - 26.0f;
             float stepWidth = w / 8.0f;
-            float stageStartX = selectedStage * stepWidth;
-            
-            // Normalize X within stage to 0..1
-            float xWithinStage = e.position.x - stageStartX;
-            float newRate = std::clamp(xWithinStage / stepWidth, 0.01f, 0.99f);
-            
-            rates[selectedStage] = newRate;
+            rates[selectedStage] = std::clamp((e.position.x - selectedStage * stepWidth) / stepWidth, 0.01f, 0.99f);
+        } else {
+            levels[selectedStage] = 1.0f - std::clamp(e.position.y / getHeight(), 0.0f, 1.0f);
         }
-        else
-        {
-            // NORMAL DRAG = Level (vertical)
-            float y = std::clamp(e.position.y / static_cast<float>(getHeight()), 0.0f, 1.0f);
-            levels[selectedStage] = 1.0f - y; // Invert because screen Y is top-down
-        }
-        
         sendUpdateToProcessor(selectedStage);
         repaint();
     }
@@ -200,32 +247,62 @@ void EnvelopeEditor::mouseDrag(const juce::MouseEvent& e)
 
 void EnvelopeEditor::mouseUp(const juce::MouseEvent& e)
 {
-    juce::ignoreUnused(e);
+    if (selectedStage >= 0 && selectedStage < 8) {
+        if (rates[selectedStage] != startDragRate || levels[selectedStage] != startDragLevel) {
+            audioProcessor.getUndoManager().perform(new EnvelopeChangeAction(
+                audioProcessor, (int)envType, currentLine, selectedStage, 
+                startDragRate, startDragLevel, rates[selectedStage], levels[selectedStage]));
+        }
+    }
+    selectedStage = -1;
+    repaint();
 }
 
 void EnvelopeEditor::sendUpdateToProcessor(int stageIndex)
 {
-    // Update Voice Manager directly
-    // Note: In a real plugin we should use parameters to support automation
-    // But we are in "Prototype / Phase 2" to verify engine.
+    EnvelopeUpdateCommand cmd;
+    cmd.type = (envType == EnvelopeType::DCA) ? EnvelopeUpdateCommand::DCA_STAGE :
+               (envType == EnvelopeType::DCW) ? EnvelopeUpdateCommand::DCW_STAGE :
+               EnvelopeUpdateCommand::PITCH_STAGE;
+    cmd.line = currentLine;
+    cmd.index = stageIndex;
+    cmd.rate = rates[stageIndex];
+    cmd.level = levels[stageIndex];
+    audioProcessor.scheduleEnvelopeUpdate(cmd);
+}
+
+void EnvelopeEditor::performCopy()
+{
+    clipboard.rates = rates;
+    clipboard.levels = levels;
+    clipboard.sustain = sustainPoint;
+    clipboard.end = endPoint;
+    clipboard.active = true;
+    pasteButton.setEnabled(true);
+}
+
+void EnvelopeEditor::performPaste()
+{
+    if (!clipboard.active) return;
+    rates = clipboard.rates;
+    levels = clipboard.levels;
+    sustainPoint = clipboard.sustain;
+    endPoint = clipboard.end;
     
-    float lvl = levels[stageIndex];
-    float rate = rates[stageIndex]; // Fixed for now
+    for (int i = 0; i < 8; ++i) sendUpdateToProcessor(i);
     
-    auto& vm = audioProcessor.getVoiceManager(); // We need to expose this getter in Processor!
-    
-    if (envType == EnvelopeType::DCA)
-    {
-        vm.setDCAStage(stageIndex, rate, lvl);
+    auto& vm = audioProcessor.getVoiceManager();
+    if (envType == EnvelopeType::DCA) {
+        vm.setDCASustainPoint(currentLine, sustainPoint);
+        vm.setDCAEndPoint(currentLine, endPoint);
+    } else if (envType == EnvelopeType::DCW) {
+        vm.setDCWSustainPoint(currentLine, sustainPoint);
+        vm.setDCWEndPoint(currentLine, endPoint);
+    } else {
+        vm.setPitchSustainPoint(currentLine, sustainPoint);
+        vm.setPitchEndPoint(currentLine, endPoint);
     }
-    else if (envType == EnvelopeType::DCW)
-    {
-        vm.setDCWStage(stageIndex, rate, lvl);
-    }
-    else if (envType == EnvelopeType::PITCH)
-    {
-        vm.setPitchStage(stageIndex, rate, lvl);
-    }
+    repaint();
 }
 
 } // namespace UI

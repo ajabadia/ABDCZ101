@@ -1,0 +1,18 @@
+Name: solostring
+By: Miles Bader
+Vibr: W: 1  Del: 28  R: 56  Dep: 10
+Oct: -1
+Line: 1+2'
+Mod: none
+DCO1: WF: 4,0  Env: 0/e
+DCW1: KF: 0    Env: 81/92, 56/86, 30/80/s, 0/0/e
+DCA1: KF: 1    Env: 70/50, 66/99, 49/91/s, 43/0/e
+DCO2: WF: 1,0  Env: 48/1, 40/0/e
+DCW2: KF: 0    Env: 81/80/s, 0/0/e
+DCA2: KF: 1    Env: 70/50, 66/99, 49/91/s, 40/0/e
+Vel1: A: 7  W: 0  P: 0
+Vel2: A: 7  W: 0  P: 0
+Detune: 0,0,0
+Comments: A pretty good clean single string sound.  Sounds good over the
+        whole keyboard.  Play with the chorus.
+

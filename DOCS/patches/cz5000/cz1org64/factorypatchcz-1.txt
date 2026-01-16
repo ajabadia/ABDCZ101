@@ -1,0 +1,81 @@
+This is the 64 original patches for the CZ-1 converted for use
+on the CZ-101,1000,3000,5000.
+Missing from the patches are the name data and the velocity, level 
+information. The patches would sound similar on the CZ-1 if played 
+at full velocity.
+There are 4 banks of .syx files with 16 patches
+Bank 1 (1-16)
+
+    BRASS 1     
+    BRASS 2     
+    BRASS 3     
+   STRINGS 1    
+   STRINGS 2    
+   STRINGS 3    
+   STRINGS 4    
+   ORCHESTRA    
+   ACO.GUITAR   
+  JAZZ GUITAR   
+  ELEC.GUITAR   
+   SLAP BASS    
+   SYNTH.BASS   
+  ELEC.BASS 1   
+  ELEC.BASS 2   
+      HARP   
+
+Bank 2  (17-32)
+   
+    BRASS 4     
+   SAXOPHONE    
+     CELLO      
+     FLUTE      
+    WHISTLE     
+   HARMONICA    
+    RECORDER    
+      KOTO      
+    PIANO 1     
+    PIANO 2     
+    PIANO 3     
+   ELEC.PIANO   
+   HONKY-TONK   
+ FUNKY CLAVI.1  
+ FUNKY CLAVI.2  
+  HARPSICHORD
+
+Bank 3 (33-48)
+   
+  JAZZ ORGAN 1  
+  JAZZ ORGAN 2  
+  PIPE ORGAN 1  
+  PIPE ORGAN 2  
+   ACCORDION    
+    VOICE 1     
+    VOICE 2     
+    VOICE 3     
+   MUSIC BOX    
+   VIBRAPHONE   
+   XYLOPHONE    
+    MARIMBA     
+   MALLET LOG   
+AFRO-PERCUSSION 
+     BELLS      
+ METALLIC SOUND
+
+Bank 4 (49-64)
+ 
+ SYNTH.STRINGS  
+  FAT ENSEMBLE  
+     SITAR      
+  SYNTH.LEAD 1  
+  SYNTH.LEAD 2  
+  SYNTH.LEAD 3  
+  SYNTH.LEAD 4  
+ SWEEP SOUND 1  
+ SYNTH.DRUMS 1  
+ SYNTH.DRUMS 2  
+     CONGA      
+   STEEL DRUM   
+ SWEEP SOUND 2  
+    JET ROAR    
+   MOTORCYCLE   
+ TYPHOON SOUND  

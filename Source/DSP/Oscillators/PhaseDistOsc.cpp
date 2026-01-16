@@ -1,5 +1,10 @@
 #include "PhaseDistOsc.h"
 #include <algorithm>
+#include <cmath> // Audit Fix 5.1: M_PI compliance
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace CZ101 {
 namespace DSP {
@@ -21,9 +26,24 @@ void PhaseDistOscillator::setFrequency(float freq) noexcept
     updatePhaseIncrement();
 }
 
-void PhaseDistOscillator::setWaveform(Waveform waveform) noexcept
+void PhaseDistOscillator::setWaveforms(CzWaveform first, CzWaveform second) noexcept
 {
-    currentWaveform = waveform;
+    firstWaveform = first;
+    
+    // CZ Logic: Second waveform 0-8. If 0 (caller handles mapping to NONE or we handle it here).
+    // Assuming the caller passes NUM_CZ_WAVEFORMS or similar for "Off" if they converted 0->None.
+    // However, the cleanest way is: if second is valid enum, it's active.
+    // We will assume the caller sets 'secondWaveformActive' logic via this call.
+    // For now, let's assume if second is 'NUM_CZ_WAVEFORMS' (8), it is OFF.
+    // But the enum only goes up to 7 (Resonance 3).
+    // Let's modify logic: if caller passes same as first, it's just mixing 2 same. 
+    // We need a way to say "OFF".
+    // I will use a convention: The VoiceManager will refrain from calling this if 0, 
+    // or passing a specific signal.
+    // Let's rely on 'secondWaveformActive' being set by checking if second != NUM_CZ_WAVEFORMS.
+    
+    secondWaveform = second;
+    secondWaveformActive = (second != NUM_CZ_WAVEFORMS); 
 }
 
 void PhaseDistOscillator::reset() noexcept
@@ -36,40 +56,142 @@ void PhaseDistOscillator::updatePhaseIncrement() noexcept
     phaseIncrement = static_cast<float>(frequency / sampleRate);
 }
 
+// Helper for applying PD
+// Now static-like, takes waveform as arg
+// Forced inline for performance in the hot path
+inline float PhaseDistOscillator::applyPhaseDistortion(float linearPhase, float dcwValue, CzWaveform wave) noexcept
+{
+    float distortedPhase = linearPhase;
+
+    switch (wave)
+    {
+        case SAWTOOTH:
+        {
+            float distorted = (linearPhase < Constants::HalfPhase) ? (linearPhase * 2.0f) : 1.0f;
+            distortedPhase = linearPhase + (distorted - linearPhase) * dcwValue;
+            break;
+        }
+        
+        case SQUARE:
+        {
+            float distorted = (linearPhase < Constants::HalfPhase) ? Constants::QuarterPhase : Constants::ThreeQuarterPhase;
+            distortedPhase = linearPhase + (distorted - linearPhase) * dcwValue;
+            break;
+        }
+
+        case PULSE:
+        {
+            float distorted = (linearPhase < Constants::QuarterPhase) ? Constants::QuarterPhase : Constants::ThreeQuarterPhase;
+            distortedPhase = linearPhase + (distorted - linearPhase) * dcwValue;
+            break;
+        }
+
+        case DOUBLE_SINE:
+        {
+            float distorted = linearPhase * 2.0f;
+            distortedPhase = linearPhase + (distorted - linearPhase) * dcwValue;
+            break;
+        }
+
+        case SAW_PULSE:
+        {
+            float distorted = (linearPhase < Constants::HalfPhase) ? (linearPhase * 2.0f) : Constants::ThreeQuarterPhase;
+            distortedPhase = linearPhase + (distorted - linearPhase) * dcwValue;
+            break;
+        }
+
+        case RESONANCE_1:
+        case RESONANCE_2:
+        case RESONANCE_3:
+        {
+            float modFreq = (wave == RESONANCE_1) ? Constants::Resonance1Freq : (wave == RESONANCE_2 ? Constants::Resonance2Freq : Constants::Resonance3Freq);
+            float maxMod = (wave == RESONANCE_1) ? Constants::Resonance1MaxMod : (wave == RESONANCE_2 ? Constants::Resonance2MaxMod : Constants::Resonance3MaxMod);
+            
+            // Optimization: Use WaveTable for modulation sine instead of sin()
+            float sineMod = waveTable.getSine(linearPhase * modFreq);
+            float distorted = linearPhase + sineMod * maxMod;
+            distortedPhase = linearPhase + (distorted - linearPhase) * dcwValue;
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    // Optimization: Fast wrapping (distortedPhase range is tight)
+    if (distortedPhase >= 1.0f) distortedPhase -= 1.0f;
+    else if (distortedPhase < 0.0f) distortedPhase += 1.0f;
+
+    return distortedPhase;
+}
+
+// Helper for PolyBLEP
+float PhaseDistOscillator::polyBLEP(float t, float dt) const noexcept
+{
+    if (t < dt) {
+        t /= dt;
+        return t + t - t * t - 1.0f;
+    }
+    else if (t > 1.0f - dt) {
+        t = (t - 1.0f) / dt;
+        return t * t + t + t + 1.0f;
+    }
+    return 0.0f;
+}
+
 float PhaseDistOscillator::renderNextSample(float dcwAmount, bool* outDidWrap) noexcept
 {
     float sample = 0.0f;
-    
-    // Render based on current waveform
-    switch (currentWaveform)
+    float stretchedPhase = phase;
+    CzWaveform activeWave = firstWaveform;
+
+    if (secondWaveformActive)
     {
-        case SINE:
-            sample = renderSine();
-            break;
-        case SAWTOOTH:
-            sample = renderSawtooth();
-            break;
-        case SQUARE:
-            sample = renderSquare();
-            break;
-        case TRIANGLE:
-            sample = renderTriangle();
-            break;
-        default:
-            sample = 0.0f;
+        // Half-period switching: 0.0-0.5 is Wave 1, 0.5-1.0 is Wave 2
+        if (phase < 0.5f)
+        {
+            stretchedPhase = phase * 2.0f;
+            activeWave = firstWaveform;
+        }
+        else
+        {
+            stretchedPhase = (phase - 0.5f) * 2.0f;
+            activeWave = secondWaveform;
+        }
     }
 
-    // Phase Distortion Simulation (Timbre Modulation)
-    // Mix between Pure Sine (fundamental) and Full Waveform based on DCW amount
-    // This creates the characteristic "wah" or filter sweep sound of PD synthesis
-    if (dcwAmount < 1.0f && currentWaveform != SINE)
-    {
-        float sineComp = renderSine();
-        // Linear interpolation: sine -> full waveform
-        sample = sineComp + (sample - sineComp) * dcwAmount;
-    }
+    // Apply PD to the selected (and potentially stretched) phase
+    float distPhase = applyPhaseDistortion(stretchedPhase, dcwAmount, activeWave);
+    sample = waveTable.getSine(distPhase);
+
+    // Apply BLEP (Anti-aliasing)
+    // For stretched phase, we need adjusted dt
+    float dt = phaseIncrement * (secondWaveformActive ? 2.0f : 1.0f);
     
-    // Advance phase
+    if (activeWave == SAWTOOTH)
+    {
+        sample -= polyBLEP(stretchedPhase, dt);
+    }
+    else if (activeWave == SQUARE)
+    {
+        sample += polyBLEP(stretchedPhase, dt);
+        float ps = stretchedPhase + 0.5f; if(ps>=1.0f) ps-=1.0f;
+        sample -= polyBLEP(ps, dt);
+    }
+    else if (activeWave == PULSE)
+    {
+        sample += polyBLEP(stretchedPhase, dt);
+        float ps = stretchedPhase + 0.75f; if(ps>=1.0f) ps-=1.0f;
+        sample -= polyBLEP(ps, dt);
+    }
+    else if (activeWave == SAW_PULSE)
+    {
+        sample += polyBLEP(stretchedPhase, dt);
+        float ps = stretchedPhase + 0.5f; if(ps>=1.0f) ps-=1.0f;
+        sample -= polyBLEP(ps, dt);
+    }
+
+    // Advance Phase
     phase += phaseIncrement;
     if (phase >= 1.0f)
     {
@@ -82,73 +204,6 @@ float PhaseDistOscillator::renderNextSample(float dcwAmount, bool* outDidWrap) n
     }
     
     return sample;
-}
-
-float PhaseDistOscillator::renderSine() noexcept
-{
-    // Sine wave: Perfect, no aliasing, no PolyBLEP needed
-    return waveTable.getSine(phase);
-}
-
-float PhaseDistOscillator::renderSawtooth() noexcept
-{
-    // Naive sawtooth
-    float value = 2.0f * phase - 1.0f;
-    
-    // Apply PolyBLEP at discontinuity (phase wraps from 1.0 to 0.0)
-    value -= polyBLEP(phase, phaseIncrement);
-    
-    return value;
-}
-
-float PhaseDistOscillator::renderSquare() noexcept
-{
-    // Naive square wave
-    float value = (phase < 0.5f) ? 1.0f : -1.0f;
-    
-    // Apply PolyBLEP at rising edge (phase = 0.0)
-    value += polyBLEP(phase, phaseIncrement);
-    
-    // Apply PolyBLEP at falling edge (phase = 0.5)
-    float phaseShifted = phase + 0.5f;
-    if (phaseShifted >= 1.0f)
-        phaseShifted -= 1.0f;
-    value -= polyBLEP(phaseShifted, phaseIncrement);
-    
-    return value;
-}
-
-float PhaseDistOscillator::renderTriangle() noexcept
-{
-    // Triangle: Continuous waveform, no PolyBLEP needed
-    return waveTable.getTriangle(phase);
-}
-
-float PhaseDistOscillator::polyBLEP(float t, float dt) const noexcept
-{
-    // PolyBLEP: Polynomial Bandlimited Step
-    // Reduces aliasing by smoothing discontinuities
-    
-    // t: normalized phase [0.0, 1.0]
-    // dt: phase increment per sample (frequency/sampleRate)
-    
-    // Discontinuity at start of cycle (t near 0.0)
-    if (t < dt)
-    {
-        t /= dt;
-        // Polynomial: t^2 - 2t + 1
-        return t + t - t * t - 1.0f;
-    }
-    // Discontinuity at end of cycle (t near 1.0)
-    else if (t > 1.0f - dt)
-    {
-        t = (t - 1.0f) / dt;
-        // Polynomial: t^2 + 2t + 1
-        return t * t + t + t + 1.0f;
-    }
-    
-    // No discontinuity, no correction needed
-    return 0.0f;
 }
 
 } // namespace DSP

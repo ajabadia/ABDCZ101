@@ -1,0 +1,23 @@
+Name: Mean Electric Guitar
+
+Detune: +,1,2,4
+Vibrato: 1,53,0,0
+Octave:+1
+Line:1+1'
+Mod:Ring
+
+DCO1:     1st wave = 3, 2nd wave = 4
+          Rate = 19, Level = 00 (End)
+
+DCW1:     Key follow = 1
+          Rate = 86, Level = 64
+                 07          00 (End)
+
+DCA1:     Key follow = 4
+          Rate = 94, Level = 96 (sus)
+                 92          00 (End)
+
+Comments: Try small amount of glide or portamento to make
+          it more of a realistic guitar sound.
+
+----------------------------------------------------------------

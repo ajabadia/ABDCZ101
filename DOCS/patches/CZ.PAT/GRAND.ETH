@@ -1,0 +1,14 @@
+Name: Grand Ethereal
+By: Miles Bader
+Vibr: -
+Oct: 0
+Line: 1+1'
+Mod: -
+DCO1: WF: 4,0  Env: 0/e
+DCW1: KF: 6    Env: 99/75/s, 0/0/e
+DCA1: KF: 0    Env: 90/61, 50/99, 10/0, 25/0/e
+Vel1: A: 3  W: 0  P: 0
+Detune: +0,0,7
+Comments: Sounds good with chorus all the way up; also, try other
+        waveforms, like 1.
+

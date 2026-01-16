@@ -1,0 +1,42 @@
+Name: Helicopter (Glenn Bruns, modified)
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line    mod     detune          vibrato         octave
+1+2     ring    + 2 00 08       3 00 70 99      -1
+DCO1
+wave
+6 5
+rt lv
+00 00e
+DCO1
+key
+8
+rt lv
+60 57s
+00 00e
+DCA1
+key
+0
+rt lv
+99 93s
+66 00e
+DCO2
+wave
+1 0
+rt lv
+00 00e
+DCW2
+key
+8
+rt lv
+60 57s
+00 00e
+DCA2
+key
+1
+rt lv
+99 93
+66 00e
+
+Comments:  Noise modulation makse a meaner helicopter, and a machine gun in the
+upper range.

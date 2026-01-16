@@ -1,0 +1,16 @@
+Name: coolstring
+By: Miles Bader
+Vibr: W: 1  Del: 50  R: 53  Dep: 12
+Oct: 0
+Line: 1+2'
+Mod: none
+DCO1: WF: 1,4  Env: 50/0/e
+DCW1: KF: 0    Env: 99/99, 64/66/s, 31/48, 85/0, 50/0/e
+DCA1: KF: 2    Env: 62/68, 34/99, 25/70/s, 50/0/e
+DCO2: WF: 4,0  Env: 50/0/e
+DCW2: KF: 0    Env: 99/99, 64/66/s, 31/48, 85/0, 50/0/e
+DCA2: KF: 2    Env: 62/68, 45/99, 25/70/s, 50/0/e
+Vel1: A: 3  W: 0  P: 0
+Vel2: A: 3  W: 0  P: 0
+Detune: -1,0,13
+Comments: envelopes orig from Casio's cello

@@ -1,0 +1,7943 @@
+From ucsd!ucbvax!tut.cis.ohio-state.edu!bloom-beacon!athena.mit.edu!paul Tue May  2 16:14:09 PDT 1989
+
+In article <2155@wpi.wpi.edu> eeciii@wpi.wpi.edu (Ed Chernosky) writes:
+>I read an article recently that asked for CZ patches to be sent over the net
+>in some Opcode format or something or other.  This seems likes quite an 
+>exclusive group!  What if I don't own a Mac? 
+
+It's okay.  I don't either.  I don't even own any CZ's anymore, unless
+I didn't fish them all out of the sock drawer.
+
+>Should I post a few of my favorite CZ and SQ patches?
+
+Not only that, Edwin, but you've just become the involuntary keeper of
+the CZ patches.  You can have the honor of sorting out the duplicates
+below and forwarding them to anyone else who ever asks again.
+
+One request:  please don't try any of mine -- I did them three years
+ago, they're probably pretty lame. :-?
+
+						-Paul
+
+___________________________________________________________________________
+---------------------------------------------------------------------------
+
+Article 2487 of rec.music.synth:
+Path: bloom-beacon!husc6!bbn!rochester!PT.CS.CMU.EDU!andrew.cmu.edu!bader+
+>From: bader+@andrew.cmu.edu (Miles Bader)
+Newsgroups: rec.music.synth
+Subject: cz.patches
+Message-ID: <4VyXJZy00jaBcy00=5@andrew.cmu.edu>
+Date: 24 Jan 88 18:03:18 GMT
+Organization: Carnegie Mellon University
+Lines: 3473
+
+Since a bunch of people asked for them, here they are...
+These have mostly seen this group before; but there's been a lot
+of redundancy taken out...
+
+[I hope files >65k don't still break things...]
+
+----------------------------------------------------------------
+Name: synth organ
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+2		+ (1,2) 00 06			+1
+
+DCO 1
+wave 
+2 4
+rate	level
+99	33
+33	00 e
+
+DCW 1
+key 
+0
+rate	level
+80	99
+47	96
+37	52 s
+26	00
+50	00 e
+
+DCA 1
+key 
+0
+rate	level
+99	90
+78	65
+83	95
+70	75
+70	99 s
+79	59
+33	00 e
+
+DCO 2
+wave 
+3 5
+rate	level
+99	33
+33	00 e
+
+DCW 2
+key 
+0
+rate	level
+80	99
+47	96
+37	52 s
+26	00
+50	00 e
+
+
+DCA 2
+key 
+0
+rate	level
+99	90
+78	65
+83	95
+70	75
+70	99 s
+79	59
+33	00 e
+
+Comments:  Boring but useful.
+----------------------------------------------------------------
+Name: drum hit
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+2		+ 1 10 25			0
+
+DCO 1
+wave 
+5 2
+rate	level
+50 	00e
+
+DCW 1
+key 
+0
+rate	level
+99 	99
+99	99e
+
+DCA 1
+key 
+0
+rate	level
+93	55
+99	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments:  If you don't have a drum machine, put some of this under your drum noise.
+I boost 200hz for extra umph.
+----------------------------------------------------------------
+Name: drum wash
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+1'	noise	+ (1,2,3) 03 08	1 00 38 15	-1
+
+DCO 1
+wave 
+5 0
+rate	level
+99	62
+76	00e
+
+DCW 1
+key 
+0
+rate	level
+99	83
+99	00e
+
+DCA 1
+key 
+6
+rate	level
+99	99
+38	51
+53	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments:  I put the three different versions (different detune octave
+settings) on adjacent Internal memory keys , and by switching back
+and forth between beats (it takes practice) I got a "drum kit", and
+even gated off some of the hits by switching to the next sound before
+the note had died out.  Primitive, but it got on the local college
+station a few times.  This is one of those sounds that sounds really
+big on tape.
+----------------------------------------------------------------
+Name: Simmons SDS-7
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+1	noise	+1 03 00			-1
+
+DCO 1
+wave 
+1 5
+rate	level
+99 	70
+42	00e
+
+DCW 1
+key 
+0
+rate	level
+99	99
+99	00e
+
+DCA 1
+key 
+9
+rate	level
+99	99
+43	00s
+50	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments:  I tried to duplicate the sound on Duran Duran's "Rio".
+----------------------------------------------------------------
+Name: Phil-in-a-box
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+1'	noise	+ 0 10 00			-1
+
+DCO 1
+wave 
+1 4
+rate	level
+99	70
+54	00s
+50	00e
+
+DCW 1
+key 
+0
+rate	level
+99	99
+99	00e
+
+DCA 1
+key 
+9
+rate	level
+99	99
+43	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments:  I was trying to emulate the big crashes on "In the Air
+Tonight" and "I Don't Care Anymore".  Having heard it on CD last
+week, there's no comparison.  However, SOMEONE on the net (I lost the
+message) claims to have improved it.  ???
+----------------------------------------------------------------
+Name: Trevor Horns
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+1'		- 0 02 24	3 06 02 99	+1
+
+DCO 1
+wave 
+3 0
+rate	level
+99	33
+33	00e
+
+DCW 1
+key 
+2
+rate	level
+67	99
+47	96
+37	52s
+26	00e
+
+DCA 1
+key 
+2
+rate	level
+82	99
+36	91s
+79	59
+55	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments:  Everybody likes this one, but you have to play it a certain
+way or it sounds stupid.  Turn your reverb WAY up and playing three
+or four octaves in unison, tap short horn-punch chords.
+
+Ha ha ha, five people have mistaken it for a Fairlight on tape so
+far!
+----------------------------------------------------------------
+Name: organ brass
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+1'		+ 1 00 06			+1
+
+DCO 1
+wave 
+3 5
+rate	level
+99	33
+68	00e
+
+DCW 1
+key 
+0
+rate	level
+80	99
+47	96
+37	52s
+26	00
+50	00e
+
+DCA 1
+key 
+0
+rate	level
+99	90
+78	65
+83	95
+70	75
+70	99s
+79	59
+33	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments:  I forget what this sounds like.  I'll have to try it again.
+Probably an organ set to "brass".
+----------------------------------------------------------------
+Name: Herbie Scratch
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+1'		+ 0 02 00	1 00 54 88	+1
+
+DCO 1
+wave 
+3 4
+rate	level
+47	99
+99	00e
+
+DCW 1
+key 
+0
+rate	level
+80	99
+47	96
+38	85s
+26	00e
+
+DCA 1
+key 
+2
+rate	level
+99	90
+85	65
+85	95
+78	75
+78	99
+01	98
+99	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments:  In lieu of having a record to scratch...
+----------------------------------------------------------------
+Name: Fuzzy bass
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+1'	ring	+ 1 00 00	1 33 55 23	+1
+
+DCO 1
+wave 
+2 3
+rate	level
+00	00e
+
+DCW 1
+key 
+7
+rate	level
+97	99
+43	79
+50	74s
+52	00e
+
+DCA 1
+key 
+0
+rate	level
+99	99
+21	00s
+61	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments:  Only so-so, but here it is.
+----------------------------------------------------------------
+Name: fat synth bass
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+1'	ring	+ 0 07 04	1 33 55 23	0
+
+DCO 1
+wave 
+2 3
+rate	level
+50	00e
+
+DCW 1
+key 
+7
+rate	level
+97	99
+43	79
+50	74s
+52	00e
+
+DCA 1
+key 
+0
+rate	level
+99	99
+21	89s
+61	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments:  Modified version of Casio "Electric bass" that sustains.
+I play Wham tunes on it -- drives my roommates *nuts*!
+----------------------------------------------------------------
+Name: 1-Octave bass
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+2		+ 1 00 05	1 54 11 04	-1
+
+DCO 1
+wave 
+1 2
+rate	level
+66	58
+72	00
+43	05
+65	00e
+
+DCW 1
+key 
+9
+rate	level
+82	88
+42	63
+00	00e
+
+DCA 1
+key 
+9
+rate	level
+99	99
+28	00
+56	00
+
+DCO 2
+wave 
+5 4
+rate	level
+00	00e
+
+DCW 2
+key 
+7
+rate	level
+92	80
+44	62
+00	00e
+
+DCA 2
+key 
+0
+rate	level
+90	99
+30	86s
+86	00e
+
+Comments:  I put this under other bass patches (via tone mix) to get
+more bottom end.
+----------------------------------------------------------------
+Name: 2-Octave bass (Tony Levin)
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+2		+ 0 00 05	1 54 11 04	-1
+
+DCO 1
+wave 
+1 2
+rate	level
+66	58
+72	00
+43	05
+65	00e
+
+DCW 1
+key 
+9
+rate	level
+82	83
+42	63
+00	00e
+
+DCA 1
+key 
+9
+rate	level
+99	99
+28	00
+56	00e
+
+
+DCO 2
+wave 
+3 4
+rate	level
+00	00e
+
+DCW 2
+key 
+7
+rate	level
+92	80
+44	62
+00	00e
+
+DCA 2
+key 
+0
+rate	level
+90	99
+30	86s
+86	00e
+
+Comments:  I used this to add bottom to bass parts played in higher
+registers until someone pointed out that it sounds just like Tony
+Levin's Chapman Stick.  "I wanna be.... your Sledgehammer..."
+It does have a nice voice of its own.
+----------------------------------------------------------------
+Name: ArtoNoise Trumpet (#3)
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+2	ring			1 27 49 11	+1
+
+DCO 1
+wave 
+3 0
+rate	level
+00 	00e
+
+DCW 1
+key 
+4
+rate	level
+67	79
+00	00e
+
+DCA 1
+key 
+2
+rate	level
+70	91
+70	67
+70	96
+70	77
+70	99s
+56	00e
+
+DCO 2
+wave 
+4 0
+rate	level
+00	00e
+
+DCW 2
+key 
+4
+rate	level
+72	79
+00	00e
+
+DCA 2
+key 
+2
+rate	level
+70	91
+70	67
+70	97
+70	77
+70	99s
+48	00e
+
+Comments:  Mix with Casio Preset turmpet.  You can set Bend Range to
+12 and go a whole octave higher still sounding great.
+----------------------------------------------------------------
+Name: Lazy Trumpet (#4)
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+1'		+ 0 00 07			0
+
+DCO 1
+wave 
+1 0
+rate	level
+99	33
+68	00e
+
+DCW 1
+key 
+2
+rate	level
+67	99
+47	96
+37	52s
+26	00e
+
+
+DCA 1
+key 
+2
+rate	level
+70	90
+70	65
+70	95
+70	75
+70	99s
+50	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments:  I mix this with the Casio Trumpet, set Bend Range to 2, and
+get some pretty cool leads with this (a long echo helps).
+----------------------------------------------------------------
+Name: snap percussion
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+2	noise	+ 1 00 00			0
+
+DCO 1
+wave 
+1 0
+rate	level
+99	82
+99	00e
+
+DCW 1
+key 
+0
+rate	level
+99	99
+28	00e
+
+DCA 1
+key 
+0
+rate	level
+99	99
+99	00e
+
+DCO 2
+wave 
+1 0
+rate	level
+00	00e
+
+DCW 2
+key 
+0
+rate	level
+00	00e
+
+DCA 2
+key 
+0
+rate	level
+99	99
+58	00e
+
+Comments:  Four notes within an octave with a slapback echo make
+realistic handclaps.
+----------------------------------------------------------------
+Name: Star Trek noise
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+1'				1 00 60 98	+ 1
+
+DCO 1
+wave 
+3 4
+rate	level
+63	99s
+99	00e
+
+DCW 1
+key 
+0
+rate	level
+80	99
+47	96
+38	85s
+26	00
+50	00e
+
+DCA 1
+key 
+2
+rate	level
+99	90
+85	65
+85	95
+78	75
+78	99
+01	98s
+99	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments:  Just another stupid noise.  Doesn't sound like anything on
+Star Trek per se, or does it?  I guess it depends on how Trekkie you
+are...
+----------------------------------------------------------------
+Name: Woh-Wow-Yeh
+>From: Barry Kirsch
+
+line	mod	detune		vibrato		octave
+1+2'		+ 00 00 07		-1
+
+DCO 1
+wave 
+6 0
+rate	level
+51	33
+68	00e
+
+DCW 1
+key 
+2
+rate	level
+58	99
+47	96
+37	52s
+26	00e
+
+DCA 1
+key 
+2
+rate	level
+62	71
+36	91s
+79	59
+55	00e
+
+DCO 2
+wave 
+7 0
+rate	level
+53	33
+68	00e
+
+DCW 2
+key 
+2
+rate	level
+33	99
+47	96
+37	52s
+26	00e
+
+DCA 2
+key 
+2
+rate	level
+82	99
+36	91s
+79	59
+55	00e
+
+Comments:  "All at once, the clouds are parting,
+	    light streams down in bright unbroken beams..."
+	  Is this a Rush sound or WHAT, I ask?  I love it anyway :) .
+----------------------------------------------------------------
+Name: Flutelight
+>From: Eric Persing, _Keyboard_ magazine
+
+line	mod	detune		vibrato		octave
+1+2	noise	- 1 00 00	1 46 52 17	+1
+
+DCO 1
+wave 
+1 0
+rate	level
+52	50
+15	00e
+
+DCW 1
+key 
+9
+rate	level
+72	88
+99	53s
+50	00e
+
+DCA 1
+key 
+0
+rate	level
+99	17
+70	91
+59	99
+12	83s
+65	00e
+
+DCO 2
+wave 
+5 0
+rate	level
+83	67
+50	00e
+
+DCW 2
+key 
+8
+rate	level
+60	57
+00	00e
+
+DCA 2
+key 
+2
+rate	level
+76	67
+61	00e
+
+Comments:  Yes, THAT sound again.... play happy major thirds and see.
+----------------------------------------------------------------
+Name: background swell
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+2	-	+ 0 00 07	1 11 51 23	0
+DCO1
+wave
+1 0
+rt lv
+0 0e
+DCO1
+key
+2
+rt lv
+99 97s
+40 00e
+DCA1
+key
+2
+rt lv
+72 15
+31 93s
+31 0e
+DCO2
+wave
+2 0
+rt lv
+00 00e
+DCW2
+key
+2
+rt lv
+99 99s
+40 00e
+DCA2
+key
+2
+rt lv
+72 15
+31 93s
+31 00e
+
+Comments:  turn down DCW1 sustain level if using without tons of processing
+
+----------------------------------------------------------------
+Name: Ministry horns
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+2	-	+ 1 00 14	3 00 40 11	+1
+DCO1
+wave
+4 1
+rt lv
+86 99
+99 33
+68 00e
+DCO1
+key
+2
+rt lv
+67 99
+47 96
+37 52s
+26 00e
+DCA1
+key
+2
+rt lv
+82 99
+36 91s
+79 59
+55 00e
+DCO2
+wave
+1 0
+rt lv
+97 99
+89 00e
+DCW2
+key
+7
+rt lv
+97 87
+43 79
+50 74s
+52 00e
+DCA2
+key
+0
+rt lv
+99 99
+21 97
+61 00e
+
+Comments:  Again, use tons of chorus & reverb.  Guaranteed to sound like Alain
+Jourgensen in short punches. Play parallel ocatves for bigger sound. 
+----------------------------------------------------------------
+Name: popcorn
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+2	ring	+ 1 00 00	4 00 97 27	-1
+DCO1
+wave
+5 2
+rt lv
+95 91
+99 00e
+DCO1
+key
+0
+rt lv
+99 78
+47 79s
+50 00
+47 00e
+DCA1
+key
+4
+rt lv
+97 99
+56 49
+99 00e
+DCO2
+wave
+8 3
+rt lv
+99 99
+93 00e
+DCW2
+key
+0
+rt lv
+99 81s
+64 00e
+DCA2
+key
+0
+rt lv
+99 99
+56 00e
+
+
+Comments:  Great for adding attack to sequencer bass lines.
+----------------------------------------------------------------
+Name: Kick #1 (extender for TR505)
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+1	noise	- 3 00 06	4 00 53 90	-1
+DCO1
+wave
+4 1
+rt lv
+98 67
+99 00e
+DCO1
+key
+0
+rt lv
+99 99
+99 00e
+DCA1
+key
+0
+rt lv
+99 99
+45 00e
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:  MIDI to TR505 bass drum, pick a low note (25-40).
+----------------------------------------------------------------
+Name: kick #2 (TR505 extender)
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+1	-	- 1 00 00	4 04 63 89	-1
+DCO1
+wave
+5 4
+rt lv
+90 76
+90 00e
+DCO1
+key
+0
+rt lv
+99 15s
+50 00e
+DCA1
+key
+0
+rt lv
+99 99
+49 00e
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:  MIDI to TR505 bass drum, has different sounds in different octaves
+----------------------------------------------------------------
+Name: snare #1 (TR505 extender)
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+1	noise	+ 2 04 08	3 00 56 88	-1
+DCO1
+wave
+4 7
+rt lv
+99 62
+76 00e
+DCO1
+key
+0
+rt lv
+00 00e
+DCA1
+key
+0
+rt lv
+99 99
+38 51
+53 00e
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:  MIDI to snare drum.  I use notes in the lower half of the keyboard.
+----------------------------------------------------------------
+Name: Snare #2
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+2	noise	+ 1 10 0	-		-1
+DCO1
+wave
+1 4
+rt lv
+99 70
+54 00s
+50 00e
+DCO1
+key
+0
+rt lv
+99 99
+99 00e
+DCA1
+key
+9
+rt lv
+99 99
+51 00e
+DCO2
+wave
+1 4
+rt lv
+99 70
+54 00s
+50 00e
+DCW2
+key
+0
+rt lv
+99 99
+99 00e
+DCA2
+key
+9
+rt lv
+99 99
+43 00e
+
+Comments:  For those of us without an SPX-90.
+----------------------------------------------------------------
+Name: Rayz
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+2	-	+ 1 07 10	1 07 61 23	+1
+DCO1
+wave
+1 4
+rt lv
+00 00e
+DCO1
+key
+0
+rt lv
+88 99s
+47 25
+44 00e
+DCA1
+key
+0
+rt lv
+93 87s
+39 00e
+DCO2
+wave
+6 0
+rt lv
+00 00e
+DCW2
+key
+0
+rt lv
+99 99s
+47 25
+44 00e
+DCA2
+key
+0
+rt lv
+92 99
+85 97
+92 99
+99 98s
+32 00e
+
+Comments:  Sounds even cooler if you use the pitch wheel for glissandi.
+(Did I really use the word "glissandi"?)
+----------------------------------------------------------------
+Name: Whistlin
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+
+DCO1
+wave
+
+rt lv
+
+DCO1
+key
+
+rt lv
+
+DCA1
+key
+
+rt lv
+
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:  Take the preset "Whistle" and change the detune to + 0 0 20
+----------------------------------------------------------------
+Name: Bowp/Industrial [Bass]
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1 +2	*	+ 3 05 00	-		-1
+DCO1
+wave
+6 *
+rt lv
+0 0e
+DCO1
+key
+0
+rt lv
+72 53
+52 00e
+DCA1
+key
+0
+rt lv
+99 99 
+44 00e
+DCO2
+wave
+4 0
+rt lv
+00 00e
+DCW2
+key
+2
+rt lv
+99 10
+48 00e
+DCA2
+key
+0
+rt lv
+99 81
+42 00e
+
+Comments:  * This is one of my most-used sounds.  There are four variations
+according to the following matrix:
+	
+		Bowp		Industrial
+
+Regular		ring mod	noise mod
+		DCO1 6 0	DCO1 6 0
+
+Bass		ring mod	noise mod
+		DCO1 6 2	DCO1 6 2
+----------------------------------------------------------------
+Name: Pan Pipes / Danger Sound
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+
+DCO1
+wave
+
+rt lv
+
+DCO1
+key
+
+rt lv
+
+DCA1
+key
+
+rt lv
+
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:  Take the "Internal #3" setting and change DCO1 to
+	2 0	for pan pipes
+	7 0	for Dangersound
+
+	"Dangersound" on the low D note is something like Ministry
+opened their show with last time I saw them.  Excuse me for making fun
+of those Casio Sound Data book names like "Dangerous Sound #2".
+
+----------------------------------------------------------------
+Name: Traffic Doppler (Barry Kirsch, modified by me)
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+1	noise	+ 00 03 00	1 00 00 97	-1
+DCO1
+wave
+7 0
+rt lv
+99 15s
+16 00e
+DCO1
+key
+0
+rt lv
+00 00e
+DCA1
+key
+0
+rt lv
+35 99
+00 00
+30 00e
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:  Hold the key down and wait.  I like clusters of low notes best
+----------------------------------------------------------------
+Name: Sampled Snap
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+2	noise	+ 1 07 00	1 00 67 09	0
+DCO1
+wave
+5 0
+rt lv
+96 75
+99 00e
+DCO1
+key
+0
+rt lv
+91 66
+93 00e
+DCA1
+key
+0
+rt lv
+93 99
+54 00e
+DCO2
+wave
+2 0
+rt lv
+97 74
+93 00e
+DCW2
+key
+0
+rt lv
+93 41
+64 00e
+DCA2
+key
+0
+rt lv
+94 99
+49 00e
+
+Comments:  Any resemblance to snare #1 is purely intentional.
+----------------------------------------------------------------
+Name: Kalimba #3,452,156 
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+2	ring	+ 2 10 00	1 60 50 03	0
+DCO1
+wave
+5 0
+rt lv
+96 75
+99 00e
+DCO1
+key
+9
+rt lv
+97 24
+88 00e
+DCA1
+key
+2
+rt lv
+95 99
+43 00e
+DCO2
+wave
+2 0
+rt lv
+97 74
+93 00e
+DCW2
+key
+9
+rt lv
+95 82
+64 00e
+DCA2
+key
+0
+rt lv
+96 99
+49 00e
+
+Comments:  Yup, more Afro-percussion.  This one has radically different timbres in
+different octaves (the second octave on the 101 keyboard is my
+favorite). Noise percussion makes some interesting sounds too.
+----------------------------------------------------------------
+Name: Helicopter (Glenn Bruns, modified)
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+2	ring	+ 2 00 08	3 00 70 99	-1
+DCO1
+wave
+6 5
+rt lv
+00 00e
+DCO1
+key
+8
+rt lv
+60 57s
+00 00e
+DCA1
+key
+0
+rt lv
+99 93s
+66 00e
+DCO2
+wave
+1 0
+rt lv
+00 00e
+DCW2
+key
+8
+rt lv
+60 57s
+00 00e
+DCA2
+key
+1
+rt lv
+99 93
+66 00e
+
+Comments:  Noise modulation makse a meaner helicopter, and a machine gun in the
+upper range.
+----------------------------------------------------------------
+Name: Reverb Flute
+>From: Electronics & Music Maker, Sep 1986
+
+Line: 1+2'
+Mod: Noise on
+Detune: +,0,0,0
+Vibrato: Wave=1,delay=26,rate=55,depth=9
+Octave: +1
+
+DCO1:     1st wave = 2, 2nd wave = 0
+          Rate=70,level = 66 (sus)
+               00         00 (end)
+
+DCW1:     Key follow = 0
+          Rate=60, Level = 35 (sus)
+               00,         00 (end)
+
+DCA1:     Key follow =1
+          rate=82   Level = 99 (sus)
+               58           89
+               71           54
+               44           30
+               63           66
+               44           30
+               61           51
+               50           00 (end)
+
+DCO2:          1st wave = 1, 2nd wave = 0
+               rate = 00,     level = 0 (end)
+
+DCW2:          Key follow = 9
+               rate = 99, level = 00 (sus)
+                      00          00 (end)
+
+DCA2:          Key follow = 1
+               rate = 92, level = 64
+                      56          00 (end)
+
+----------------------------------------------------------------
+Name: Guitar with distortion
+>From: Robert Lansdale <lansd@gpu.utcs.toronto.edu>
+
+Detune: +, oct=2,note=7, fine=8
+Vibrato: wave=1,delay=0,rate=99,depth=24
+Octave=-1
+Line: 1+1'
+mod: ring
+
+DCO1:     1st wave = 8, 2nd wave = 4
+          rate =00, level = 00 (end)
+
+DCW1:     Key follow = 0
+          Rate = 99, level = 21 (sus)
+                 33          00 (end)
+
+DCA1:     Key follow = 0
+          rate = 99, level = 99 (sus)
+                 31          83
+                 52          00 (end)
+
+----------------------------------------------------------------
+Name: Mean Electric Guitar
+>From: Robert Lansdale <lansd@gpu.utcs.toronto.edu>
+
+Detune: +,1,2,4
+Vibrato: 1,53,0,0
+Octave:+1
+Line:1+1'
+Mod:Ring
+
+DCO1:     1st wave = 3, 2nd wave = 4
+          Rate = 19, Level = 00 (End)
+
+DCW1:     Key follow = 1
+          Rate = 86, Level = 64
+                 07          00 (End)
+
+DCA1:     Key follow = 4
+          Rate = 94, Level = 96 (sus)
+                 92          00 (End)
+
+Comments:  Try small amount of glide or portamento to make
+          it more of a realistic guitar sound.
+
+----------------------------------------------------------------
+Name: YABS (Yet Another Bass Sound)
+>From: Robert Lansdale <lansd@gpu.utcs.toronto.edu>
+
+Line: 1+1'
+Detune: +,0,0,1
+Vibrato: Wave=1,delay=0,rate=50,depth=0
+Octave: +0
+
+DCO1:     1st wave = 2, 2nd wave = 3
+          Rate=99,level = 99
+               99         00 (end)
+
+DCW1:     Key follow = 0
+          Rate=99, Level = 99
+               50,         00 (end)
+
+DCA1:     Key follow =0
+          rate=99   Level = 99 (sus)
+               50           00 (end)
+----------------------------------------------------------------
+Name: NOISE SWEEP
+>From: Robert Lansdale <lansd@gpu.utcs.toronto.edu>
+
+Noise: On
+Line: 1+1'
+Detune: +,0,0,1
+Vibrato: Wave=1,delay=0,rate=50,depth=2
+Octave: +0
+
+DCO1:     1st wave = 2, 2nd wave = 3
+          Rate=99,level = 99
+               49         00 (end)
+
+DCW1:     Key follow = 0
+          Rate=99, Level = 99
+               50,         00 (end)
+
+DCA1:     Key follow =0
+          rate=99   Level = 99 
+               02           98
+               53           00 (end)
+----------------------------------------------------------------
+Name: Bushy		
+>From: Glenn Bruns <bruns@mcc.com>
+
+line	mod	detune		vibrato		octave
+1+2		+ 0 00 03	0 00 00 00	0
+
+DCO 1
+wave 
+5 0
+rate	level
+99	65
+38	66s
+00	00e
+
+DCW 1
+key 
+2
+rate	level
+99	99s
+40	00e
+
+DCA 1
+key 
+2
+rate	level
+72	92s
+45	00e
+
+DCO 2
+wave 
+1 0
+rate	level
+99	66
+00	00e
+
+DCW 2
+key 
+2
+rate	level
+99	99s
+40	00e
+
+DCA 2
+key 
+2
+rate	level
+72	92s
+45	00e
+
+Comments:  Reminds me of Kate Bush.
+----------------------------------------------------------------
+Name: Spacious
+>From: Glenn Bruns <bruns@mcc.com>
+
+line	mod	detune		vibrato		octave
+1+1'		- 0 00 02	0 00 00 00	0
+
+DCO 1
+wave 
+2 6
+rate	level
+00	00e
+
+DCW 1
+key 
+4
+rate	level
+99	60
+30	75s
+50	80
+00	00e
+
+DCA 1
+key 
+0
+rate	level
+99	90
+40	93s
+45	30
+60	00e
+
+Comments:   
+----------------------------------------------------------------
+Name: Wild Kingdom
+>From: Glenn Bruns <bruns@mcc.com>
+
+line	mod	detune		vibrato		octave
+1+2	ring	+ 1 00 01	1 15 28 06	0
+
+DCO 1
+wave 
+2 0
+rate	level
+99	33
+68	00e
+
+DCW 1
+key 
+2
+rate	level
+67	99
+47	96
+37	52s
+26	00e
+
+DCA 1
+key 
+2
+rate	level
+90	99
+36	91s
+79	59
+55	00e
+
+DCO 2
+wave 
+5 0
+rate	level
+99	33
+68	00e
+
+DCW 2
+key 
+2
+rate	level
+63	99
+66	96
+37	52s
+26	00e
+
+DCA 2
+key 
+2
+rate	level
+70	99
+36	75s
+79	55
+55	00e
+
+Comments:  I called this "Wild Kingdom" because it's sounds like a
+nature TV show patch.  The patch is based on CZ-101 patch #1 (Brass
+ens. 1).  The slow vibrato is critical for this patch.
+----------------------------------------------------------------
+Name: Rising resonance
+>From: Glenn Bruns <bruns@mcc.com>
+
+line	mod	detune		vibrato		octave
+1+2'		+ 0 00 04	0 00 00 00	0
+
+DCO 1
+wave 
+3 0
+rate	level
+00	00e
+
+DCW 1
+key 
+6
+rate	level
+99	90s
+40	00e
+
+DCA 1
+key 
+9
+rate	level
+72	92s
+50	00e
+
+DCO 2
+wave 
+6 0
+rate	level
+99	95
+27	66s
+00	66
+00	00e
+
+DCW 2
+key 
+9
+rate	level
+99	40s
+40	00e
+
+DCA 2
+key 
+0
+rate	level
+80	80
+60	90s
+55	00e
+
+Comments:  Try different waveforms, esp. on DCO 2.
+----------------------------------------------------------------
+Name: Chunky Blocks
+>From: Glenn Bruns <bruns@mcc.com>
+
+line	mod	detune		vibrato		octave
+1+1'	ring	- 3 03 08	1 00 38 15	-1
+
+DCO 1
+wave 
+2 1
+rate	level
+99	62
+76	00e
+
+DCW 1
+key 
+0
+rate	level
+99	83
+51	00e
+
+DCA 1
+key 
+6
+rate	level
+99	99
+52	00e
+
+Comments:  Use tone mix if you're using this patch for bass line.
+Also, I'm not sure if the detune is supposed to be "-".
+----------------------------------------------------------------
+Name: Electric bubbles
+>From: Glenn Bruns <bruns@mcc.com>
+
+line	mod	detune		vibrato		octave
+1+2'	ring	+ 2 00 08	3 00 75 99	0
+
+DCO 1
+wave 
+6 5
+rate	level
+00	00e
+
+DCW 1
+key 
+8
+rate	level
+60	57s
+00	00e
+
+DCA 1
+key 
+0
+rate	level
+99	36
+70	91
+59	99
+12	93s
+66	00e
+
+DCO 2
+wave 
+1 8
+rate	level
+00	00e
+
+DCW 2
+key 
+8
+rate	level
+60	57
+00	00e
+
+DCA 2
+key 
+1
+rate	level
+99	36
+70	91
+59	99
+12	93s
+66	00e
+
+Comments:  Strictly for special effects.  High notes sound like a ray
+gun (don't ask what kind of ray); low notes sound like a helicopter.
+Based on CZ-101 patch #7 (flute) -- which explains the gratuitous
+detail in the DCA's.
+----------------------------------------------------------------
+Name: Woody metal.
+>From: Truls Ellefsen <seismo!mcvax!kvvax4!truls@EDDIE.MIT.EDU>
+
+line	mod	detune		vibrato		octave
+1+1'    ring    + 2 00 06       1 50 65 07         0
+
+DCO 1
+wave 
+1 0
+rate	level
+00      00 end
+
+DCW 1
+key 
+9
+rate	level
+83      27
+37      10 sus
+88      00 end
+
+DCA 1
+key 
+5
+rate	level
+99      99
+38      85
+21      78
+31      65
+32      60
+40      55
+17      00
+37      00 end
+
+Comments:  Detune, octave=3 also useful. Expriment with vibrato.
+----------------------------------------------------------------
+Name: Scratchy Trumpet
+>From: Alan Bland <..!ihnp4!druak!mab>
+
+line	mod	detune		vibrato		octave
+1+2'		+ 0 00 00	1 19 50 14	0
+
+DCO 1
+wave
+4 0
+rate	level
+00	00e
+
+DCW 1
+key
+0
+rate	level
+99	99s
+27	00e
+
+DCA 1
+key
+4
+rate	level
+70	99
+20	89s
+49	00e
+
+DC0 2
+wave
+3 5
+rate	level
+00	00e
+
+DCW 2
+key
+0
+rate	level
+51	77
+39	00e
+
+DCA 2
+key
+4
+rate	level
+99	79
+32	00e
+
+Comments: 
+----------------------------------------------------------------
+Name: harpsichord #2 (originally by Mark Schmeider)
+>From: Bill Wake <wake@11lang.dec.com>
+
+PARAMETER
+ 
+ LINE SELECT   MODULATION         DETUNE            VIBRATO        OCTAVE
+|1,2,12',11'| |ring|noise| |+/-|oct|note|fine| |wave|dly|rt|dep| |+/-|range|
+|  1+2'     | |    |     | | + | 2 | 0  | 06 | | 1  | 0 |00|00 | | + |  1  |
+|___________| |____|_____| |___|___|____|____| |____|___|__|___| |___|_____|
+ 
+************************************    ************************************
+(1)					(2)
+DCO 1					DCO 2
+  WAVE FORM  			 	  WAVE FORM
+|first|second|				|first|second|
+|  3  |  6   |                          |  3  |  7   |                      
+|_____|______|                          |_____|______|                        
+ (1-8)  (0-8)                            (1-8)  (0-8)  
+               ENV(PITCH)                             ENV(PITCH)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |99 |99 |   |   |   |   |   |0-99 rate|99 |99 |   |   |   |   |   |   |
+levl|99 |00 |00 |   |   |   |   |   |0-99 levl|21 |00 |   |   |   |   |   |   |
+s/e |   | s | e |   |   |   |   |   |     s/e |   | e |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCW 1                                   DCW 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     5     |(0-9)                      |     3     |(0-9)
+|___________|                           |___________|
+ 
+               ENV(WAVE)                             ENV(WAVE)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |00 |   |   |   |   |   |   |0-99 rate|99 |00 |   |   |   |   |   |   |
+levl|50 |00 |   |   |   |   |   |   |0-99 levl|52 |00 |   |   |   |   |   |   |
+s/e | s | e |   |   |   |   |   |   |     s/e |   | e |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCA 1                                   DCA 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     9     |(0-9)                      |     3     |(0-9)
+|___________|                           |___________|
+ 
+               ENV(AMP)                             ENV(AMP)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |33 |57 |99 |   |   |   |   |0-99 rate|76 |94 |58 |44 |99 |   |   |   |
+levl|90 |16 |00 |00 |   |   |   |   |0-99 levl|02 |99 |90 |00 |00 |   |   |   |
+s/e |   |   | s | e |   |   |   |   |     s/e |   |   |   | s | e |   |   |   |
+_____________________________________     _____________________________________
+ 
+----------------------------------------------------------------
+Name: swept reed
+>From: Michael Schaeffer <michaels%tekigm2.tek.com@RELAY.CS.NET>
+
+COMMENT: modified casio reed
+ENVELOPE DATA (wave or key - R1.L1 - R2.L2 - *** - R7.L7 - R8);
+DCO1 (wave-env): 3.4-99.29-72e
+DCW1 (key-env): 9-74.93-93.86s-50e
+DCA1 (key-env): 1-86.99-63.93-65.94-29e
+DCO2 (wave-env): 6.4-99.66-73e
+DCW2 (key-env): 2-43.60-24.49-26e
+DCA2 (key-env): 0-62.94-18.85-24.77-26e
+DETUNE (+- oct - semi - fine): (-)0-0-7
+MODULATION (1'or 2' - ring or noise): either 1' or 2'
+VIBRATO (wave-delay-rate-depth): 4-81-41-99
+KEYBOARD OCTAVE (+ o -): 0
+----------------------------------------------------------------
+Name: minor vox chorus
+>From: Michael Schaeffer <michaels%tekigm2.tek.com@RELAY.CS.NET>
+
+COMMENT: fairly modal based on casio human voice
+ENVELOPE DATA (wave or key - R1.L1 - R2.L2 - *** - R7.L7 - R8);
+DCO1 (wave-env): 1.4-55.65-40.66s-2e
+DCW1 (key-env): 0-99e
+DCA1 (key-env): 0-79.99-21.74s-31.75-60e
+DCO2 (wave-env): 5.0-50e
+DCW2 (key-env): 8-46.65-35.20s-54e
+DCA2 (key-env): 0-67.77-21.77-12.90s-35e
+DETUNE (+- oct - semi - fine): (-)0-7-10
+MODULATION (1'or 2' - ring or noise): 2'
+VIBRATO (wave-delay-rate-depth): 1-72-46-19
+KEYBOARD OCTAVE (+ o -): 0
+----------------------------------------------------------------
+Name: Synth Bass II
+>From: Michael Schaeffer <michaels%tekigm2.tek.com@RELAY.CS.NET>
+
+COMMENT: modified casio
+ENVELOPE DATA (wave or key - R1.L1 - R2.L2 - *** - R7.L7 - R8);
+DCO1 (wave-env): 2.3-0e
+DCW1 (key-env): 7-97.99-43.79-50.74s-52e
+DCA1 (key-env): 0-99.99-21e
+DETUNE (+- oct - semi - fine): (-)1-0-3
+MODULATION (1'or 2' - ring or noise): 1' - ring
+VIBRATO (wave-delay-rate-depth): 1-33-55-23
+KEYBOARD OCTAVE (+ o -): 0
+----------------------------------------------------------------
+Name: swept mute ens.
+>From: Michael Schaeffer <michaels%tekigm2.tek.com@RELAY.CS.NET>
+
+ENVELOPE DATA (wave or key - R1.L1 - R2.L2 - *** - R7.L7 - R8);
+DCO1 (wave-env): 2.1-67.55-42.60-54.6-50e
+DCW1 (key-env): 0-52.99-28.90-30.97-31.93-22.71s-50.52-50e
+DCA1 (key-env): 0-71.99s-38.82-30.75-49e
+DCO2 (wave-env): 2.4-53.15-49e
+DCW2 (key-env): 0-53.99-79.72-50.70s-50e
+DCA2 (key-env):  0-89.91-49.86-18.73(?s?)-20.70-22e
+DETUNE (+- oct - semi - fine): +1-0-2
+MODULATION (1'or 2' - ring or noise): 2' ring
+VIBRATO (wave-delay-rate-depth): 1-42-31-20
+KEYBOARD OCTAVE (+ o -): 0
+----------------------------------------------------------------
+Name: Bright electric piano
+>From: Michael Schaeffer <michaels%tekigm2.tek.com@RELAY.CS.NET>
+
+COMMENT: I could really use some nice pianos
+ENVELOPE DATA (wave or key - R1.L1 - R2.L2 - *** - R7.L7 - R8);
+DCO1 (wave-env): 5.2-99.66-99e
+DCW1 (key-env): 0-99.99s-0e
+DCA1 (key-env): 0-92.99-95.87-92.99-99.88s-43e
+DCO2 (wave-env):3.1-99.66-99e
+DCW2 (key-env): 0-99.99s-0e
+DCA2 (key-env): 0-92.99-95.87-92.99-99.88-44e
+DETUNE (+- oct - semi - fine):+0-0-10
+MODULATION (1'or 2' - ring or noise): 2'
+VIBRATO (wave-delay-rate-depth): 1-45-52-11
+KEYBOARD OCTAVE (+ o -): +1
+----------------------------------------------------------------
+Name: Bird call #1
+>From: Wayne Wylupski <ada-uts!wayne@EDDIE.MIT.EDU>
+    
+Line    Modulation
+Select  Ring Noise  +/- Octave Note Fine  Wave Delay Rate Depth  +/- Range
+------  ----------  --------------------  ---------------------  ---------
+  1     off  off     0    0     0    0      1    00   80    68    +    1
+
+
+-- DCO 1 --                 -- DCW 1 --              -- DCA 1 --
+Wave  Form                  Key Follow               Key Follow
+First Second                ----------               ----------
+------------                     4                        0
+  4     0
+
+  ENV (pitch)               ENV (wave)               ENV (amp)
+-------------               ----------               ------------------
+Step   1   2                Step   1                 Step   1   2   3
+Rate  99  40                Rate  00                 Rate  69  46  64
+Level 65   0                Level 00                 Level 88  99  00
+         End                      End                              End
+
+NOTES : Built from the "whistle" preset.  Play around with portamento,
+and quickly a notes followed by their third or fourth.
+----------------------------------------------------------------
+Name: Bird call #2
+>From: Wayne Wylupski <ada-uts!wayne@EDDIE.MIT.EDU>
+
+Line    Modulation
+Select  Ring Noise  +/- Octave Note Fine  Wave Delay Rate Depth  +/- Range
+------  ----------  --------------------  ---------------------  ---------
+1       off  off     0    0     0    0      1    00   48    49    +    1
+
+
+-- DCO 1 --                 -- DCW 1 --              -- DCA 1 --
+Wave  Form                  Key Follow               Key Follow
+First Second                ----------               ----------
+------------                     4                        0
+  4     0
+
+ENV (pitch)                 ENV (wave)               ENV (amp)
+----------------            ----------               ------------------
+Step   1   2   3            Step   1                 Step   1   2   3
+Rate  52  00  00            Rate  00                 Rate  69  46  64
+Level 66  00  00            Level 00                 Level 88  99  00
+             End                 End                              End
+
+NOTES : Built from the "whistle" preset.  Vibrato can be taken off.
+Short repeated key strokes work well.
+----------------------------------------------------------------
+Name: MASSIVE BASS
+>From: Tom Benson <benson@star.dec.com>
+
+PARAMETER
+ 
+ LINE SELECT   MODULATION         DETUNE            VIBRATO        OCTAVE
+|1,2,12',11'| |ring|noise| |+/-|oct|note|fine| |wave|dly|rt|dep| |+/-|range|
+|   12'     | | off| off | | + | 0 |  0 |  4 | | 1  |33 |23| 06| | - |  1  |
+|___________| |____|_____| |___|___|____|____| |____|___|__|___| |___|_____|
+ 
+************************************    ************************************
+(1)					(2)
+DCO 1					DCO 2
+  WAVE FORM  			 	  WAVE FORM
+|first|second|				|first|second|
+| 4   |  4   |                          | 3   |  4   |                      
+|_____|______|                          |_____|______|                        
+ (1-8)  (0-8)                            (1-8)  (0-8)  
+               ENV(PITCH)                             ENV(PITCH)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|50 |   |   |   |   |   |   |   |0-99 rate|50 |   |   |   |   |   |   |   |
+levl| 0 |   |   |   |   |   |   |   |0-99 levl| 0 |   |   |   |   |   |   |   |
+s/e | e |   |   |   |   |   |   |   |     s/e | e |   |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCW 1                                   DCW 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     7     |(0-9)                      |     7     |(0-9)
+|___________|                           |___________|
+ 
+               ENV(WAVE)                             ENV(WAVE)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|97 |43 |50 |50 |   |   |   |   |0-99 rate|97 |43 |50 |50 |   |   |   |   |
+levl|99 |79 |87 | 0 |   |   |   |   |0-99 levl|99 |79 |87 | 0 |   |   |   |   |
+s/e |   |   | s | e |   |   |   |   |     s/e |   |   | s | e |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCA 1                                   DCA 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     9     |(0-9)                      |     9     |(0-9)
+|___________|                           |___________|
+ 
+               ENV(AMP)                             ENV(AMP)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |21 |61 |   |   |   |   |   |0-99 rate|99 |21 |61 |   |   |   |   |   |
+levl|99 |88 | 0 |   |   |   |   |   |0-99 levl|99 |88 | 0 |   |   |   |   |   |
+s/e |   | s | e |   |   |   |   |   |     s/e |   | s | e |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+ 
+*****************************************************************************
+COMMENT: 
+ 
+Based on Elec Guitar preset C-5.   Play in the second octave.
+ 
+*****************************************************************************
+----------------------------------------------------------------
+Name: THWACK DRUMS
+>From: Tom Benson <benson@star.dec.com>
+
+PARAMETER
+ 
+ LINE SELECT   MODULATION         DETUNE            VIBRATO        OCTAVE
+|1,2,12',11'| |ring|noise| |+/-|oct|note|fine| |wave|dly|rt|dep| |+/-|range|
+|   12'     | | off| on  | | + | 0 | 10 | 0  | |  3 | 0 |55| 85| | - |  1  |
+|___________| |____|_____| |___|___|____|____| |____|___|__|___| |___|_____|
+ 
+************************************    ************************************
+(1)					(2)
+DCO 1					DCO 2
+  WAVE FORM  			 	  WAVE FORM
+|first|second|				|first|second|
+|  5  |   1  |                          |  6  |   4  |                      
+|_____|______|                          |_____|______|                        
+ (1-8)  (0-8)                            (1-8)  (0-8)  
+               ENV(PITCH)                             ENV(PITCH)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|92 |99 |   |   |   |   |   |   |0-99 rate|99 |99 |13 |   |   |   |   |   |
+levl|93 | 0 |   |   |   |   |   |   |0-99 levl|99 |53 | 0 |   |   |   |   |   |
+s/e |   | e |   |   |   |   |   |   |     s/e |   | s | e |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCW 1                                   DCW 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     0     |(0-9)                      |      8    |(0-9)
+|___________|                           |___________|
+ 
+               ENV(WAVE)                             ENV(WAVE)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |99 |99 |   |   |   |   |   |0-99 rate|99 |94 |50 |   |   |   |   |   |
+levl|99 |86 | 0 |   |   |   |   |   |0-99 levl|99 |99 | 0 |   |   |   |   |   |
+s/e |   |   | e |   |   |   |   |   |     s/e |   | s | e |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCA 1                                   DCA 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     0     |(0-9)                      |      1    |(0-9)
+|___________|                           |___________|
+ 
+               ENV(AMP)                             ENV(AMP)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |41 |52 |   |   |   |   |   |0-99 rate|99 |53 |52 |   |   |   |   |   |
+levl|99 | 0 | 0 |   |   |   |   |   |0-99 levl|81 |35 | 0 |   |   |   |   |   |
+s/e |   | s | e |   |   |   |   |   |     s/e |   |   | e |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+ 
+*****************************************************************************
+COMMENT: 
+ 
+Based on "Tom toms 1" from Casio "Pro-tone data book."  Play octaves 2+3.
+ 
+*****************************************************************************
+----------------------------------------------------------------
+Name: BELL ORGAN
+>From: Tom Benson <benson@star.dec.com>
+
+PARAMETER
+ 
+ LINE SELECT   MODULATION         DETUNE            VIBRATO        OCTAVE
+|1,2,12',11'| |ring|noise| |+/-|oct|note|fine| |wave|dly|rt|dep| |+/-|range|
+|   12'     | | off|  off| | + | 3 | 07 | 08 | | 1  |49 |50| 10| | - |  1  |
+|___________| |____|_____| |___|___|____|____| |____|___|__|___| |___|_____|
+ 
+************************************    ************************************
+(1)					(2)
+DCO 1					DCO 2
+  WAVE FORM  			 	  WAVE FORM
+|first|second|				|first|second|
+|  2  |  5   |                          |  2  |  2   |                      
+|_____|______|                          |_____|______|                        
+ (1-8)  (0-8)                            (1-8)  (0-8)  
+               ENV(PITCH)                             ENV(PITCH)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|50 |   |   |   |   |   |   |   |0-99 rate|50 |   |   |   |   |   |   |   |
+levl| 0 |   |   |   |   |   |   |   |0-99 levl| 0 |   |   |   |   |   |   |   |
+s/e | e |   |   |   |   |   |   |   |     s/e | e |   |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCW 1                                   DCW 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     0     |(0-9)                      |      7    |(0-9)
+|___________|                           |___________|
+ 
+               ENV(WAVE)                             ENV(WAVE)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |   |   |   |   |   |   |   |0-99 rate|99 |50 |52 |50 |   |   |   |   |
+levl| 0 |   |   |   |   |   |   |   |0-99 levl|70 |68 |97 | 0 |   |   |   |   |
+s/e | e |   |   |   |   |   |   |   |     s/e |   |   | s | e |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCA 1                                   DCA 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|      0    |(0-9)                      |      0    |(0-9)
+|___________|                           |___________|
+ 
+               ENV(AMP)                             ENV(AMP)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |55 |31 |31 |   |   |   |   |0-99 rate|99 |81 |31 |31 |   |   |   |   |
+levl|99 |89 |65 | 0 |   |   |   |   |0-99 levl|90 |86 |29 | 0 |   |   |   |   |
+s/e |   |   | s | e |   |   |   |   |     s/e |   |   | s | e |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+ 
+*****************************************************************************
+COMMENT: 
+ 
+Based on "fairy tale" preset, B-8.
+ 
+*****************************************************************************
+----------------------------------------------------------------
+Name: ????
+>From: Tom Benson <benson@star.dec.com>
+
+Line Select  Modulation        Detune                 Vibrato          Octave
+                         +/- Octave Note Fine  Wave Delay Rate Depth  +/- Range
+1+1'                     +   1           8     1    38    60   4          0
+
+DCO 1
+Wave Form
+First Second
+2     3
+    
+Step   1   2
+Rate   99  68
+Level  33  0
+           END
+
+DCW 1
+Key Follow 9
+
+Step   1   2   3   4
+Rate   73  99  99  00
+Level  88  96  99  00
+               SUS END
+
+DCA 1
+Key Follow 0
+Step  1   2   3   4
+Rate  82  99  88  62
+Level 81  99  96  00
+              SUS END
+
+* Use it at the extreme low end for a fat slightly distorted deep organy
+  sound.  I don't know how else to explain it.
+----------------------------------------------------------------
+Name: Marimba
+>From: John Pritchard <john%latcs1.oz@seismo.css.gov>
+
+line	mod	detune		vibrato		octave
+1+2		+ 2 00 01	1 51 60 05	-1
+
+DCO 1
+wave 
+1 0
+rate	level
+50	00e
+
+DCW 1
+key 
+5
+rate	level
+99	27
+48	00e
+
+DCA 1
+key 
+6
+rate	level
+94	99
+32	00s
+45	00e
+
+DCO 2
+wave 
+2 0
+rate	level
+50	00e
+
+DCW 2
+key 
+1
+rate	level
+99	12
+12	00e
+
+DCA 2
+key 
+3
+rate	level
+95	99
+54	36
+28	00s
+60	00e
+----------------------------------------------------------------
+Name: Space Shots
+>From: Chris Malley <..!ucbvax!ihnp4!daimler!cvm>
+
+line	mod	detune		vibrato		octave
+1+1'   off/off	- 0 00 06	3 0 35 93	(whatever you like best)
+
+DCO 1
+wave 
+8 0
+rate	level
+99	33
+33      0       END
+
+DCW 1
+key 
+0
+rate	level
+99  	99
+46	99
+37	52	SUS
+26	0	END
+
+DCA 1
+key 
+0
+rate	level
+99	50
+77	99
+67	91	SUS
+79	92
+26	0	END
+
+
+Comments:  This sounds kind of like the laser fire in a cheap video game.
+To change the number of shots fired each time you push a key,
+change the rate of DCA 1, STEP 5.   
+To vary the speed at which shots are fired, vary the vibrato 
+rate (most effective if you do this while playing.) 
+----------------------------------------------------------------
+Name: Glissando Filter Sweep
+>From: Chris Malley <..!ucbvax!ihnp4!daimler!cvm>
+
+line	mod	detune		vibrato		octave
+1+1'   off/off	- 0 00 06	1 0 0 6		- 1
+
+DCO 1
+wave 
+8 0
+rate	level
+99	33
+70      0       END
+
+DCW 1
+key 
+0
+rate	level
+99  	99
+46	99
+37	52	SUS
+26	0	END
+
+DCA 1
+key 
+0
+rate	level
+99	50
+77	99
+67	91	SUS
+79	59
+33	0	END
+
+
+Comments:  This sound creates a "high-to-low" filter sweep in discrete increments
+(hence, glissando) each time a key is pressed. The sweep is most noticable
+in the lower range of the keyboard. For really gothic song intros, 
+try setting DETUNE OCTAVE to -1 and playing single notes going slowly 
+>from high to low on the keyboard.
+(Notice that the parameter values of this sound are very similar 
+to those of Space Shots. By tweaking the vibrato, DCO1, DCA1
+it becomes a semi-musical sound.)
+----------------------------------------------------------------
+Name: Diva Harmonic
+>From: Tom O'Brien <..!cbosgd!bpa!swatsun!obrien>
+
+An ethereal third harmonic fades in as the fundamental fades out.
+Play slowly & hold down the keys for several seconds for full effect. 
+Reminiscent of some of the music in the film _Diva_.
+
+Line 1+2'  Octave 0
+Detune +  OCT 1, NOTE 7 FINE 0
+Vibrato: Wave 1 Delay 0 Rate 0 Depth 0
+Modulation: None
+
+DCO 1 Wave 1 Env 0/0/END
+DCW 1 Key 0 Env 53/5 37/0/END
+DCA 1 Key 0 Env 38/99 30/0/END
+
+DCO 2 Wave 1 Env 0/0/END
+DCW 2 Key 0 Env 32/5 25/0/END
+DCA 2 Key 0 Env 32/99 30/0/END
+----------------------------------------------------------------
+Name: Landing 747
+>From: Tom O'Brien <..!cbosgd!bpa!swatsun!obrien>
+
+The best sound comes from keys at the low end of the keyboard, I think.
+Hold down the key to let the effect complete its cycle.
+Holding several adjacent keys works well, too.
+ 
+Line 1+2'  Octave -1
+Detune -  OCT 1, NOTE 0 FINE 0
+Vibrato: Wave 1 Delay 31 Rate 36 Depth 0
+Modulation: Noise
+
+DCO 1 Wave 5 Env 99/95 9/43/SUS 8/0/END
+DCW 1 Key 0 Env 99/73/SUS 9/62 9/0/END
+DCA 1 Key 6 Env 56/88/SUS 10/28 37/0/END
+
+DCO 2 Wave 5 Env 99/80 24/43/SUS 8/0/END
+DCW 2 Key 0 Env 99/81/SUS 9/62 9/0/END
+DCA 2 Key 2 Env 53/81/SUS 10/37 30/0/END
+----------------------------------------------------------------
+Name: Thompson Bass
+>From: Tom O'Brien <..!cbosgd!bpa!swatsun!obrien>
+
+Similar to the plucked bass sound used on several Thompson Twins records.
+After an initial transient, the note fades to a muted drone.
+
+Line 1+2'  Octave -1
+Detune -  OCT 0, NOTE 0 FINE 0
+Vibrato: Wave 1 Delay 0 Rate 0 Depth 0
+Modulation: None
+
+DCO 1 Wave 3 Env 0/0/END
+DCW 1 Key 9 Env 99/94 55/23/SUS 37/0/END
+DCA 1 Key 0 Env 99/99 63/70/SUS 50/0/END
+
+DCO 2 Wave 3 Env 0/0/END
+DCW 2 Key 9 Env 99/94 55/23/SUS 37/0/END
+DCA 2 Key 0 Env 99/99 63/70/SUS 50/0/END
+----------------------------------------------------------------
+Name: Brass Strings
+>From: Brian Yamauchi <yamauchi@speech2.cs.cmu.edu>
+
+Line Select:       1+2'
+Modulation:        Ring   = OFF   Noise = OFF
+Detune:            Octave = 0     Note  = 0      Fine = +6
+Vibrato:           Wave   = 1     Delay = 28     Rate = 52      Depth = 11
+Octave:            
+
+
+DCO1                                   DCO2
+----                                   ----
+
+First = 1     Second = 5               First = 1      Second = 3
+
+Rate:         99 99                    Rate:          99 68
+Level:        66 00                    Level:         33 00
+Sus/End:         E                     Sus/End:          E
+
+DCW1                                   DCW2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    0
+
+Rate:         99 00                    Rate:          80 47 37 26
+Level:        90 00                    Level:         99 96 52 00
+Sus/End:      S  E                     Sus/End:             S  E
+
+DCA1                                   DCA2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    0
+
+Rate:         92 95 92 99 45           Rate:          99 77 67 79 33
+Level:        99 87 99 88 00           Level:         50 99 91 59 00
+Sus/End:               S  E            Sus/End:             S     E
+
+Comment: This patch started as a combination of the Synth Strings preset and
+Synth Brass 1.  It works well for lead lines on the upper half of the keyboard.
+----------------------------------------------------------------
+Name: Ice Blue
+>From: Brian Yamauchi <yamauchi@speech2.cs.cmu.edu>
+
+Line Select:       1+1'
+Modulation:        Ring   = OFF   Noise = OFF
+Detune:            Octave = 0     Note  = 0      Fine = -7
+Vibrato:           Wave   = 1     Delay = 0      Rate = 0       Depth = 0
+Octave:            
+
+
+DCO1                                   DCO2
+----                                   ----
+
+First = 2     Second = 0               First =        Second = 
+
+Rate:         00                       Rate:          
+Level:        00                       Level:         
+Sus/End:      E                        Sus/End:       
+
+DCW1                                   DCW2
+----                                   ----
+
+Key Follow:   5                        Key Follow:    
+
+Rate:         99 50                    Rate:          
+Level:        85 00                    Level:         
+Sus/End:      S  E                     Sus/End:       
+
+DCA1                                   DCA2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    
+
+Rate:         99 50 50 40              Rate:          
+Level:        80 99 50 00              Level:         
+Sus/End:         S     E               Sus/End:       
+
+Comment: Sounds almost like a synth clarinet.
+----------------------------------------------------------------
+Name: Pseudosilk
+>From: Brian Yamauchi <yamauchi@speech2.cs.cmu.edu>
+
+Line Select:       1+1'
+Modulation:        Ring   = OFF   Noise = OFF
+Detune:            Octave = 0     Note  = 0      Fine = +7
+Vibrato:           Wave   = 1     Delay = 0      Rate = 0       Depth = 0
+Octave:            
+
+
+DCO1                                   DCO2
+----                                   ----
+
+First = 1     Second = 0               First =        Second = 
+
+Rate:         00                       Rate:          
+Level:        00                       Level:         
+Sus/End:      E                        Sus/End:       
+
+DCW1                                   DCW2
+----                                   ----
+
+Key Follow:   7                        Key Follow:    
+
+Rate:         93 60 42                 Rate:          
+Level:        99 90 00                 Level:         
+Sus/End:         S  E                  Sus/End:       
+
+DCA1                                   DCA2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    
+
+Rate:         75 55 40                 Rate:          
+Level:        68 99 00                 Level:         
+Sus/End:         S  E                  Sus/End:       
+
+Comment: This patch was designed to sound like the lead synth in Pseudosilk
+Kimono by Marillion.
+----------------------------------------------------------------
+Name: Oracle
+>From: Brian Yamauchi <yamauchi@speech2.cs.cmu.edu>
+
+Line Select:       1+1'
+Modulation:        Ring   = OFF   Noise = OFF
+Detune:            Octave = 0     Note  = 0      Fine = +7
+Vibrato:           Wave   = 2     Delay = 0      Rate = 60      Depth = 30
+Octave:            
+
+
+DCO1                                   DCO2
+----                                   ----
+
+First = 2     Second = 7               First =        Second = 
+
+Rate:         00                       Rate:          
+Level:        00                       Level:         
+Sus/End:      E                        Sus/End:       
+
+DCW1                                   DCW2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    
+
+Rate:         99 40                    Rate:          
+Level:        99 00                    Level:         
+Sus/End:      S  E                     Sus/End:       
+
+DCA1                                   DCA2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    
+
+Rate:         99 30                    Rate:          
+Level:        99 00                    Level:         
+Sus/End:         E                     Sus/End:       
+
+Comment: An exotic-sounding tone.
+----------------------------------------------------------------
+Name: Choral oooh
+>From: David Coleman <ah5@k.cc.purdue.edu>
+
+Line Select:  1 + 2'
+Modulation: none
+
+Detune     (-)       oct:  0
+	 Note: 00   fine: 07
+
+Vibrato  wave:  1   delay: 40
+	 rate: 26   depth: 03
+
+Octave  -1
+
+DCO1  wave   1st: 1   2nd: 0
+step       1   2   3
+rate      86  00  74
+level     66  10  00
+sus/end  sus     end
+
+DCW1  key follow: 6
+step       1   2   3
+rate      70  00  50
+level     24  79  00
+sus/end  sus     end
+
+DCA1  key follow: 0
+step       1   2   3   4
+rate      85  36  40  50
+level     99  40  00  00
+sus/end  sus         end
+
+DCO2  wave   1st: 2   2nd: 0
+step       1   2   3
+rate      59  81  00
+level     66  62  00
+sus/end  sus     end
+
+DCW2  key follow: 5
+step       1   2   3
+rate      70  69  50
+level     28  79  00
+sus/end  sus     end
+
+DCA2  key follow: 9
+step       1   2   3
+rate      85  83  50
+level     99  37  00
+sus/end  sus     end
+
+Comments:  "Choral oooh" was a semi-successful experiment to see if
+           something close to vocals could be obtained. As you CZ
+	   owners know, the "human voice" preset sounds ok, but not
+	   at all like a human voice. "Choral oooh" sounds something
+	   like a person singing "oooh" (long u sound). It is not
+	   perfect, but I think you will find it outclasses the human
+	   voice preset by far. This voice sounds best when you play
+	   major chords on the middle-high octave range. Try playing
+           with the line select, too.
+----------------------------------------------------------------
+Name: Reverb Strings
+>From: David Coleman <ah5@k.cc.purdue.edu>
+
+Line Select:  1 + 1'
+Modulation: none
+
+Detune     (+)       oct:  0
+	 Note: 00   fine: 10
+
+Vibrato  wave:  1   delay: 28
+	 rate: 52   depth: 11
+
+Octave  +1
+
+DCO1  wave   1st: 1   2nd: 3
+step       1   2
+rate      99  99
+level     66  00
+sus/end      end
+
+DCW1  key follow: 0
+step       1   2
+rate      99  00
+level     99  00
+sus/end  sus end
+
+DCA1  key follow: 4
+step       1   2   3   4   5   6   7
+rate      64  95  75  75  79  63  26
+level     99  99  76  76  33  87  00
+sus/end          sus             end
+
+DCO2  wave   1st: 1   2nd: 3
+step       1   2
+rate      99  99                  (Same as DCO1)
+level     66  00
+sus/end      end
+
+DCW2  key follow: 0
+step       1   2
+rate      99  00                  (Same as DCW1)
+level     99  00
+sus/end  sus end
+
+DCA2  key follow: 0
+step       1   2   3   4   5
+rate      92  95  92  99  32
+level     99  87  99  88  00
+sus/end              sus end
+
+Comments:  "Reverb Strings" is a modification of the preset "Synth
+	   Strings". The "reverb" comes from playing the note not
+	   only when a key is pressed, but also when the key is 
+	   released. Try holding a chord and then letting off the
+	   keys one at a time, and you will hear the effect. With
+	   a little practice on the timing of pressing and releasing
+	   the keys, you can get some interesting effects such as
+	   eight eighth notes when only when four eighth notes
+	   separated by eighth rests are played.
+----------------------------------------------------------------
+Name: Buzzing Fly
+>From: Glenn Bruns <bruns@mcc.com>
+
+line	mod	detune		vibrato		octave
+1+1'	ring	+ 3 06 11	1 00 11 44	-1
+
+DCO 1
+wave 
+2 7
+rate	level
+50	00s
+50	00e
+
+DCW 1
+key 
+0
+rate	level
+99	80
+35	57
+41	96
+40	47
+41	79
+39	62
+40	95
+30	00e
+
+DCA 1
+key 
+0
+rate	level
+99	80
+33	67
+33	86
+34	64
+32	78
+33	65
+35	79s
+28	00e
+
+Comments:  An annoying patch to enter manually, but amusing.
+----------------------------------------------------------------
+Name: Drill
+>From: Glenn Bruns <bruns@mcc.com>
+
+line	mod	detune		vibrato		octave
+1+1'	noise	+ 2 00 40	1 36 66 62 	0
+
+DCO 1
+wave 
+1 2 
+rate	level
+55	82s
+54	39
+00	00e
+
+DCW 1
+key 
+4
+rate	level
+82	92s
+26	45
+00	00e
+
+DCA 1
+key 
+0
+rate	level
+63	99s
+47	68
+70	00e
+
+Comments: 
+----------------------------------------------------------------
+Name: Dropped Bomb
+>From: Glenn Bruns <bruns@mcc.com>
+
+line	mod	detune		vibrato		octave
+1+2'	noise	- 0 05 07	1 24 54 00	-1
+
+DCO 1
+wave 
+5 0
+rate	level
+99	86
+38	00e
+
+DCW 1
+key 
+4
+rate	level
+99	40
+50	80s
+99	00e
+
+DCA 1
+key 
+0
+rate	level
+99	20
+36	40s
+99	00e
+
+DCO 2
+wave 
+3 3
+rate	level
+99	65
+40	66s
+00	00e
+
+DCW 2
+key 
+4
+rate	level
+99	99
+40	75
+40	77
+40	51
+44	00e
+
+DCA 2
+key 
+0
+rate	level
+99	20
+36	40s
+99	00e
+
+Comments:  Press key to drop bomb, release to explode.  Best range seems
+to be in the octave above middle C.  I have yet to get a decent explosion
+sound out of the CZ -- this explosion is weak.
+----------------------------------------------------------------
+Name: OIL-DRUM / JARS / TOY PIANO
+>From: J. Peter Alfke <alfke@cit-vax.UUCP>
+
+Comments:  Sound depends on what octave you play at.  Very nice ringy metallic
+	  sounds; the piano in particular is *perfect*.
+	  Then plug in distortion [I'm using an Arion Metal Master] and get
+	  twisted wicked sounds with intense feedback sustain.  Twiddle the
+	  pitch-bend knob and be your own Jimi Hendrix or Thurston Moore!
+	  [Based on Casio Synth. Harp]
+
+Line: 1+1'	Mod: Ring	Detune: +0 5 18	  Vibrato: none
+Octave: +1
+
+DCO 1:	Wave 2 0
+		99  99
+		67  00
+		    END
+DCW 1:  Key 0
+		99  55
+		99  00
+		    END
+DCA 1:  Key 7
+		99  31  16
+		99  98  00
+			END
+----------------------------------------------------------------
+Name: HAMBURGER LADY
+>From: J. Peter Alfke <alfke@cit-vax.UUCP>
+
+Comments:  Very Throbbing Gristle.  Sounds like the background grind to
+	  "Hamburger Lady"; play one or two low notes.  Not perfect, but
+	  pretty good.  You can also turn off the vibrato and hit
+	  crashing atonal chords in the low octave; another very T.G sound.
+	  [Based on Casio Bass Guitar]
+
+Line: 1+1'	Mod: Ring	Detune: +1 11 34	Vibrato: 1 30 2 66
+Octave: -1
+
+DCO 1:	Wave 3 4
+		50
+		00
+		END
+DCW 1:	Key 9
+		99  45  40  41
+		80  45  30  00
+			SUS END
+DCA 1:	Key 1
+		99  25  35  42
+		90  80  75  00
+		    SUS     END
+----------------------------------------------------------------
+Name: newhorn
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line	mod	detune		vibrato		octave
+1+2	ring	+ 0 00 12	1 27 49 11	(0,+1)
+
+DCO 1
+wave 
+3 2
+rate	level
+00 00e
+
+DCW 1
+key 
+4
+rate	level
+67 79
+15 00e
+
+DCA 1
+key 
+2
+rate	level
+70 91
+70 67
+70 96
+70 77
+70 99s
+44 00r
+
+DCO 2
+wave 
+3 2
+rate	level
+00 00e
+
+DCW 1
+key 
+4
+rate	level
+72 79
+15 00e
+
+DCA 1
+key 
+2
+rate	level
+70 91
+70 67
+70 96
+70 77
+70 99s
+35 00r
+
+Comments:  Tone mix one voice in octave 0 with one in octave +1
+----------------------------------------------------------------
+Name: Drilling
+>From: Glenn Bruns <bruns@mcc.com>
+
+line	mod	detune		vibrato		octave
+1+1'	noise	- 2 00 40	1 36 66 62	0
+
+DCO 1
+wave 
+1 2
+rate	level
+55	82s
+54	39
+00	00e
+
+DCW 1
+key 
+4
+rate	level
+82	92s
+26	45
+00	00e
+
+DCA 1
+key 
+0
+rate	level
+63	99s
+47	68
+70	00e
+
+Comments:  High notes sound like dentist's drill; low notes sound
+more like 3/8" drill into wood.
+----------------------------------------------------------------
+Name: Nightporter
+>From: Steve Conti
+
+line	mod	detune		vibrato		octave
+1+2		+ 0 00 12			0
+
+DCO 1
+wave 
+1 0
+rate	level
+00	00e
+
+DCW 1
+key 
+9
+rate	level
+60	60
+12	00e
+
+DCA 1
+key 
+0
+rate	level
+95	30
+99	00e
+
+DCO 2
+wave 
+2 0
+rate	level
+50	00e
+
+DCW 2
+key 
+9
+rate	level
+77	50
+12	00e
+DCA 2
+key 
+5
+rate	level
+95	30
+99	00e
+
+Comments:
+	"'Nightporter' was programmed (surprise, surprise) in an
+attempt to recreate the mood of the Satie-influenced Japan song of the
+same name.  If the sound comes across too sweet for your taste, reduce
+the Fine Detune to around 09 for a more piano-like sound.  Some slow
+modulation delayed to the tail-end of the sound adds a different
+dimension, too."  -_MT_
+----------------------------------------------------------------
+Name: ????
+>From: Chris Cuthbert <cpc@edison.GE.COM>
+
+LINE   RING   NOISE   +/-  OCTV  NOTE  FINE    WAVE  DELAY  RATE  DPTH  OCTV
+ 1+2    OFF    OFF     +    0     00    07       1     00    00    00    -1
+
+             LINE 1                                   LINE  2
+
+           WAVEFORMS                                 WAVEFORMS
+             3   0                                     4   0
+
+         PITCH  ENVELOPE                           PITCH  ENVELOPE
+RATE  50 50                               RATE  50
+LEVL  00 00                               LEVL  00
+      S  E                                      E
+
+          DCW KEYFOLLOW                          DCW KEYFOLLOW
+               0                                        0
+
+          WAVE ENVELOPE                          WAVE ENVELOPE
+RATE  72 20                               RATE  87 56 33 89 72 57
+LEVL  41 00                               LEVL  98 76 58 61 30 00
+      S  E                                                     E
+
+          DCA KEYFOLLOW                          DCA KEYFOLLOW
+                0                                       0
+
+      AMPLITUDE ENVELOPE                        AMPLITUDE ENVLOPE
+RATE  99 50                               RATE  99 50
+LEVL  99 00                               LEVL  99 00
+      S  E                                         E
+----------------------------------------------------------------
+Name: Real fat Oberheim-like moan
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line 1+1'	octave 0 or -1	 vibrato  w1  d28  r49  d21
+det + 1 00 10
+
+DCO 1		DCW 1		DCA 1
+wave		key fol		key fol
+ 4  3		0		0
+rt  lv		rt  lv		rt  lv
+99  66		91  67s		77  60
+99  00e		00  00e		48  68
+				39  99
+				68  99s
+				32  00e
+----------------------------------------------------------------
+Name: Snare double for drum machine
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line 1+2'	octave 0(?)	vibrato off	noise	detune + 3 11 60
+
+DCO 1		DCW 1		DCA 1
+wave		key fol		key fol
+2 2		0		0
+rt  lv		rt  lv		rt  lv
+99   99		95  29		88  99
+77  00e		41  00		36  91
+				79  60	
+				54  00
+				55  00  \
+				51  00   >  Hey, do these do anything?
+				47  00  /
+				50  00e
+
+DCO 2		DCW 2		DCA 2
+wave		key fol		key fol
+2 2		0		2
+rt  lv		rt  lv		rt  lv
+99  99		96  34		89  99
+77  00		41  00e		36  91
+				79  59
+				55  00
+				50  00
+				50  00
+				50  00
+				49  00e
+
+	Note: I didn't write down the octave setting, but when set up
+correctly there will be this surprise "clank" somewhere in the second
+octave of the keyboard, and a more electronic-drum-like bash on the
+low C.  Reuben had this timed to go with the snare on his TR-707, and
+the resulting clank sounded like a Depeche Mode sample.  In fact, I
+*thought* he was doing this on his Prophet 2000, it sounded so good.
+----------------------------------------------------------------
+Name: ROUGH EDGE
+>From: Martin Sant <mfs@edison.GE.COM>
+
+Line  Ring  Noise   +/-  Octv  Note  Fine   Wave  Delay  Rate  Depth   Octv
+1+1    OFF   OFF     +    0     00    08     1      45    49     02     0
+
+             Line 1                                Line 2
+             ------                                ------
+
+         DCO Waveforms                          DCO Waveforms
+            4     3                               1      0
+
+         Pitch Envelope                         Pitch Envelope
+Rate  67 87 00 00 00 00 00 00          Rate  00 00 00 00 00 00 00 00 
+Level 33 00 00 00 00 00 00 00          Level 00 00 00 00 00 00 00 00
+         E                                   E
+
+         DCW Keyfollow                          DCW Keyfollow
+               1                                      2
+ 
+         Wave Envelope                          Wave Envelope
+Rate  99 34 40 04 00 00 00 00          Rate  99 50 50 50 50 50 50 50 
+Level 99 24 17 13 00 00 00 00          Level 99 00 00 00 00 00 00 00
+                  E                                               E
+
+         DCA Keyfollow                          DCA Keyfollow
+               3                                      2
+
+        Amplitude Envelope                     Amplitude Envelope
+Rate  97 52 14 39 00 00 00 00          Rate  72 38 00 00 00 00 00 00
+Level 99 98 65 00 00 00 00 00          Level 92 00 00 00 00 00 00 00 
+            S  E                                E
+----------------------------------------------------------------
+Name: BOWR BASS
+>From: Martin Sant <mfs@edison.GE.COM>
+
+Line  Ring  Noise   +/-  Octv  Note  Fine   Wave  Delay  Rate  Depth   Octv
+1+1    OFF   OFF     +    0     00    07     1     11     51     18     0
+
+             Line 1                                 Line 2
+             ------                                 ------
+
+         DCO Waveforms                          DCO Waveforms
+            4     3                               1      0
+
+         Pitch Envelope                         Pitch Envelope
+Rate  00 00 00 00 00 00 00 00          Rate  00 00 00 00 00 00 00 00 
+Level 00 00 00 00 00 00 00 00          Level 00 00 00 00 00 00 00 00
+      E                                      E
+
+         DCW Keyfollow                          DCW Keyfollow
+               7                                      2
+ 
+Rate  74 47 00 00 00 00 00 00          Rate  99 40 00 00 00 00 00 00 
+Level 78 00 00 00 00 00 00 00          Level 99 00 00 00 00 00 00 00
+         E                                      E
+
+         DCA Keyfollow                          DCA Keyfollow
+               2                                      2
+
+Rate  72 38 00 00 00 00 00 00          Rate  72 38 00 00 00 00 00 00
+Level 92 00 00 00 00 00 00 00          Level 92 00 00 00 00 00 00 00 
+      S  E                                      E
+
+
+Article 2885 of rec.music.synth:
+Path: bloom-beacon!mit-eddie!ll-xn!ames!pasteur!agate!ig!uwmcsd1!bbn!rochester!PT.CS.CMU.EDU!andrew.cmu.edu!bader+
+>From: bader+@andrew.cmu.edu (Miles Bader)
+Newsgroups: rec.music.synth
+Subject: 2 cz patches
+Message-ID: <8W=WMzy00UkazIs15Y@andrew.cmu.edu>
+Date: 4 Mar 88 03:36:31 GMT
+Organization: Carnegie Mellon University
+Lines: 41
+
+Here are two patches I made for the casio cz.  The first one evolved
+from Casio's cello (and so sounds sort of slowly bowed), the second
+was originally an attempt to make a plucked version of the first (but
+doesn't sound all that much like that).  I like to split the
+keyboard between them.
+
+Name: coolstring
+By: Miles Bader
+Vibr: W: 1  Del: 50  R: 53  Dep: 12
+Oct: 0
+Line: 1+2'
+Mod: none
+DCO1: WF: 1,4  Env: 50/0/e
+DCW1: KF: 0    Env: 99/99, 64/66/s, 31/48, 85/0, 50/0/e
+DCA1: KF: 2    Env: 62/68, 34/99, 25/70/s, 50/0/e
+DCO2: WF: 4,0  Env: 50/0/e
+DCW2: KF: 0    Env: 99/99, 64/66/s, 31/48, 85/0, 50/0/e
+DCA2: KF: 2    Env: 62/68, 45/99, 25/70/s, 50/0/e
+Vel1: A: 3  W: 0  P: 0
+Vel2: A: 3  W: 0  P: 0
+Detune: -1,0,13
+Comments: envelopes orig from Casio's cello
+
+Name: Fat Pluck
+By: Miles Bader
+Vibr: W: 1  Del: 50  R: 53  Dep: 12
+Oct: 0
+Line: 1+2'
+Mod: none
+DCO1: WF: 5,4  Env: 50/0/e
+DCW1: KF: 0    Env: 99/99, 38/0/e
+DCA1: KF: 2    Env: 80/99, 40/60, 30/0/s, 43/0/e
+DCO2: WF: 4,0  Env: 50/0/e
+DCW2: KF: 0    Env: 99/99, 38/0/e
+DCA2: KF: 2    Env: 80/99, 40/60, 30/0/s, 50/0/e
+Vel1: A: 3  W: 0  P: 0
+Vel2: A: 3  W: 0  P: 0
+Detune: -1,0,7
+Comments: 
+
+Enjoy! -Miles
+
+
+Article 3079 of rec.music.synth:
+Path: bloom-beacon!husc6!uwvax!rutgers!topaz.rutgers.edu!mrichter
+>From: mrichter@topaz.rutgers.edu (Madprog)
+Newsgroups: rec.music.synth
+Subject: CZ patches
+Keywords: patches, CZ
+Message-ID: <Mar.17.19.38.31.1988.21441@topaz.rutgers.edu>
+Date: 18 Mar 88 00:38:33 GMT
+Organization: Rutgers Univ., New Brunswick, N.J.
+Lines: 69
+
+Okay, here are two patches for my fellow CZ owners.
+
+The first, called BRASS!, was developed by myself shortly after I got
+my synth. I wanted a euphonium and ended up with a very fat brassy sound.
+
+The second, Steinway, is a pretty good piano patch I picked up from
+a friend of mine. No, it won't fool anyone, but it works for me...
+
+Tone name: BRASS!
+Line select: 1 + 1'
+Ring:ON     Noise:OFF
+Detune - Octave:0    Note:0    Fine:-1
+Vibrato -  Wave:2    Delay:0   Rate:75   Depth:5
+Octave:-1
+
+DCO1				DCO2
+Wave Form - First:1  Second:0   Wave Form - First:   Second:
+
+Env: 70/30 70/00 70/30 70/00S   Env: 00/00 00/00 00/00 00/00
+     50/00 50/00 50/00 50/00E        00/00 00/00 00/00 00/00
+
+DCW1				DCW2
+Key Follow:0			Key Follow:
+
+Env: 99/99S50/00E00/00 00/00	Env: 00/00 00/00 00/00 00/00
+     00/00 00/00 00/00 00/00         00/00 00/00 00/00 00/00
+
+DCA1				DCA2
+Key Follow:0			Key Follow:
+
+Env: 99/99S40/00E00/00 00/00	Env: 00/00 00/00 00/00 00/00
+     00/00 00/00 00/00 00/00	     00/00 00/00 00/00 00/00
+
+Comments:Very fat, brassy analog type sound. Crank it.
+
+Tone name: Steinway
+Line select: 1 + 2'
+Ring:OFF    Noise:OFF
+Detune - Octave:0    Note:0    Fine:-1
+Vibrato -  Wave:1    Delay:0   Rate:0    Depth:0
+Octave:0
+
+DCO1				DCO2
+Wave Form - First:4  Second:0   Wave Form - First:3  Second:0
+
+Env: 00/00E00/00 00/00 00/00    Env: 00/00E00/00 00/00 00/00
+     00/00 00/00 00/00 00/00         00/00 00/00 00/00 00/00
+
+DCW1				DCW2
+Key Follow:9			Key Follow:9
+
+Env: 95/93 64/80 37/00E00/00	Env: 94/93 20/86 37/00E00/00
+     00/00 00/00 00/00 00/00         00/00 00/00 00/00 00/00
+
+DCA1				DCA2
+Key Follow:0			Key Follow:6
+
+Env: 99/99 30/80 16/02S50/00E	Env: 99/99 30/75 20/00S50/00E
+     00/00 00/00 00/00 00/00	     00/00 00/00 00/00 00/00
+
+Comments:Piano patch --- sounds pretty good
+
+Well, enjoy...
+
+					Marc
+					(MadProg)
+
+"FISH!"
+	e2m
+
+
+Article 3274 of rec.music.synth:
+Path: bloom-beacon!husc6!bbn!rochester!PT.CS.CMU.EDU!andrew.cmu.edu!bader+
+>From: bader+@andrew.cmu.edu (Miles Bader)
+Newsgroups: rec.music.synth
+Subject: cz patch
+Message-ID: <IWIQWly00UkaA8s-Na@andrew.cmu.edu>
+Date: 31 Mar 88 04:18:57 GMT
+Organization: Carnegie Mellon University
+Lines: 20
+
+Yum!
+
+Name: Fuzzy
+By: Miles Bader
+Vibr: None
+Oct: 0
+Line: 1+2'
+Mod: None
+DCO1: WF: 5,0  Env: 0/e
+DCW1: KF: 9    Env: 81/92/s, 20/0/e
+DCA1: KF: 1    Env: 70/50, 66/99, 49/91/s, 33/0/e
+DCO2: WF: 3,5  Env: 0/e
+DCW2: KF: 9    Env: 81/92/s, 20/0/e
+DCA2: KF: 1    Env: 70/50, 66/99, 49/91/s, 33/0/e
+Vel1: --
+Vel2: --
+Detune: +1,0,4
+Comments: Organ-y, string-y, neat-o
+
+-Miles
+
+
+Article 3486 of rec.music.synth:
+Path: bloom-beacon!tut.cis.ohio-state.edu!mailrus!nrl-cmf!ames!pasteur!ucbvax!decwrl!pyramid!voder!tolerant!procase!bauer
+>From: bauer@procase.UUCP (Jerry Bauer)
+Newsgroups: rec.music.synth
+Subject: ESQ1 and CZ-x patches
+Keywords: patches, we don't NEED no STINKIN' patches!!
+Message-ID: <3b93e6ca.14dd6@c>
+Date: 20 Apr 88 16:55:00 GMT
+Organization: proCASE Corporation, Santa Clara, CA
+Lines: 117
+
+
+We need GOOD patches.  Here are a couple of contributions.
+(Are they GOOD?  Well, I like them.)
+
+Here is one for the ESQ'1.  This is a wire-strung celtic harp.
+It layers nicely with the HARP patch for the CZ-101, below
+
+program: CELTIC
+
+       oct semi fine  wave   mod1  depth   mod2  depth
+osc1    1    7    2   bell   env2    +63  ------   0
+osc2    0    0    2   bell   env2     +2  ------   0
+osc3    0    0    4  synth2  env1    +41  ------   0
+
+      level output   mod1  depth   mod2  depth
+dca1    63    off   ------  ---   ------  ---
+dca2    63    off   ------  ---   ------  ---
+dca3    61     on    env1   +24   ------  ---
+
+       freq  q  keybd   mod1  depth   mod2 depth
+filter   20  2    25    env3    40    kbd2   -1
+
+      final vol.    pan    pan mod.   depth
+dca4      63         5      kbd         63
+
+       freq reset human wav L1 delay L2  mod
+lfo1    ---   ---   --- --- --  --   -- ------
+lfo2    ---   ---   --- --- --  --   -- ------
+lfo3    ---   ---   --- --- --  --   -- ------
+
+      L1 L2 L3 LV T1V T1 T2 T3 T4 TK
+env1  63  0  0 22   0  0  0 19 45  1
+env2  63  0  0  0   0  0  6  0 40  9
+env3  63 49  1 48   0  0 24 38 30 10
+env4  63 45  0 27   0  0 44 51 30 27
+
+       sync  am  mono  glide  vc  env  osc  cyc
+modes   off  on   off    0   off   on  off   on
+
+        s/l  s/l prog.  lay  lay prog.  spl. spl prog  key
+splits  off   ------    off   ------    off   ------   ---
+
+
+comment: I built this one after a celtic harp concert.
+         (Patrick Ball, September, 1987)  
+
+I subsequently purchased a cassette of Mr. Ball, playing his harp.
+
+>From the album notes:  
+The uniquely clear and resonant sound of the traditional wire-strung
+Celtic folk harp has been heard only rarely since its playing became a
+lost art nearly two centuries ago.  An ancient instrument, it is
+played with the fingernails and demands far greater playing skill than
+the more familiar "neo-irish" harp with its softer gut or nylon
+strings.  The instrument featured on this album is an outstanding
+modern re-creation by the master harp builder Jay Witcher.
+
+         The synthesized sound described here is subjectively
+         (to me) close to the sound of the harp on the album. 
+
+
+__________________________________________________________________
+
+Here it is - one of my favorite sounds for the CZ-101.
+
+
+Tone name: HARP
+line select: 1
+detune: + 0 0 0 	(+/-, octave, note, fine)
+vibrato: 1 0 0 0 	(wave, delay, rate, depth)
+octave: 0
+dco1 wave: 2 0
+dco1 env: 50/0/e  	(rate/level{/sustain|end})*
+dcw1 keyfollow: 9
+dcw1 env: 99/99, 50/0/e
+dca1 keyfollow: 9
+dca1 env: 90/99, 20/0/e
+
+comment: gut or nylon harp, pluck envelope on dcw/dca
+
+This is a reasonable approximation of a gut-strung or nylon-
+strung harp.  It is done on dcx1, only, so it is 
+octophonic - I find this valuable because of the longish
+sustain (from 99 to 0 @ 20.)
+
+__________________________________________________________________
+
+
+I have done a couple other interesting sounds for these instruments
+(ESQ'1 and CZ-101,) and I might share them, too, if there is expressed
+interest sufficient to overcome my inertia.
+
+
+So, if you like these, let me know.  I place them in the public domain
+- you may use them any way you like, including public performance for
+profit, without ever mentioning where you got them, or from whom.
+Inasmuch as I do not share in the benefits of such use, I shall be
+held blameless of any damages resulting from their use.  Reading this
+notice constitutes your agreement to abide by these restrictions.  So
+there.  (Copyright by Jerry Randal Bauer, in perpetuity, forever and
+ever, AMEN, until H - E - double toothpicks freezes over and some
+after that.  Ipso Facto, Habeas Corpus, et al.) (this copyright and the
+preceeding copyright notice are the exclusive property of Jerry Randal 
+Bauer, and it is strictly ILLEGAL to even read them.)  (Oh, NO!  You didn't
+read them did you?)
+
+
+
+(Also, I am unsure of my ability to post.  If you get this, please drop 
+ me a line at one of the addresses below.)
+
+JRBauer (Jerry)
+
+          ...!tolerant!procase!bauer
+          ...!hpda!procase!bauer
+          ...!cae780!procase!bauer <-- I'm not sure of this one
+   
+
+
+Article 3959 of rec.music.synth:
+Path: bloom-beacon!gatech!mcnc!uvaarpa!virginia!maxwell.acc.Virginia.EDU!smm7l
+>From: smm7l@maxwell.acc.Virginia.EDU (Steven M. Michelson)
+Newsgroups: rec.music.synth
+Subject: CZ Patches
+Message-ID: <912@virginia.acc.virginia.edu>
+Date: 6 Jun 88 14:14:09 GMT
+Sender: acc@virginia.acc.virginia.edu
+Reply-To: smm7l@maxwell.acc.Virginia.EDU (Steven M. Michelson)
+Distribution: na
+Organization: Academic Computing Center, University of Va.
+Lines: 100
+
+I seem to recall seeing a few postings for Casio CZ patches on this net,
+so I will assume that there is at least _some_ audience for these patches.
+Here are a few of my own, which I think some of you might enjoy:
+
+----------------------
+"Space" (Couldn't think of a better name. Can you?)
+
+Line Select: 1 + 1'
+Modulation: None
+Detune: (+)    Oct: 00
+  Note: 00    Fine: 07
+Octave: +1
+Vibrato: Wave: 1    Delay: 23
+         Rate: 52   Depth: 05
+
+DCO 1:   Wave: 2  0
+         Env: 99  00 (E)
+
+DCW 1:   Key Follow: 0
+         Env: 89  99
+              68  00 (E)
+
+DCA 1:   Key Follow: 3
+         Env: 94 99
+              55 93
+              21 10 (S)
+              33 00 (E)
+
+This one also works well with line select set to 1, which gives you 8 voice
+polyphony.
+
+---------------------------------------
+
+"Crazy" 
+
+Line Select: 1 + 2'
+Modulation: None
+Detune: (-)    Oct: 01
+  Note: 00    Fine: 06
+Octave: +1
+Vibrato: Wave: 1    Delay: 62
+         Rate: 39   Depth: 06
+
+DCO 1:   Wave: 2  4               DCO 2:   Wave: 4  2
+         Env: 99  66 (S)                   Env: 00  00 (E)
+              00  65              
+              00  64
+              00  63
+              00  00 (E)
+
+DCW 1:   Key Follow: 2            DCW 2:   Key Follow: 8
+         Env: 99  81                       Env: 99  81
+              55  23 (S)                        55  23 (S)
+              37  00 (E)                        37  00 (E)
+
+DCA 1:   Key Follow: 0            DCA 2:   Key Follow: 0
+         Env: 99 99                        Env: 99  99
+              63 90 (S)                         63  90 (S)
+              40 00 (E)                         33  00 (E)
+
+         (If you play and hold a C Major chord, it sounds like the 
+         opening chord of Prince's song "Let's Go _Crazy_". You know:
+         "Dearly beloved, we are gathered here today to talk about this thing 
+          called life....")
+-----------------------------------------
+
+"Choral"
+
+Line Select: 1 + 2'
+Modulation: None
+Detune: (-)    Oct: 01
+  Note: 00    Fine: 07
+Octave: +1
+Vibrato: Wave: 1    Delay: 38
+         Rate: 51   Depth: 08
+
+DCO 1:   Wave: 5  0               DCO 2:   Wave: 3  5
+         Env: 00  00 (E)                   Env: 00  00 (E)
+
+DCW 1:   Key Follow: 8            DCW 2:   Key Follow: 7
+         Env: 30  28                       Env: 40  40
+              50  00 (E)                        42  57
+                                                00  56
+                                                15  00 (E)
+
+DCA 1:   Key Follow: 1            DCA 2:   Key Follow: 1
+         Env: 80  36                       Env: 88  36
+              70  91                            70  91
+              59  99                            59  99
+              12  93 (S)                        12  93 (S)
+              32  00 (E)                        23  00 (E)
+
+(If you want 8 voice polyphonic, use Line Select 2, but this is not nearly
+ as good as the whole thing.)
+-------------------------------
+
+If anyone else has patches, I would love to try them out! I would also like
+to hear your comments.
+
+                           -Steve Michelson
+
+
+Article 4024 of rec.music.synth:
+Path: bloom-beacon!tut.cis.ohio-state.edu!mailrus!ames!lll-lcc!well!csz
+>From: csz@well.UUCP (Carter Scholz)
+Newsgroups: rec.music.synth
+Subject: Re: Doing Gamelan Noises
+Keywords: gamelan microtuning harpsichords
+Message-ID: <6237@well.UUCP>
+Date: 10 Jun 88 06:15:28 GMT
+References: <3274@whutt.UUCP> <30946@yale-celray.yale.UUCP> <223@heurikon.UUCP>
+Reply-To: csz@well.UUCP (Carter Scholz)
+Organization: Whole Earth 'Lectronic Link, Sausalito, CA
+Lines: 104
+
+As the estimable G Taylor points out, the playing technique is what
+makes or breaks any synthesis.
+
+I have spent some time fiddling with FM "equivalents" to
+authentic Javanese instruments, and have decided it's fruitless.
+
+Nonetheless, here are a few patches which are not terribly far
+off.
+
+==========================================================
+
+BONANG -- DX7
+
+algorithm 5    feedback=5
+
+               op1      op2     op3      op4       op5     op6
+frequency      1.00     2.70    1.76     79.43 Hz  1.00    2.74
+output         99       89      87       80        91      53
+eg rate 1      78       99      77       99        78      99
+eg rate 2      48       47      55       53        50      50
+eg rate 3      13       29      25       13        22      09
+eg rate 4      46       55      48       42        47      99
+eg level 1     99       99      99       99        99      99
+eg level 2     99       77      87       99        96      94
+eg level 3     0        0       0        0         0       0
+eg level 4     0        0       0        0         0       97
+vel sens 1     5        4       7        1         3       7
+
+==============================================================
+
+GAMBANG -- DX7
+
+algorithm 11   feedback=0
+
+               op1      op2     op3      op4       op5     op6
+frequency      1.00     1.63    97.72Hz  1.00      1.00    1.00
+output         99       66      99       60        99      93
+eg rate 1      78       80      99       67        99      99
+eg rate 2      99       99      99       94        99      99
+eg rate 3      30       63      99       32        99      99
+eg rate 4      30       21      99       26        99      99
+eg level 1     99       99      99       99        99      99
+eg level 2     99       86      99       99        99      94
+eg level 3     0        0       0        0         0       0
+eg level 4     0        0       0        0         0       0
+vel sens 1     5        7       2        7         0       0
+
+=================================================
+=================================================
+
+TX81Z:
+
+name:Gong Ageng             TX81Z Editor, (c) 1987, Ross Sponholtz
+
+o    A  D1  D1  D2  R EG Out Lvl Rte EG   Amp Vel  Fix/ Rng/ Crs Fin De   Wave
+p    R  R   L   R   R Sf put Scl Scl bias Mod Sens Rat  Mul          Tune Form
+
+1   24  24  14   3  1  0 94   0    2   0  off   3  rat   0    4   0  -3     1
+2    7   4  13   0  1  0 71   0    2   0  off   4  rat   0    5   0   3     1
+3   16   6   7   4  2  0 99   0    2   0  off   3  rat   0    4   0   3     1
+4   11   4  11   1  1  0 67  22    0   0  off   4  rat   0    5  10   0     1
+
+Algorithm  5
+
+==================================================================
+
+name:Gender                 TX81Z Editor, (c) 1987, Ross Sponholtz
+
+o    A  D1  D1  D2  R EG Out Lvl Rte EG   Amp Vel  Fix/ Rng/ Crs Fin De   Wave
+p    R  R   L   R   R Sf put Scl Scl bias Mod Sens Rat  Mul          Tune Form
+
+1   31  18  13   3  6  0 99   0    0   0  off   1  rat   0    4   0  -3     1
+2   31  14  12   4  6  0 74   0    1   0  off   4  rat   0    6  11   3     1
+3   24  19  12   3  8  0 89   0    0   0  off   4  rat   0   16   2   3     1
+4   21  19  10   5  6  0 84   0    1   0  off   4  rat   0   25  14   3     2
+
+Algorithm  8
+================================================================
+
+name:Saron                  TX81Z Editor, (c) 1987, Ross Sponholtz
+
+o    A  D1  D1  D2  R EG Out Lvl Rte EG   Amp Vel  Fix/ Rng/ Crs Fin De   Wave
+p    R  R   L   R   R Sf put Scl Scl bias Mod Sens Rat  Mul          Tune Form
+
+1   31  17  15   7  6  0 99   0    2   0  off   2  rat   0    4   0  -3     1
+2   31  12  12   6  6  0 93   0    2   0  off   5  rat   0    6  12   3     1
+3   31  13  15   8  3  0 94   0    3   0  off   5  rat   0   17   2   3     2
+4   29   9  10   5  6  0 80   0    1   0  off   5  rat   0   25  15   3     1
+
+Algorithm  8
+
+==================================================================
+==================================================================
+
+Note that I've left lots of parameters blank.  These are the "fine-tuning".
+
+Most of the bar instruments can be approximated using additive synthesis.
+On a DX7 (6-op) instrument choose algorithm 32.  On a 4-op instrument,
+choose algorithm 8. In any case, the first six frequency ratios should be,
+roughly, 1.00, 2.76, 5.40, 8.94, 13.36, 18.60.  Make decaying envelopes and
+mess with the output levels and keyboard scalings.
+
+And listen.  Listen to what you've made.  Then listen to the world.
+Then listen to what you've made.  Et cetera.
+
+
+Article 4080 of rec.music.synth:
+Path: bloom-beacon!tut.cis.ohio-state.edu!husc6!bbn!rochester!pt.cs.cmu.edu!andrew.cmu.edu!bader+
+>From: bader+@andrew.cmu.edu (Miles Bader)
+Newsgroups: rec.music.synth
+Subject: cz pateches
+Message-ID: <YWhiQzy00Uka03I0FP@andrew.cmu.edu>
+Date: 15 Jun 88 21:08:15 GMT
+Organization: Carnegie Mellon
+Lines: 56
+
+These are for the cz1, so just ignore the velocity data if you don't have one.
+
+Name: jangly
+By: Miles Bader
+Vibr: W: 1  Del: 0  R: 53  Dep: 12
+Oct: 0
+Line: 1+1'
+Mod: -
+DCO1: WF: 1,0  Env: 0/e
+DCW1: KF: 0    Env: 99/99, 40/74/s, 47/48, 0/0/e
+DCA1: KF: 2    Env: 80/99/s, 34/0/e
+Vel1: A: 3  W: 0  P: 0
+Detune: -0,0,13
+Comments: If released quickly, sounds very "jangly", otherwise, quickly
+        becomes more breathy sounding, and sustains that way.
+        One of my favorites.
+
+Name: swerl
+By: Miles Bader
+Vibr: -
+Oct: -1
+Line: 1+2'
+Mod: -
+DCO1: WF: 3,2  Env: 0/e
+DCW1: KF: 9    Env: 35/90/s, 35/80, 0/0/e
+DCA1: KF: 0    Env: 99/99/s, 33/0/e
+DCO2: WF: 2,3  Env: 0/e
+DCW2: KF: 4    Env: 85/70, 30/76/s, 30/0/e
+DCA2: KF: 2    Env: 99/99/s, 33/0/e
+Vel1: A: 3  W: 0  P: 0
+Vel2: A: 3  W: 0  P: 0
+Detune: +2,0,7
+Comments: Initially sounds bell-like, swelling to a much fatter sound,
+        more so the lower the note.  Started out as "octavibrato" from
+        Keyboard magazine.
+
+Name: aaaho [just need uuullman now]
+By: Miles Bader
+Vibr: -
+Oct: -1
+Line: 1+2'
+Mod: -
+DCO1: WF: 3,0  Env: 80/66, 75/0/e
+DCW1: KF: 3    Env: 85/99/s, 51/0/e
+DCA1: KF: 2    Env: 80/99/s, 33/0/e
+DCO2: WF: 4,0  Env: 0/e
+DCW2: KF: 3    Env: 85/85, 30/76/s, 30/0/e
+DCA2: KF: 2    Env: 80/99/s, 33/0/e
+Vel1: A: 3  W: 4  P: 0
+Vel2: A: 3  W: 0  P: 0
+Detune: +1,0,7
+Comments: Sounds more voice-like the harder you hit.  If you don't have
+        a cz1, you'll have to decrease the sustain level of dcw1 to a
+        point that sounds good.
+
+-Miles
+
+
+Article 4170 of rec.music.synth:
+Path: bloom-beacon!gatech!udel!rochester!pt.cs.cmu.edu!andrew.cmu.edu!bader+
+>From: bader+@andrew.cmu.edu (Miles Bader)
+Newsgroups: rec.music.synth
+Subject: cz patch
+Message-ID: <kWkGkNy00Vs886vkpm@andrew.cmu.edu>
+Date: 23 Jun 88 16:04:41 GMT
+Organization: Carnegie Mellon
+Lines: 17
+
+Name: solostring
+By: Miles Bader
+Vibr: W: 1  Del: 28  R: 56  Dep: 10
+Oct: -1
+Line: 1+2'
+Mod: none
+DCO1: WF: 4,0  Env: 0/e
+DCW1: KF: 0    Env: 81/92, 56/86, 30/80/s, 0/0/e
+DCA1: KF: 1    Env: 70/50, 66/99, 49/91/s, 43/0/e
+DCO2: WF: 1,0  Env: 48/1, 40/0/e
+DCW2: KF: 0    Env: 81/80/s, 0/0/e
+DCA2: KF: 1    Env: 70/50, 66/99, 49/91/s, 40/0/e
+Vel1: A: 7  W: 0  P: 0
+Vel2: A: 7  W: 0  P: 0
+Detune: 0,0,0
+Comments: A pretty good clean single string sound.  Sounds good over the
+        whole keyboard.  Play with the chorus.
+
+
+Article 4278 of rec.music.synth:
+Path: bloom-beacon!tut.cis.ohio-state.edu!mailrus!uwmcsd1!bbn!rochester!pt.cs.cmu.edu!andrew.cmu.edu!bader+
+>From: bader+@andrew.cmu.edu (Miles Bader)
+Newsgroups: rec.music.synth
+Subject: cz patches
+Message-ID: <8Wmk12y00UkaE6uNpR@andrew.cmu.edu>
+Date: 1 Jul 88 03:00:18 GMT
+Organization: Carnegie Mellon
+Lines: 37
+
+Name: fen
+By: Miles Bader
+Vibr: -
+Oct: -1
+Line: 1+2'
+Mod: -
+DCO1: WF: 5,0  Env: 80/66, 75/0/e
+DCW1: KF: 0    Env: 85/87/s, 51/0/e
+DCA1: KF: 2    Env: 80/99/s, 33/0/e
+DCO2: WF: 5,0  Env: 0/e
+DCW2: KF: 0    Env: 85/36, 67/89/s, 30/0/e
+DCA2: KF: 2    Env: 80/99/s, 33/0/e
+Vel1: A: 7  W: 0  P: 0
+Vel2: A: 7  W: 0  P: 0
+Detune: +0,0,7
+Comments: This is what a synthesizer is SUPPOSED to sound like!  A bit
+	harsh on the high end... Line 2 sounds alright by itself too.
+
+Name: swamp
+By: Miles Bader
+Vibr: W: 1  Del: 0  R: 53  Dep: 7
+Oct: 0
+Line: 1+2'
+Mod: -
+DCO1: WF: 1,0  Env: 0/e
+DCW1: KF: 3    Env: 85/50/s, 30/0/e
+DCA1: KF: 2    Env: 80/99/s, 33/0/e
+DCO2: WF: 3,0  Env: 0/e
+DCW2: KF: 0    Env: 85/85, 30/0/e
+DCA2: KF: 2    Env: 80/99/s, 33/0/e
+Vel1: A: 3  W: 2  P: 0
+Vel2: A: 3  W: 0  P: 0
+Detune: +0,0,7
+Comments: A sort of ethereal sound.  The name is 'cause it made me think of
+	the songs on Stratos-fear (sp?) [Tangerine Dream]
+
+-Miles
+
+
+Article 4599 of rec.music.synth:
+Path: bloom-beacon!mit-eddie!rutgers!rochester!pt.cs.cmu.edu!andrew.cmu.edu!bader+
+>From: bader+@andrew.cmu.edu (Miles Bader)
+Newsgroups: rec.music.synth
+Subject: cz patches
+Message-ID: <IWw0R8y00VoDI3MFRa@andrew.cmu.edu>
+Date: 29 Jul 88 05:04:08 GMT
+Organization: Carnegie Mellon
+Lines: 34
+
+Pianos!
+
+Well, these don't REALLY sound like pianos, but they are nice sounds, and
+closer than any other cz patches I've heard (which isn't saying a whole
+lot...).  And since they're simple, you also get twice as many notes!
+
+-Miles
+
+
+Name: Acoustic Piano
+By: Miles Bader
+Vibr: -
+Oct: 0
+Line: 1
+Mod: -
+DCO1: WF: 1,0  Env: 0/e
+DCW1: KF: 9    Env: 99/85/s, 0/0/e
+DCA1: KF: 5    Env: 99/99, 30/0/s, 40/0/e
+Vel1: A: 7  W: 0  P: 0
+Comments: The low end is too muted sounding; also, you may want
+        a tad more keyfollow & a slower release on dca1.
+
+Name: Electric Piano
+By: Miles Bader
+Vibr: -
+Oct: 0
+Line: 1
+Mod: -
+DCO1: WF: 1,0  Env: 0/e
+DCW1: KF: 5    Env: 99/95, 32/85/s, 38/0/e
+DCA1: KF: 5    Env: 99/99, 30/0/s, 40/0/e
+Vel1: A: 7  W: 0  P: 0
+Comments: It's been years since I've heard a real electric piano,
+        but hey, it sounds "electric" to me!
+
+
+Article 4795 of rec.music.synth:
+Path: bloom-beacon!gatech!uflorida!haven!rutgers!njin!princeton!udel!rochester!pt.cs.cmu.edu!andrew.cmu.edu!bader+
+>From: bader+@andrew.cmu.edu (Miles Bader)
+Newsgroups: rec.music.synth
+Subject: cz patch
+Message-ID: <sX1tiGy00Vs9A9Hkx5@andrew.cmu.edu>
+Date: 16 Aug 88 02:18:58 GMT
+Organization: Carnegie Mellon
+Lines: 13
+
+Name: Grand Ethereal
+By: Miles Bader
+Vibr: -
+Oct: 0
+Line: 1+1'
+Mod: -
+DCO1: WF: 4,0  Env: 0/e
+DCW1: KF: 6    Env: 99/75/s, 0/0/e
+DCA1: KF: 0    Env: 90/61, 50/99, 10/0, 25/0/e
+Vel1: A: 3  W: 0  P: 0
+Detune: +0,0,7
+Comments: Sounds good with chorus all the way up; also, try other
+        waveforms, like 1.
+
+
+Article 643 of rec.music.synth:
+Path: bloom-beacon!mit-eddie!ll-xn!cit-vax!alfke
+>From: alfke@cit-vax.Caltech.Edu (J. Peter Alfke)
+Newsgroups: rec.music.synth
+Subject: Here come da CZ patches!
+Message-ID: <2541@cit-vax.Caltech.Edu>
+Date: 1 May 87 05:40:42 GMT
+Reply-To: alfke@cit-vax.UUCP (J. Peter Alfke)
+Organization: California Institute of Technology
+Lines: 63
+
+Okay, kids, it's clip'n'save time...
+
+---------------8<-------------------------------------------------------------
+
+Name: OIL-DRUM / JARS / TOY PIANO
+Comments: Sound depends on what octave you play at.  Very nice ringy metallic
+	  sounds; the piano in particular is *perfect*.
+	  Then plug in distortion [I'm using an Arion Metal Master] and get
+	  twisted wicked sounds with intense feedback sustain.  Twiddle the
+	  pitch-bend knob and be your own Jimi Hendrix or Thurston Moore!
+	  [Based on Casio Synth. Harp]
+
+Line: 1+1'	Mod: Ring	Detune: +0 5 18	  Vibrato: none
+Octave: +1
+
+DCO 1:	Wave 2 0
+		99  99
+		67  00
+		    END
+DCW 1:  Key 0
+		99  55
+		99  00
+		    END
+DCA 1:  Key 7
+		99  31  16
+		99  98  00
+			END
+
+---------------8<-------------------------------------------------------------
+
+Name: HAMBURGER LADY
+Comments: Very Throbbing Gristle.  Sounds like the background grind to
+	  "Hamburger Lady"; play one or two low notes.  Not perfect, but
+	  pretty good.  You can also turn off the vibrato and hit
+	  crashing atonal chords in the low octave; another very T.G sound.
+	  [Based on Casio Bass Guitar]
+
+Line: 1+1'	Mod: Ring	Detune: +1 11 34	Vibrato: 1 30 2 66
+Octave: -1
+
+DCO 1:	Wave 3 4
+		50
+		00
+		END
+DCW 1:	Key 9
+		99  45  40  41
+		80  45  30  00
+			SUS END
+DCA 1:	Key 1
+		99  25  35  42
+		90  80  75  00
+		    SUS     END
+
+
+---------------8<-------------------------------------------------------------
+
+That's it ... enjoy!  Please post any improvements or interesting modifica-
+tions.
+-- 
+		 MET					pEtEr AlfkE
+"Oh, rocks!	 HIM						  @
+		PIKE	Tell it to us				  cSVAx
+		HOSES		in plain talk!"			.cAlTEch.EDU
+
+
+Article 295 of rec.music.synth:
+Path: bacchus!mit-eddie!rutgers!ames!ptsfa!ihnp4!inuxc!pur-ee!j.cc.purdue.edu!k.cc.purdue.edu!ah5
+>From: ah5@k.cc.purdue.edu (David Coleman)
+Newsgroups: rec.music.synth
+Subject: 2 CZ-series patches
+Message-ID: <1794@k.cc.purdue.edu>
+Date: 15 Feb 87 20:45:57 GMT
+Reply-To: ah5@k.cc.purdue.edu (David Coleman)
+Distribution: world
+Organization: Undue Perversity
+Lines: 143
+Keywords: CZ CZ-101 CZ-1000 CZ-5000 CZ101 CZ1000 CZ5000 Casio CASIO
+
+
+ Hello!  Just thought I would post a couple interesting
+patches I made for the Casio CZ-series. I have a CZ-5000 
+and I love it!!
+
+---------------------------------------------------------------------
+Tone Name: "Choral oooh"
+
+Line Select:  1 + 2'
+Modulation: none
+
+Detune     (-)       oct:  0
+	 Note: 00   fine: 07
+
+Vibrato  wave:  1   delay: 40
+	 rate: 26   depth: 03
+
+Octave  -1
+
+DCO1  wave   1st: 1   2nd: 0
+step       1   2   3
+rate      86  00  74
+level     66  10  00
+sus/end  sus     end
+
+DCW1  key follow: 6
+step       1   2   3
+rate      70  00  50
+level     24  79  00
+sus/end  sus     end
+
+DCA1  key follow: 0
+step       1   2   3   4
+rate      85  36  40  50
+level     99  40  00  00
+sus/end  sus         end
+
+DCO2  wave   1st: 2   2nd: 0
+step       1   2   3
+rate      59  81  00
+level     66  62  00
+sus/end  sus     end
+
+DCW2  key follow: 5
+step       1   2   3
+rate      70  69  50
+level     28  79  00
+sus/end  sus     end
+
+DCA2  key follow: 9
+step       1   2   3
+rate      85  83  50
+level     99  37  00
+sus/end  sus     end
+
+Comments:  "Choral oooh" was a semi-successful experiment to see if
+           something close to vocals could be obtained. As you CZ
+	   owners know, the "human voice" preset sounds ok, but not
+	   at all like a human voice. "Choral oooh" sounds something
+	   like a person singing "oooh" (long u sound). It is not
+	   perfect, but I think you will find it outclasses the human
+	   voice preset by far. This voice sounds best when you play
+	   major chords on the middle-high octave range.
+---------------------------------------------------------------------
+Tone Name: Reverb Strings
+
+Line Select:  1 + 1'
+Modulation: none
+
+Detune     (+)       oct:  0
+	 Note: 00   fine: 10
+
+Vibrato  wave:  1   delay: 28
+	 rate: 52   depth: 11
+
+Octave  +1
+
+DCO1  wave   1st: 1   2nd: 3
+step       1   2
+rate      99  99
+level     66  00
+sus/end      end
+
+DCW1  key follow: 0
+step       1   2
+rate      99  00
+level     99  00
+sus/end  sus end
+
+DCA1  key follow: 4
+step       1   2   3   4   5   6   7
+rate      64  95  75  75  79  63  26
+level     99  99  76  76  33  87  00
+sus/end          sus             end
+
+DCO2  wave   1st: 1   2nd: 3
+step       1   2
+rate      99  99                  (Same as DCO1)
+level     66  00
+sus/end      end
+
+DCW2  key follow: 0
+step       1   2
+rate      99  00                  (Same as DCW1)
+level     99  00
+sus/end  sus end
+
+DCA2  key follow: 0
+step       1   2   3   4   5
+rate      92  95  92  99  32
+level     99  87  99  88  00
+sus/end              sus end
+
+Comments:  "Reverb Strings" is a modification of the preset "Synth
+	   Strings". The "reverb" comes from playing the note not
+	   only when a key is pressed, but also when the key is 
+	   released. Try holding a chord and then letting off the
+	   keys one at a time, and you will hear the effect. With
+	   a little practice on the timing of pressing and releasing
+	   the keys, you can get some interesting effects such as
+	   eight eighth notes when only when four eighth notes
+	   separated by eighth rests are played.
+---------------------------------------------------------------------
+
+ I hope you enjoy these patches. Please send me comments or 
+ questions to:
+
+		     David Coleman
+		     539 North Grant
+		     West Lafayette, IN  47906
+
+       or            k.cc.purdue.edu!ah5
+---------------------------------------------------------------------
+(A special note to Paul Boutin)
+
+ Paul,
+
+   Do these patches qualify me for the twelve "god-awesome" patches
+ you are sending cz people? If so please rush me my twelve patches
+ via electronic mail, or real mail.
+
+			      Thanks,
+				 David Coleman
+
+
+Article 200 of rec.music.synth:
+Path: bacchus!mit-eddie!genrad!decvax!tektronix!uw-beaver!cornell!rochester!seismo!mcnc!gatech!cuae2!ihnp4!houxm!mtuxo!mtune!ariel!caelum!io!granjon!daimler!cvm
+>From: cvm@daimler.UUCP
+Newsgroups: rec.music.synth
+Subject: CZ patches (attention Paul B!)
+Message-ID: <661@daimler.UUCP>
+Date: 6 Feb 87 14:20:28 GMT
+Organization: AT&T Bell Laboratories, Liberty Corner
+Lines: 124
+
+
+
+
+Fellow Casio-holics,
+
+Pardons to all for posting this to the net, but I've been trying to
+contact Paul B for some time now with no luck. Anyway, here're some more
+CZ patches for all of you patch hoards to glom. 
+
+----------------------------------------------------------------
+Paul B,
+
+Here are a couple of my patches. They're probably not 
+the greatest in the world but they've been useful in various
+contexts. (I tend to use an SPX-90 *a lot*, so the sounds might
+loose translation w/out the effect.) Let me know what you think.
+
+In addition to your new patches, I'm still waiting on your previous 
+batch of patches from some 4+ months ago. I thought I was on your
+mailing list for those (..at least you told me I was...).  If I 
+could get those too I'd appreciate it. 
+
+Thanks!
+
+-Chris Malley
+--------------------------------------------------------------
+UUCP:   ..{allegra,ihnp4,princeton,vax135}!daimler!cvm
+        ..ucbvax!ihnp4!daimler!cvm 
+USmail: AT&T Bell Laboratories
+        Room 4N-D17
+        184 Liberty Corner Road
+        PO Box 4908
+        Warren, NJ 07060-0908
+Phone:  (201)580-4392
+
+************* Patch Hoarders of America, Unite! **************
+--------------------------------------------------------------
+
+------------------------------------------------------------------
+
+Name: Space Shots
+
+line	mod	detune		vibrato		octave
+1+1'   off/off	- 0 00 06	3 0 35 93	(whatever you like best)
+
+DCO 1
+wave 
+8 0
+rate	level
+99	33
+33      0       END
+
+DCW 1
+key 
+0
+rate	level
+99  	99
+46	99
+37	52	SUS
+26	0	END
+
+DCA 1
+key 
+0
+rate	level
+99	50
+77	99
+67	91	SUS
+79	92
+26	0	END
+
+
+Comments: 
+This sounds kind of like the laser fire in a cheap video game.
+To change the number of shots fired each time you push a key,
+change the rate of DCA 1, STEP 5.   
+To vary the speed at which shots are fired, vary the vibrato 
+rate (most effective if you do this while playing.) 
+
+------------------------------------------------------------------
+
+Name: Glissando Filter Sweep
+
+line	mod	detune		vibrato		octave
+1+1'   off/off	- 0 00 06	1 0 0 6		- 1
+
+DCO 1
+wave 
+8 0
+rate	level
+99	33
+70      0       END
+
+DCW 1
+key 
+0
+rate	level
+99  	99
+46	99
+37	52	SUS
+26	0	END
+
+DCA 1
+key 
+0
+rate	level
+99	50
+77	99
+67	91	SUS
+79	59
+33	0	END
+
+
+Comments: 
+This sound creates a "high-to-low" filter sweep in discrete increments
+(hence, glissando) each time a key is pressed. The sweep is most noticable
+in the lower range of the keyboard. For really gothic song intros, 
+try setting DETUNE OCTAVE to -1 and playing single notes going slowly 
+from high to low on the keyboard.
+(Notice that the parameter values of this sound are very similar 
+to those of Space Shots. By tweaking the vibrato, DCO1, DCA1
+it becomes a semi-musical sound.)
+
+------------------------------------------------------------------
+
+
+Article 703 of net.music.synth:
+Relay-Version: version B 2.10.3 4.3bsd-beta 6/6/85; site mit-trillian.MIT.EDU
+Path: mit-trillian!mit-eddie!rutgers!sri-unix!hplabs!hp-sdd!ncr-sd!milano!bruns
+>From: bruns@milano.UUCP
+Newsgroups: net.music.synth
+Subject: CZ patches
+Message-ID: <3043@milano.UUCP>
+Date: 24 Nov 86 03:58:51 GMT
+Date-Received: 24 Nov 86 18:02:17 GMT
+Sender: bruns@milano.UUCP
+Organization: MCC, Austin, TX
+Lines: 291
+
+Here's 6 patches for Casio CZ's.  You'll probably want to replace the
+lame names with something more dignified.  Also note that some of
+the patches include a "parent patch" in the comments section.
+
+Name: Bushy		
+
+line	mod	detune		vibrato		octave
+1+2		+ 0 00 03	0 00 00 00	0
+
+DCO 1
+wave 
+5 0
+rate	level
+99	65
+38	66s
+00	00e
+
+DCW 1
+key 
+2
+rate	level
+99	99s
+40	00e
+
+DCA 1
+key 
+2
+rate	level
+72	92s
+45	00e
+
+DCO 2
+wave 
+1 0
+rate	level
+99	66
+00	00e
+
+DCW 2
+key 
+2
+rate	level
+99	99s
+40	00e
+
+DCA 2
+key 
+2
+rate	level
+72	92s
+45	00e
+
+Comments: Reminds me of Kate Bush.
+
+
+Name: Spacious
+
+line	mod	detune		vibrato		octave
+1+1'		- 0 00 02	0 00 00 00	0
+
+DCO 1
+wave 
+2 6
+rate	level
+00	00e
+
+DCW 1
+key 
+4
+rate	level
+99	60
+30	75s
+50	80
+00	00e
+
+DCA 1
+key 
+0
+rate	level
+99	90
+40	93s
+45	30
+60	00e
+
+Comments: 
+
+
+Name: Wild Kingdom
+
+line	mod	detune		vibrato		octave
+1+2	ring	+ 1 00 01	1 15 28 06	0
+
+DCO 1
+wave 
+2 0
+rate	level
+99	33
+68	00e
+
+DCW 1
+key 
+2
+rate	level
+67	99
+47	96
+37	52s
+26	00e
+
+DCA 1
+key 
+2
+rate	level
+90	99
+36	91s
+79	59
+55	00e
+
+DCO 2
+wave 
+5 0
+rate	level
+99	33
+68	00e
+
+DCW 2
+key 
+2
+rate	level
+63	99
+66	96
+37	52s
+26	00e
+
+DCA 2
+key 
+2
+rate	level
+70	99
+36	75s
+79	55
+55	00e
+
+Comments: I called this "Wild Kingdom" because it's sounds like a
+nature TV show patch.  The patch is based on CZ-101 patch #1 (Brass
+ens. 1).  The slow vibrato is critical for this patch.
+
+
+Name: Rising resonance
+
+line	mod	detune		vibrato		octave
+1+2'		+ 0 00 04	0 00 00 00	0
+
+DCO 1
+wave 
+3 0
+rate	level
+00	00e
+
+DCW 1
+key 
+6
+rate	level
+99	90s
+40	00e
+
+DCA 1
+key 
+9
+rate	level
+72	92s
+50	00e
+
+DCO 2
+wave 
+6 0
+rate	level
+99	95
+27	66s
+00	66
+00	00e
+
+DCW 2
+key 
+9
+rate	level
+99	40s
+40	00e
+
+DCA 2
+key 
+0
+rate	level
+80	80
+60	90s
+55	00e
+
+Comments: Try different waveforms, esp. on DCO 2.
+
+
+Name: Chunky Blocks
+
+line	mod	detune		vibrato		octave
+1+1'	ring	- 3 03 08	1 00 38 15	-1
+
+DCO 1
+wave 
+2 1
+rate	level
+99	62
+76	00e
+
+DCW 1
+key 
+0
+rate	level
+99	83
+51	00e
+
+DCA 1
+key 
+6
+rate	level
+99	99
+52	00e
+
+Comments: Use tone mix if you're using this patch for bass line.
+Also, I'm not sure if the detune is supposed to be "-".
+
+
+Name: Electric bubbles
+
+line	mod	detune		vibrato		octave
+1+2'	ring	+ 2 00 08	3 00 75 99	0
+
+DCO 1
+wave 
+6 5
+rate	level
+00	00e
+
+DCW 1
+key 
+8
+rate	level
+60	57s
+00	00e
+
+DCA 1
+key 
+0
+rate	level
+99	36
+70	91
+59	99
+12	93s
+66	00e
+
+DCO 2
+wave 
+1 8
+rate	level
+00	00e
+
+DCW 2
+key 
+8
+rate	level
+60	57
+00	00e
+
+DCA 2
+key 
+1
+rate	level
+99	36
+70	91
+59	99
+12	93s
+66	00e
+
+Comments: Strictly for special effects.  High notes sound like a ray
+gun (don't ask what kind of ray); low notes sound like a helicopter.
+Based on CZ-101 patch #7 (flute) -- which explains the gratuitous
+detail in the DCA's.
+
+
+-- 
+Glenn Bruns 
+MCC, Software Technology Program
+arpa: bruns@mcc.com    
+uucp: {seismo,harvard,gatech,pyramid}!ut-sally!im4u!milano!bruns
+
+
+ 
+NAME: background swell
+
+line	mod	detune		vibrato		octave
+1+2	-	+ 0 00 07	1 11 51 23	0
+DCO1
+wave
+1 0
+rt lv
+0 0e
+DCO1
+key
+2
+rt lv
+99 97s
+40 00e
+DCA1
+key
+2
+rt lv
+72 15
+31 93s
+31 0e
+DCO2
+wave
+2 0
+rt lv
+00 00e
+DCW2
+key
+2
+rt lv
+99 99s
+40 00e
+DCA2
+key
+2
+rt lv
+72 15
+31 93s
+31 00e
+
+Comments:
+
+turn down DCW1 sustain level if using without tons of processing
+
+-------------------------------------------------------------
+
+
+NAME:Ministry horns
+
+line	mod	detune		vibrato		octave
+1+2	-	+ 1 00 14	3 00 40 11	+1
+DCO1
+wave
+4 1
+rt lv
+86 99
+99 33
+68 00e
+DCO1
+key
+2
+rt lv
+67 99
+47 96
+37 52s
+26 00e
+DCA1
+key
+2
+rt lv
+82 99
+36 91s
+79 59
+55 00e
+DCO2
+wave
+1 0
+rt lv
+97 99
+89 00e
+DCW2
+key
+7
+rt lv
+97 87
+43 79
+50 74s
+52 00e
+DCA2
+key
+0
+rt lv
+99 99
+21 97
+61 00e
+
+Comments:
+
+Again, use tons of chorus & reverb.  Guaranteed to sound like Alain
+Jourgensen in short punches. Play parallel ocatves for bigger sound. 
+-------------------------------------------------------------
+
+NAME: popcorn
+
+line	mod	detune		vibrato		octave
+1+2	ring	+ 1 00 00	4 00 97 27	-1
+DCO1
+wave
+5 2
+rt lv
+95 91
+99 00e
+DCO1
+key
+0
+rt lv
+99 78
+47 79s
+50 00
+47 00e
+DCA1
+key
+4
+rt lv
+97 99
+56 49
+99 00e
+DCO2
+wave
+8 3
+rt lv
+99 99
+93 00e
+DCW2
+key
+0
+rt lv
+99 81s
+64 00e
+DCA2
+key
+0
+rt lv
+99 99
+56 00e
+
+
+Comments:
+
+Great for adding attack to sequencer bass lines.
+-------------------------------------------------------------
+
+NAME: Kick #1 (extender for TR505)
+
+line	mod	detune		vibrato		octave
+1+1	noise	- 3 00 06	4 00 53 90	-1
+DCO1
+wave
+4 1
+rt lv
+98 67
+99 00e
+DCO1
+key
+0
+rt lv
+99 99
+99 00e
+DCA1
+key
+0
+rt lv
+99 99
+45 00e
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:
+
+MIDI to TR505 bass drum, pick a low note (25-40).
+-------------------------------------------------------------
+
+NAME:kick #2 (TR505 extender)
+
+line	mod	detune		vibrato		octave
+1+1	-	- 1 00 00	4 04 63 89	-1
+DCO1
+wave
+5 4
+rt lv
+90 76
+90 00e
+DCO1
+key
+0
+rt lv
+99 15s
+50 00e
+DCA1
+key
+0
+rt lv
+99 99
+49 00e
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:
+
+MIDI to TR505 bass drum, has different sounds in different octaves
+-------------------------------------------------------------
+
+NAME: snare #1 (TR505 extender)
+
+line	mod	detune		vibrato		octave
+1+1	noise	+ 2 04 08	3 00 56 88	-1
+DCO1
+wave
+4 7
+rt lv
+99 62
+76 00e
+DCO1
+key
+0
+rt lv
+00 00e
+DCA1
+key
+0
+rt lv
+99 99
+38 51
+53 00e
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:
+
+MIDI to snare drum.  I use notes in the lower half of the keyboard.
+-------------------------------------------------------------
+
+NAME: Snare #2
+
+line	mod	detune		vibrato		octave
+1+2	noise	+ 1 10 0	-		-1
+DCO1
+wave
+1 4
+rt lv
+99 70
+54 00s
+50 00e
+DCO1
+key
+0
+rt lv
+99 99
+99 00e
+DCA1
+key
+9
+rt lv
+99 99
+51 00e
+DCO2
+wave
+1 4
+rt lv
+99 70
+54 00s
+50 00e
+DCW2
+key
+0
+rt lv
+99 99
+99 00e
+DCA2
+key
+9
+rt lv
+99 99
+43 00e
+
+Comments:
+
+For those of us without an SPX-90.
+-------------------------------------------------------------
+
+NAME: Rayz
+
+line	mod	detune		vibrato		octave
+1+2	-	+ 1 07 10	1 07 61 23	+1
+DCO1
+wave
+1 4
+rt lv
+00 00e
+DCO1
+key
+0
+rt lv
+88 99s
+47 25
+44 00e
+DCA1
+key
+0
+rt lv
+93 87s
+39 00e
+DCO2
+wave
+6 0
+rt lv
+00 00e
+DCW2
+key
+0
+rt lv
+99 99s
+47 25
+44 00e
+DCA2
+key
+0
+rt lv
+92 99
+85 97
+92 99
+99 98s
+32 00e
+
+Comments:
+
+Sounds even cooler if you use the pitch wheel for glissandi.
+(Did I really use the word "glissandi"?)
+-------------------------------------------------------------
+
+NAME: Whistlin
+
+line	mod	detune		vibrato		octave
+
+DCO1
+wave
+
+rt lv
+
+DCO1
+key
+
+rt lv
+
+DCA1
+key
+
+rt lv
+
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:
+
+Take the preset "Whistle" and change the detune to + 0 0 20
+-------------------------------------------------------------
+
+NAME: Bowp/Industrial [Bass]
+
+line	mod	detune		vibrato		octave
+1 +2	*	+ 3 05 00	-		-1
+DCO1
+wave
+6 *
+rt lv
+0 0e
+DCO1
+key
+0
+rt lv
+72 53
+52 00e
+DCA1
+key
+0
+rt lv
+99 99 
+44 00e
+DCO2
+wave
+4 0
+rt lv
+00 00e
+DCW2
+key
+2
+rt lv
+99 10
+48 00e
+DCA2
+key
+0
+rt lv
+99 81
+42 00e
+
+Comments:
+
+* This is one of my most-used sounds.  There are four variations
+according to the following matrix:
+	
+		Bowp		Industrial
+
+Regular		ring mod	noise mod
+		DCO1 6 0	DCO1 6 0
+
+Bass		ring mod	noise mod
+		DCO1 6 2	DCO1 6 2
+-------------------------------------------------------------
+
+NAME:Pan Pipes / Danger Sound
+
+line	mod	detune		vibrato		octave
+
+DCO1
+wave
+
+rt lv
+
+DCO1
+key
+
+rt lv
+
+DCA1
+key
+
+rt lv
+
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:
+Take the "Internal #3" setting and change DCO1 to
+	2 0	for pan pipes
+	7 0	for Dangersound
+
+	"Dangersound" on the low D note is something like Ministry
+opened their show with last time I saw them.  Excuse me for making fun
+of those Casio Sound Data book names like "Dangerous Sound #2".
+
+-------------------------------------------------------------
+
+NAME: Traffic Doppler (Barry Kirsch, modified by me)
+
+line	mod	detune		vibrato		octave
+1+1	noise	+ 00 03 00	1 00 00 97	-1
+DCO1
+wave
+7 0
+rt lv
+99 15s
+16 00e
+DCO1
+key
+0
+rt lv
+00 00e
+DCA1
+key
+0
+rt lv
+35 99
+00 00
+30 00e
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:
+
+Hold the key down and wait.  I like clusters of low notes best
+-------------------------------------------------------------
+
+NAME: Sampled Snap
+
+line	mod	detune		vibrato		octave
+1+2	noise	+ 1 07 00	1 00 67 09	0
+DCO1
+wave
+5 0
+rt lv
+96 75
+99 00e
+DCO1
+key
+0
+rt lv
+91 66
+93 00e
+DCA1
+key
+0
+rt lv
+93 99
+54 00e
+DCO2
+wave
+2 0
+rt lv
+97 74
+93 00e
+DCW2
+key
+0
+rt lv
+93 41
+64 00e
+DCA2
+key
+0
+rt lv
+94 99
+49 00e
+
+Comments:
+
+Any resemblance to snare #1 is purely intentional.
+-------------------------------------------------------------
+
+NAME: Kalimba #3,452,156 
+
+line	mod	detune		vibrato		octave
+1+2	ring	+ 2 10 00	1 60 50 03	0
+DCO1
+wave
+5 0
+rt lv
+96 75
+99 00e
+DCO1
+key
+9
+rt lv
+97 24
+88 00e
+DCA1
+key
+2
+rt lv
+95 99
+43 00e
+DCO2
+wave
+2 0
+rt lv
+97 74
+93 00e
+DCW2
+key
+9
+rt lv
+95 82
+64 00e
+DCA2
+key
+0
+rt lv
+96 99
+49 00e
+
+Comments:
+
+Yup, more Afro-percussion.  This one has radically different timbres in
+different octaves (the second octave on the 101 keyboard is my
+favorite). Noise percussion makes some interesting sounds too.
+-------------------------------------------------------------
+
+NAME: Helicopter (Glenn Bruns, modified)
+
+line	mod	detune		vibrato		octave
+1+2	ring	+ 2 00 08	3 00 70 99	-1
+DCO1
+wave
+6 5
+rt lv
+00 00e
+DCO1
+key
+8
+rt lv
+60 57s
+00 00e
+DCA1
+key
+0
+rt lv
+99 93s
+66 00e
+DCO2
+wave
+1 0
+rt lv
+00 00e
+DCW2
+key
+8
+rt lv
+60 57s
+00 00e
+DCA2
+key
+1
+rt lv
+99 93
+66 00e
+
+Comments:
+
+Noise modulation makse a meaner helicopter, and a machine gun in the
+upper range.
+-------------------------------------------------------------
+
+
+
+
+
+
+
+Name: synth organ
+
+line	mod	detune		vibrato		octave
+1+2		+ (1,2) 00 06			+1
+
+DCO 1
+wave 
+2 4
+rate	level
+99	33
+33	00 e
+
+DCW 1
+key 
+0
+rate	level
+80	99
+47	96
+37	52 s
+26	00
+50	00 e
+
+DCA 1
+key 
+0
+rate	level
+99	90
+78	65
+83	95
+70	75
+70	99 s
+79	59
+33	00 e
+
+DCO 2
+wave 
+3 5
+rate	level
+99	33
+33	00 e
+
+DCW 2
+key 
+0
+rate	level
+80	99
+47	96
+37	52 s
+26	00
+50	00 e
+
+
+DCA 2
+key 
+0
+rate	level
+99	90
+78	65
+83	95
+70	75
+70	99 s
+79	59
+33	00 e
+
+Comments:
+
+Boring but useful.
+
+Name: drum hit
+
+line	mod	detune		vibrato		octave
+2		+ 1 10 25			0
+
+DCO 1
+wave 
+5 2
+rate	level
+50 	00e
+
+DCW 1
+key 
+0
+rate	level
+99 	99
+99	99e
+
+DCA 1
+key 
+0
+rate	level
+93	55
+99	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments:
+If you don't have a drum machine, put some of this under your drum noise.
+I boost 200hz for extra umph.
+
+
+Name: drum wash
+
+line	mod	detune		vibrato		octave
+1+1'	noise	+ (1,2,3) 03 08	1 00 38 15	-1
+
+DCO 1
+wave 
+5 0
+rate	level
+99	62
+76	00e
+
+DCW 1
+key 
+0
+rate	level
+99	83
+99	00e
+
+DCA 1
+key 
+6
+rate	level
+99	99
+38	51
+53	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments: I put the three different versions (different detune octave
+settings) on adjacent Internal memory keys , and by switching back
+and forth between beats (it takes practice) I got a "drum kit", and
+even gated off some of the hits by switching to the next sound before
+the note had died out.  Primitive, but it got on the local college
+station a few times.  This is one of those sounds that sounds really
+big on tape.
+
+Name: Simmons SDS-7
+
+line	mod	detune		vibrato		octave
+1+1	noise	+1 03 00			-1
+
+DCO 1
+wave 
+1 5
+rate	level
+99 	70
+42	00e
+
+DCW 1
+key 
+0
+rate	level
+99	99
+99	00e
+
+DCA 1
+key 
+9
+rate	level
+99	99
+43	00s
+50	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments: I tried to duplicate the sound on Duran Duran's "Rio".
+
+Name: Phil-in-a-box
+
+line	mod	detune		vibrato		octave
+1+1'	noise	+ 0 10 00			-1
+
+DCO 1
+wave 
+1 4
+rate	level
+99	70
+54	00s
+50	00e
+
+DCW 1
+key 
+0
+rate	level
+99	99
+99	00e
+
+DCA 1
+key 
+9
+rate	level
+99	99
+43	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments: I was trying to emulate the big crashes on "In the Air
+Tonight" and "I Don't Care Anymore".  Having heard it on CD last
+week, there's no comparison.  However, SOMEONE on the net (I lost the
+message) claims to have improved it.  ???
+
+Name: Trevor Horns
+
+line	mod	detune		vibrato		octave
+1+1'		- 0 02 24	3 06 02 99	+1
+
+DCO 1
+wave 
+3 0
+rate	level
+99	33
+33	00e
+
+DCW 1
+key 
+2
+rate	level
+67	99
+47	96
+37	52s
+26	00e
+
+DCA 1
+key 
+2
+rate	level
+82	99
+36	91s
+79	59
+55	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments: Everybody likes this one, but you have to play it a certain
+way or it sounds stupid.  Turn your reverb WAY up and playing three
+or four octaves in unison, tap short horn-punch chords.
+
+Ha ha ha, five people have mistaken it for a Fairlight on tape so
+far!
+
+Name: organ brass
+
+line	mod	detune		vibrato		octave
+1+1'		+ 1 00 06			+1
+
+DCO 1
+wave 
+3 5
+rate	level
+99	33
+68	00e
+
+DCW 1
+key 
+0
+rate	level
+80	99
+47	96
+37	52s
+26	00
+50	00e
+
+DCA 1
+key 
+0
+rate	level
+99	90
+78	65
+83	95
+70	75
+70	99s
+79	59
+33	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments: I forget what this sounds like.  I'll have to try it again.
+Probably an organ set to "brass".
+
+Name: Herbie Scratch
+
+line	mod	detune		vibrato		octave
+1+1'		+ 0 02 00	1 00 54 88	+1
+
+DCO 1
+wave 
+3 4
+rate	level
+47	99
+99	00e
+
+DCW 1
+key 
+0
+rate	level
+80	99
+47	96
+38	85s
+26	00e
+
+DCA 1
+key 
+2
+rate	level
+99	90
+85	65
+85	95
+78	75
+78	99
+01	98
+99	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments: In lieu of having a record to scratch...
+
+Name: Fuzzy bass
+
+line	mod	detune		vibrato		octave
+1+1'	ring	+ 1 00 00	1 33 55 23	+1
+
+DCO 1
+wave 
+2 3
+rate	level
+00	00e
+
+DCW 1
+key 
+7
+rate	level
+97	99
+43	79
+50	74s
+52	00e
+
+DCA 1
+key 
+0
+rate	level
+99	99
+21	00s
+61	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments: Only so-so, but here it is.
+
+Name: fat synth bass
+
+line	mod	detune		vibrato		octave
+1+1'	ring	+ 0 07 04	1 33 55 23	0
+
+DCO 1
+wave 
+2 3
+rate	level
+50	00e
+
+DCW 1
+key 
+7
+rate	level
+97	99
+43	79
+50	74s
+52	00e
+
+DCA 1
+key 
+0
+rate	level
+99	99
+21	89s
+61	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments: Modified version of Casio "Electric bass" that sustains.
+I play Wham tunes on it -- drives my roommates *nuts*!
+
+Name: 1-Octave bass
+
+line	mod	detune		vibrato		octave
+1+2		+ 1 00 05	1 54 11 04	-1
+
+DCO 1
+wave 
+1 2
+rate	level
+66	58
+72	00
+43	05
+65	00e
+
+DCW 1
+key 
+9
+rate	level
+82	88
+42	63
+00	00e
+
+DCA 1
+key 
+9
+rate	level
+99	99
+28	00
+56	00
+
+DCO 2
+wave 
+5 4
+rate	level
+00	00e
+
+DCW 2
+key 
+7
+rate	level
+92	80
+44	62
+00	00e
+
+DCA 2
+key 
+0
+rate	level
+90	99
+30	86s
+86	00e
+
+Comments: I put this under other bass patches (via tone mix) to get
+more bottom end.
+
+Name: 2-Octave bass (Tony Levin)
+
+line	mod	detune		vibrato		octave
+1+2		+ 0 00 05	1 54 11 04	-1
+
+DCO 1
+wave 
+1 2
+rate	level
+66	58
+72	00
+43	05
+65	00e
+
+DCW 1
+key 
+9
+rate	level
+82	83
+42	63
+00	00e
+
+DCA 1
+key 
+9
+rate	level
+99	99
+28	00
+56	00e
+
+
+DCO 2
+wave 
+3 4
+rate	level
+00	00e
+
+DCW 2
+key 
+7
+rate	level
+92	80
+44	62
+00	00e
+
+DCA 2
+key 
+0
+rate	level
+90	99
+30	86s
+86	00e
+
+Comments: I used this to add bottom to bass parts played in higher
+registers until someone pointed out that it sounds just like Tony
+Levin's Chapman Stick.  "I wanna be.... your Sledgehammer..."
+It does have a nice voice of its own.
+
+Name: ArtoNoise Trumpet (#3)
+
+line	mod	detune		vibrato		octave
+1+2	ring			1 27 49 11	+1
+
+DCO 1
+wave 
+3 0
+rate	level
+00 	00e
+
+DCW 1
+key 
+4
+rate	level
+67	79
+00	00e
+
+DCA 1
+key 
+2
+rate	level
+70	91
+70	67
+70	96
+70	77
+70	99s
+56	00e
+
+DCO 2
+wave 
+4 0
+rate	level
+00	00e
+
+DCW 2
+key 
+4
+rate	level
+72	79
+00	00e
+
+DCA 2
+key 
+2
+rate	level
+70	91
+70	67
+70	97
+70	77
+70	99s
+48	00e
+
+Comments: Mix with Casio Preset turmpet.  You can set Bend Range to
+12 and go a whole octave higher still sounding great.
+
+Name: Lazy Trumpet (#4)
+
+line	mod	detune		vibrato		octave
+1+1'		+ 0 00 07			0
+
+DCO 1
+wave 
+1 0
+rate	level
+99	33
+68	00e
+
+DCW 1
+key 
+2
+rate	level
+67	99
+47	96
+37	52s
+26	00e
+
+
+DCA 1
+key 
+2
+rate	level
+70	90
+70	65
+70	95
+70	75
+70	99s
+50	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments: I mix this with the Casio Trumpet, set Bend Range to 2, and
+get some pretty cool leads with this (a long echo helps).
+
+Name: snap percussion
+
+line	mod	detune		vibrato		octave
+1+2	noise	+ 1 00 00			0
+
+DCO 1
+wave 
+1 0
+rate	level
+99	82
+99	00e
+
+DCW 1
+key 
+0
+rate	level
+99	99
+28	00e
+
+DCA 1
+key 
+0
+rate	level
+99	99
+99	00e
+
+DCO 2
+wave 
+1 0
+rate	level
+00	00e
+
+DCW 2
+key 
+0
+rate	level
+00	00e
+
+DCA 2
+key 
+0
+rate	level
+99	99
+58	00e
+
+Comments: Four notes within an octave with a slapback echo make
+realistic handclaps.
+
+Name: Star Trek noise
+
+line	mod	detune		vibrato		octave
+1+1'				1 00 60 98	+ 1
+
+DCO 1
+wave 
+3 4
+rate	level
+63	99s
+99	00e
+
+DCW 1
+key 
+0
+rate	level
+80	99
+47	96
+38	85s
+26	00
+50	00e
+
+DCA 1
+key 
+2
+rate	level
+99	90
+85	65
+85	95
+78	75
+78	99
+01	98s
+99	00e
+
+DCO 2
+wave 
+
+rate	level
+
+
+DCW 2
+key 
+
+rate	level
+
+
+DCA 2
+key 
+
+rate	level
+
+
+Comments: Just another stupid noise.  Doesn't sound like anything on
+Star Trek per se, or does it?  I guess it depends on how Trekkie you
+are...
+
+Name: Woh-Wow-Yeh 	FROM BARRY KIRSCH
+
+line	mod	detune		vibrato		octave
+1+2'		+ 00 00 07		-1
+
+DCO 1
+wave 
+6 0
+rate	level
+51	33
+68	00e
+
+DCW 1
+key 
+2
+rate	level
+58	99
+47	96
+37	52s
+26	00e
+
+DCA 1
+key 
+2
+rate	level
+62	71
+36	91s
+79	59
+55	00e
+
+DCO 2
+wave 
+7 0
+rate	level
+53	33
+68	00e
+
+DCW 2
+key 
+2
+rate	level
+33	99
+47	96
+37	52s
+26	00e
+
+DCA 2
+key 
+2
+rate	level
+82	99
+36	91s
+79	59
+55	00e
+
+Comments: "All at once, the clouds are parting,
+	    light streams down in bright unbroken beams..."
+	  Is this a Rush sound or WHAT, I ask?  I love it anyway :) .
+
+Name: Flutelight	ERIC PERSING, _KEYBOARD_ MAGAZINE
+
+line	mod	detune		vibrato		octave
+1+2	noise	- 1 00 00	1 46 52 17	+1
+
+DCO 1
+wave 
+1 0
+rate	level
+52	50
+15	00e
+
+DCW 1
+key 
+9
+rate	level
+72	88
+99	53s
+50	00e
+
+DCA 1
+key 
+0
+rate	level
+99	17
+70	91
+59	99
+12	83s
+65	00e
+
+DCO 2
+wave 
+5 0
+rate	level
+83	67
+50	00e
+
+DCW 2
+key 
+8
+rate	level
+60	57
+00	00e
+
+DCA 2
+key 
+2
+rate	level
+76	67
+61	00e
+
+Comments: Yes, THAT sound again.... play happy major thirds and see.
+
+
+
+Article 1660 of rec.music.synth:
+Path: bloom-beacon!husc6!cmcl2!brl-adm!umd5!uvaarpa!virginia!uvacs!edison!cpc
+>From: cpc@edison.GE.COM (Chris Cuthbert)
+Newsgroups: rec.music.synth
+Subject: CZ Patch
+Keywords: Yo
+Message-ID: <1215@edison.GE.COM>
+Date: 29 Oct 87 18:43:04 GMT
+Organization: General Electric Company, Charlottesville, VA
+Lines: 40
+
+Here's a good CZ bass patch that was spit out one day by my random patch
+generator:
+
+LINE   RING   NOISE   +/-  OCTV  NOTE  FINE    WAVE  DELAY  RATE  DPTH  OCTV
+ 1+2    OFF    OFF     +    0     00    07       1     00    00    00    -1
+
+             LINE 1                                   LINE  2
+
+           WAVEFORMS                                 WAVEFORMS
+             3   0                                     4   0
+
+         PITCH  ENVELOPE                           PITCH  ENVELOPE
+RATE  50 50                               RATE  50
+LEVL  00 00                               LEVL  00
+      S  E                                      E
+
+          DCW KEYFOLLOW                          DCW KEYFOLLOW
+               0                                        0
+
+          WAVE ENVELOPE                          WAVE ENVELOPE
+RATE  72 20                               RATE  87 56 33 89 72 57
+LEVL  41 00                               LEVL  98 76 58 61 30 00
+      S  E                                                     E
+
+          DCA KEYFOLLOW                          DCA KEYFOLLOW
+                0                                       0
+
+      AMPLITUDE ENVELOPE                        AMPLITUDE ENVLOPE
+RATE  99 50                               RATE  99 50
+LEVL  99 00                               LEVL  99 00
+      S  E                                         E
+
+
+Try it.  You know what they say, computers never lie!  Want more ? I have
+tons of patches.  Let me know.
+
+
+MOM SAYS: Ed Meese is a slime wevil
+
+Mar Tan
+
+
+Article 111 of rec.music.synth:
+Path: bacchus!mit-eddie!rutgers!im4u!milano!bruns
+>From: bruns@milano.UUCP
+Newsgroups: rec.music.synth
+Subject: Casio CZ patch
+Message-ID: <3516@milano.UUCP>
+Date: 23 Jan 87 15:02:39 GMT
+Sender: bruns@milano.UUCP
+Organization: MCC, Austin, TX
+Lines: 46
+
+OK, Paul, here is a new patch.  I just bought an EZ-CZ memory
+cartridge for my Casio - the $50 model that is supposed to be
+blank.  My copy had about 16 patches in it, including one
+that was reminiscent of drilling.  After making some changes
+I came up with this:
+
+
+Name: Drilling 		
+
+line	mod	detune		vibrato		octave
+1+1'	noise	- 2 00 40	1 36 66 62	0
+
+DCO 1
+wave 
+1 2
+rate	level
+55	82s
+54	39
+00	00e
+
+DCW 1
+key 
+4
+rate	level
+82	92s
+26	45
+00	00e
+
+DCA 1
+key 
+0
+rate	level
+63	99s
+47	68
+70	00e
+
+Comments: High notes sound like dentist's drill; low notes sound
+more like 3/8" drill into wood.
+
+-- 
+Glenn Bruns 
+MCC, Software Technology Program
+arpa: bruns@mcc.com    
+uucp: {seismo,harvard,gatech,pyramid}!ut-sally!im4u!milano!bruns
+
+"A change is as good as a holiday"
+
+
+Name: synth organ
+
+line	mod	detune		vibrato		octave
+1+2	ring	+ 0 00 12	1 27 49 11	(0,+1)
+
+DCO 1
+wave 
+3 2
+rate	level
+00 00e
+
+DCW 1
+key 
+4
+rate	level
+67 79
+15 00e
+
+DCA 1
+key 
+2
+rate	level
+70 91
+70 67
+70 96
+70 77
+70 99s
+44 00r
+
+DCO 2
+wave 
+3 2
+rate	level
+00 00e
+
+DCW 1
+key 
+4
+rate	level
+72 79
+15 00e
+
+DCA 1
+key 
+2
+rate	level
+70 91
+70 67
+70 96
+70 77
+70 99s
+35 00r
+
+Comments:
+
+Tone mix one voice in octave 0 with one in octave +1
+Article 1066 of rec.music.synth:
+Path: bloom-beacon!husc6!rutgers!rochester!pt!speech2.cs.cmu.edu!yamauchi
+>From: yamauchi@speech2.cs.cmu.edu (Brian Yamauchi)
+Newsgroups: rec.music.synth
+Subject: CZ-101 Patches
+Keywords: Casio CZ-101 Patches
+Message-ID: <1052@speech2.cs.cmu.edu>
+Date: 27 Jul 87 16:21:27 GMT
+Organization: Carnegie-Mellon University, CS/RI
+Lines: 171
+Posted: Mon Jul 27 12:21:27 1987
+
+Here are a few patches I created for the CZ-101.  Comments and suggestions
+are welcome.
+
+--------------------
+
+Tone Name:         Brass Strings
+
+Line Select:       1+2'
+Modulation:        Ring   = OFF   Noise = OFF
+Detune:            Octave = 0     Note  = 0      Fine = +6
+Vibrato:           Wave   = 1     Delay = 28     Rate = 52      Depth = 11
+Octave:            
+
+
+DCO1                                   DCO2
+----                                   ----
+
+First = 1     Second = 5               First = 1      Second = 3
+
+Rate:         99 99                    Rate:          99 68
+Level:        66 00                    Level:         33 00
+Sus/End:         E                     Sus/End:          E
+
+DCW1                                   DCW2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    0
+
+Rate:         99 00                    Rate:          80 47 37 26
+Level:        90 00                    Level:         99 96 52 00
+Sus/End:      S  E                     Sus/End:             S  E
+
+DCA1                                   DCA2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    0
+
+Rate:         92 95 92 99 45           Rate:          99 77 67 79 33
+Level:        99 87 99 88 00           Level:         50 99 91 59 00
+Sus/End:               S  E            Sus/End:             S     E
+
+Comment: This patch started as a combination of the Synth Strings preset and
+Synth Brass 1.  It works well for lead lines on the upper half of the keyboard.
+
+--------------------
+
+Tone Name:         Ice Blue
+
+Line Select:       1+1'
+Modulation:        Ring   = OFF   Noise = OFF
+Detune:            Octave = 0     Note  = 0      Fine = -7
+Vibrato:           Wave   = 1     Delay = 0      Rate = 0       Depth = 0
+Octave:            
+
+
+DCO1                                   DCO2
+----                                   ----
+
+First = 2     Second = 0               First =        Second = 
+
+Rate:         00                       Rate:          
+Level:        00                       Level:         
+Sus/End:      E                        Sus/End:       
+
+DCW1                                   DCW2
+----                                   ----
+
+Key Follow:   5                        Key Follow:    
+
+Rate:         99 50                    Rate:          
+Level:        85 00                    Level:         
+Sus/End:      S  E                     Sus/End:       
+
+DCA1                                   DCA2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    
+
+Rate:         99 50 50 40              Rate:          
+Level:        80 99 50 00              Level:         
+Sus/End:         S     E               Sus/End:       
+
+Comment: Sounds almost like a synth clarinet.
+
+--------------------
+
+Tone Name:         Pseudosilk
+
+Line Select:       1+1'
+Modulation:        Ring   = OFF   Noise = OFF
+Detune:            Octave = 0     Note  = 0      Fine = +7
+Vibrato:           Wave   = 1     Delay = 0      Rate = 0       Depth = 0
+Octave:            
+
+
+DCO1                                   DCO2
+----                                   ----
+
+First = 1     Second = 0               First =        Second = 
+
+Rate:         00                       Rate:          
+Level:        00                       Level:         
+Sus/End:      E                        Sus/End:       
+
+DCW1                                   DCW2
+----                                   ----
+
+Key Follow:   7                        Key Follow:    
+
+Rate:         93 60 42                 Rate:          
+Level:        99 90 00                 Level:         
+Sus/End:         S  E                  Sus/End:       
+
+DCA1                                   DCA2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    
+
+Rate:         75 55 40                 Rate:          
+Level:        68 99 00                 Level:         
+Sus/End:         S  E                  Sus/End:       
+
+Comment: This patch was designed to sound like the lead synth in Pseudosilk
+Kimono by Marillion.
+
+--------------------
+
+Tone Name:         Oracle
+
+Line Select:       1+1'
+Modulation:        Ring   = OFF   Noise = OFF
+Detune:            Octave = 0     Note  = 0      Fine = +7
+Vibrato:           Wave   = 2     Delay = 0      Rate = 60      Depth = 30
+Octave:            
+
+
+DCO1                                   DCO2
+----                                   ----
+
+First = 2     Second = 7               First =        Second = 
+
+Rate:         00                       Rate:          
+Level:        00                       Level:         
+Sus/End:      E                        Sus/End:       
+
+DCW1                                   DCW2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    
+
+Rate:         99 40                    Rate:          
+Level:        99 00                    Level:         
+Sus/End:      S  E                     Sus/End:       
+
+DCA1                                   DCA2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    
+
+Rate:         99 30                    Rate:          
+Level:        99 00                    Level:         
+Sus/End:         E                     Sus/End:       
+
+Comment: An exotic-sounding tone.
+-- 
+______________________________________________________________________________
+
+Brian Yamauchi                      INTERNET:    yamauchi@speech2.cs.cmu.edu
+Carnegie-Mellon University
+Computer Science Department
+______________________________________________________________________________
+
+
+>From seismo!mcvax!kvvax4!truls@EDDIE.MIT.EDU Tue Mar 31 13:37:26 1987
+Date: Thu, 8 Jan 87 09:11:11 -0100
+>From: seismo!mcvax!kvvax4!truls@EDDIE.MIT.EDU (Truls Ellefsen)
+To: mit-athena!paul
+Subject: CZ-patches.
+
+Hei Paul!!! (Norwegian)
+
+Please mail those new patches to me.
+Thanks.
+Q: Have you got any other responses from Norway?
+
+Here is a patch edited from a piano-like sound recived earlier. Maybe useful.
+(I like it.)
+
+Truls.
+
+*********************************************************
+Name: Woody metal.
+
+line	mod	detune		vibrato		octave
+1+1'    ring    + 2 00 06       1 50 65 07         0
+
+DCO 1
+wave 
+1 0
+rate	level
+00      00 end
+
+DCW 1
+key 
+9
+rate	level
+83      27
+37      10 sus
+88      00 end
+
+DCA 1
+key 
+5
+rate	level
+99      99
+38      85
+21      78
+31      65
+32      60
+40      55
+17      00
+37      00 end
+
+*****************************************************************************
+Comments: Detune, octave=3 also useful. Expriment with vibrato.
+
+
+*****************************************************************************
+
+
+
+>From lansd@utcs.toronto.edu Tue Mar 31 13:37:59 1987
+Date: Fri, 9 Jan 87 06:41:26 EST
+>From: Robert Lansdale <lansd@utcs.toronto.edu>
+To: mit-eddie!mit-trillian!paul, @mnetor, @rutgers, @seismo, @utzoo
+
+     I read your offer of "FREE!" CZ-101 patches on the net a  few 
+days ago,  and I offer the following three in return.  My favorite 
+is  the  "Reverb  Flute"  from  E&MM,  while  the  other  two  are 
+originals. "Guitar with distortion" really is an unplayable patch, 
+but it has 'built-in' distortion,  so may come in handy as a guide 
+as  to  how  to do this.  The "Mean Electric Guitar"  is  a  cross 
+between  a motor bike at 800000 rpm and a guitar - it needs  work, 
+but  with the right outboard signal processors it could  become  a 
+good heavy metal guitar (I've used it occasionally for such).
+
+     By the way,  do you know of any people with a TR-707 or Jx8p? 
+I would like to trade patches, or sequences for them. 
+
+<Robert Lansdale> <University of Toronto>
+
+Name: Reverb Flute (September 1986 Electronics & Music Maker)
+
+Line: 1+2'
+Mod: Noise on
+Detune: +,0,0,0
+Vibrato: Wave=1,delay=26,rate=55,depth=9
+Octave: +1
+
+DCO1:     1st wave = 2, 2nd wave = 0
+          Rate=70,level = 66 (sus)
+               00         00 (end)
+
+DCW1:     Key follow = 0
+          Rate=60, Level = 35 (sus)
+               00,         00 (end)
+
+DCA1:     Key follow =1
+          rate=82   Level = 99 (sus)
+               58           89
+               71           54
+               44           30
+               63           66
+               44           30
+               61           51
+               50           00 (end)
+
+DCO2:          1st wave = 1, 2nd wave = 0
+               rate = 00,     level = 0 (end)
+
+DCW2:          Key follow = 9
+               rate = 99, level = 00 (sus)
+                      00          00 (end)
+
+DCA2:          Key follow = 1
+               rate = 92, level = 64
+                      56          00 (end)
+
+----------------------------------------------------------------
+
+Name: Guitar with distortion
+
+Detune: +, oct=2,note=7, fine=8
+Vibrato: wave=1,delay=0,rate=99,depth=24
+Octave=-1
+Line: 1+1'
+mod: ring
+
+DCO1:     1st wave = 8, 2nd wave = 4
+          rate =00, level = 00 (end)
+
+DCW1:     Key follow = 0
+          Rate = 99, level = 21 (sus)
+                 33          00 (end)
+
+DCA1:     Key follow = 0
+          rate = 99, level = 99 (sus)
+                 31          83
+                 52          00 (end)
+
+------------------------------------------------------------------
+
+Name: Mean Electric Guitar
+
+Detune: +,1,2,4
+Vibrato: 1,53,0,0
+Octave:+1
+Line:1+1'
+Mod:Ring
+
+DCO1:     1st wave = 3, 2nd wave = 4
+          Rate = 19, Level = 00 (End)
+
+DCW1:     Key follow = 1
+          Rate = 86, Level = 64
+                 07          00 (End)
+
+DCA1:     Key follow = 4
+          Rate = 94, Level = 96 (sus)
+                 92          00 (End)
+
+Comments: Try small amount of glide or portamento to make
+          it more of a realistic guitar sound.
+
+
+
+>From seismo!akgua!mtune!mtuxo!drutx!druak!mab@EDDIE.MIT.EDU Tue Mar 31 13:39:01 1987
+Date: Mon, 12 Jan 87 12:10:30 EST
+>From: seismo!akgua!mtune!mtuxo!drutx!druak!mab@EDDIE.MIT.EDU
+To: mit-eddie!mit-trillian!paul
+Subject: CZ patches
+Content-Type: text  
+Content-Length: 505    
+
+I'll trade the following original CZ patch for your latest set of patches
+(sounds like an even trade to me!).  I hope I transcribed it properly.
+
+			Alan Bland	...!ihnp4!druak!mab
+
+
+Name: Scratchy Trumpet
+
+line	mod	detune		vibrato		octave
+1+2'		+ 0 00 00	1 19 50 14	0
+
+DCO 1
+wave
+4 0
+rate	level
+00	00e
+
+DCW 1
+key
+0
+rate	level
+99	99s
+27	00e
+
+DCA 1
+key
+4
+rate	level
+70	99
+20	89s
+49	00e
+
+DC0 2
+wave
+3 5
+rate	level
+00	00e
+
+DCW 2
+key
+0
+rate	level
+51	77
+39	00e
+
+DCA 2
+key
+4
+rate	level
+99	79
+32	00e
+
+Comments:
+
+
+
+
+>From wake@11lang.dec.com Tue Mar 31 13:39:23 1987
+Date: 12-Jan-1987 1714
+>From: wake@11lang.dec.com  (RISC is like a backpack)
+To: cornell!rochester!seismo!rutgers!mit-eddie!mit-trillian!paul
+Subject: New CZ patch set
+
+Hi--
+
+I'm interested in getting a copy of your new patch set.
+Here's your patch.  This patch is not original with me;  it was 
+developed by a guy named Mark Schmeider here at DEC.
+There was a harpsichord #1 but this one's better.
+
+I'm at 
+   ever11%wake.dec@decwrl.dec.com
+
+Thanks in advance,
+      Bill Wake
+
+    
+    TONE NAME harpsichord #2		CARTRIDGE NO.           TONE NO.
+ 
+PARAMETER
+ 
+ LINE SELECT   MODULATION         DETUNE            VIBRATO        OCTAVE
+|1,2,12',11'| |ring|noise| |+/-|oct|note|fine| |wave|dly|rt|dep| |+/-|range|
+|  1+2'     | |    |     | | + | 2 | 0  | 06 | | 1  | 0 |00|00 | | + |  1  |
+|___________| |____|_____| |___|___|____|____| |____|___|__|___| |___|_____|
+ 
+************************************    ************************************
+(1)					(2)
+DCO 1					DCO 2
+  WAVE FORM  			 	  WAVE FORM
+|first|second|				|first|second|
+|  3  |  6   |                          |  3  |  7   |                      
+|_____|______|                          |_____|______|                        
+ (1-8)  (0-8)                            (1-8)  (0-8)  
+               ENV(PITCH)                             ENV(PITCH)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |99 |99 |   |   |   |   |   |0-99 rate|99 |99 |   |   |   |   |   |   |
+levl|99 |00 |00 |   |   |   |   |   |0-99 levl|21 |00 |   |   |   |   |   |   |
+s/e |   | s | e |   |   |   |   |   |     s/e |   | e |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCW 1                                   DCW 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     5     |(0-9)                      |     3     |(0-9)
+|___________|                           |___________|
+ 
+               ENV(WAVE)                             ENV(WAVE)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |00 |   |   |   |   |   |   |0-99 rate|99 |00 |   |   |   |   |   |   |
+levl|50 |00 |   |   |   |   |   |   |0-99 levl|52 |00 |   |   |   |   |   |   |
+s/e | s | e |   |   |   |   |   |   |     s/e |   | e |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCA 1                                   DCA 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     9     |(0-9)                      |     3     |(0-9)
+|___________|                           |___________|
+ 
+               ENV(AMP)                             ENV(AMP)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |33 |57 |99 |   |   |   |   |0-99 rate|76 |94 |58 |44 |99 |   |   |   |
+levl|90 |16 |00 |00 |   |   |   |   |0-99 levl|02 |99 |90 |00 |00 |   |   |   |
+s/e |   |   | s | e |   |   |   |   |     s/e |   |   |   | s | e |   |   |   |
+_____________________________________     _____________________________________
+ 
+
+
+
+>From michaels%tekigm2.tek.com@RELAY.CS.NET Tue Mar 31 13:39:38 1987
+Date: Tue, 13 Jan 87 12:19:42 PST
+>From: Michael Schaeffer <michaels%tekigm2.tek.com@RELAY.CS.NET>
+To: paul%mit-athena.uucp@RELAY.CS.NET, paul@ATHENA.MIT.EDU
+Subject: Re: More Casio Patches, a A Year Later
+Newsgroups: rec.music.synth
+In-Reply-To: <1597@mit-trillian.MIT.EDU>
+Organization: Tektronix, Inc., Beaverton, OR.
+
+
+Here are six patches I have created or modified since I got my CZ in
+October. I have since sold my 1000 and am awaiting the arival of my 3000,
+after which I will begin creating more sounds than I can imagine, hopefully
+better than these:
+
+CZ PATCH NAME: swept reed
+COMMENT: modified casio reed
+ENVELOPE DATA (wave or key - R1.L1 - R2.L2 - *** - R7.L7 - R8);
+DCO1 (wave-env): 3.4-99.29-72e
+DCW1 (key-env): 9-74.93-93.86s-50e
+DCA1 (key-env): 1-86.99-63.93-65.94-29e
+DCO2 (wave-env): 6.4-99.66-73e
+DCW2 (key-env): 2-43.60-24.49-26e
+DCA2 (key-env): 0-62.94-18.85-24.77-26e
+DETUNE (+- oct - semi - fine): (-)0-0-7
+MODULATION (1'or 2' - ring or noise): either 1' or 2'
+VIBRATO (wave-delay-rate-depth): 4-81-41-99
+KEYBOARD OCTAVE (+ o -): 0
+
+CZ PATCH NAME: minor vox chorus
+COMMENT: fairly modal based on casio human voice
+ENVELOPE DATA (wave or key - R1.L1 - R2.L2 - *** - R7.L7 - R8);
+DCO1 (wave-env): 1.4-55.65-40.66s-2e
+DCW1 (key-env): 0-99e
+DCA1 (key-env): 0-79.99-21.74s-31.75-60e
+DCO2 (wave-env): 5.0-50e
+DCW2 (key-env): 8-46.65-35.20s-54e
+DCA2 (key-env): 0-67.77-21.77-12.90s-35e
+DETUNE (+- oct - semi - fine): (-)0-7-10
+MODULATION (1'or 2' - ring or noise): 2'
+VIBRATO (wave-delay-rate-depth): 1-72-46-19
+KEYBOARD OCTAVE (+ o -): 0
+
+CZ PATCH NAME: Synth Bass II
+COMMENT: modified casio
+ENVELOPE DATA (wave or key - R1.L1 - R2.L2 - *** - R7.L7 - R8);
+DCO1 (wave-env): 2.3-0e
+DCW1 (key-env): 7-97.99-43.79-50.74s-52e
+DCA1 (key-env): 0-99.99-21e
+DETUNE (+- oct - semi - fine): (-)1-0-3
+MODULATION (1'or 2' - ring or noise): 1' - ring
+VIBRATO (wave-delay-rate-depth): 1-33-55-23
+KEYBOARD OCTAVE (+ o -): 0
+
+CZ PATCH NAME:swept mute ens.
+ENVELOPE DATA (wave or key - R1.L1 - R2.L2 - *** - R7.L7 - R8);
+DCO1 (wave-env): 2.1-67.55-42.60-54.6-50e
+DCW1 (key-env): 0-52.99-28.90-30.97-31.93-22.71s-50.52-50e
+DCA1 (key-env): 0-71.99s-38.82-30.75-49e
+DCO2 (wave-env): 2.4-53.15-49e
+DCW2 (key-env): 0-53.99-79.72-50.70s-50e
+DCA2 (key-env):  0-89.91-49.86-18.73(?s?)-20.70-22e
+DETUNE (+- oct - semi - fine): +1-0-2
+MODULATION (1'or 2' - ring or noise): 2' ring
+VIBRATO (wave-delay-rate-depth): 1-42-31-20
+KEYBOARD OCTAVE (+ o -): 0
+
+CZ PATCH NAME: Bright electric piano
+COMMENT: I could really use some nice pianos
+ENVELOPE DATA (wave or key - R1.L1 - R2.L2 - *** - R7.L7 - R8);
+DCO1 (wave-env): 5.2-99.66-99e
+DCW1 (key-env): 0-99.99s-0e
+DCA1 (key-env): 0-92.99-95.87-92.99-99.88s-43e
+DCO2 (wave-env):3.1-99.66-99e
+DCW2 (key-env): 0-99.99s-0e
+DCA2 (key-env): 0-92.99-95.87-92.99-99.88-44e
+DETUNE (+- oct - semi - fine):+0-0-10
+MODULATION (1'or 2' - ring or noise): 2'
+VIBRATO (wave-delay-rate-depth): 1-45-52-11
+KEYBOARD OCTAVE (+ o -): +1
+
+
+>From ada-uts!wayne@EDDIE.MIT.EDU Tue Mar 31 13:40:01 1987
+Date: Wed, 14 Jan 87 18:34:39 EST
+>From: ada-uts!wayne@EDDIE.MIT.EDU
+To: inmet!mit-trillian!paul
+Subject: CZ patches
+
+Hello Paul --
+
+   You say you have some patches to swap, eh?  Well, I just
+recently purchased a CZ-101, so I don't have much.  I only
+have two.  Now don't laugh when you see what they are; they
+were for a project I was doing for someone.  Enclosed are
+two "bird call" patches.  (I had used a DX-100 wind chime
+patch plus an old PAIA wind generator to make an environmental
+ambiance.)
+
+   I would appreciate leads to other patches as well.  If I
+develop any, I'll send you a copy, if you're interested.
+
+   One other thing, before I move on to the patches themselves:
+I am a member of the Computers and Music Group of the Boston
+Computer Society.  My mind went on a bit of a journey and
+thought about the possibility of collecting patches (beg, borrow
+and steal among everyone) and if there is an interest, to possibly
+bind them into a book.  The whole idea, though is the free exchange
+of patches and programming hints and techniques.  Do you have any
+comments?  Are you interested?
+
+Wayne Wylupski                   ...!{ihnp4,ima}!inmet!ada-uts!wayne
+--------------------------------------------------------------------------
+						
+                            Bird call #1 :
+    
+Line    Modulation
+Select  Ring Noise  +/- Octave Note Fine  Wave Delay Rate Depth  +/- Range
+------  ----------  --------------------  ---------------------  ---------
+  1     off  off     0    0     0    0      1    00   80    68    +    1
+
+
+-- DCO 1 --                 -- DCW 1 --              -- DCA 1 --
+Wave  Form                  Key Follow               Key Follow
+First Second                ----------               ----------
+------------                     4                        0
+  4     0
+
+  ENV (pitch)               ENV (wave)               ENV (amp)
+-------------               ----------               ------------------
+Step   1   2                Step   1                 Step   1   2   3
+Rate  99  40                Rate  00                 Rate  69  46  64
+Level 65   0                Level 00                 Level 88  99  00
+         End                      End                              End
+
+NOTES : Built from the "whistle" preset.  Play around with portamento,
+and quickly a notes followed by their third or fourth.
+--------------------------------------------------------------------------
+
+                           Bird call #2 :
+
+Line    Modulation
+Select  Ring Noise  +/- Octave Note Fine  Wave Delay Rate Depth  +/- Range
+------  ----------  --------------------  ---------------------  ---------
+1       off  off     0    0     0    0      1    00   48    49    +    1
+
+
+-- DCO 1 --                 -- DCW 1 --              -- DCA 1 --
+Wave  Form                  Key Follow               Key Follow
+First Second                ----------               ----------
+------------                     4                        0
+  4     0
+
+ENV (pitch)                 ENV (wave)               ENV (amp)
+----------------            ----------               ------------------
+Step   1   2   3            Step   1                 Step   1   2   3
+Rate  52  00  00            Rate  00                 Rate  69  46  64
+Level 66  00  00            Level 00                 Level 88  99  00
+             End                 End                              End
+
+NOTES : Built from the "whistle" preset.  Vibrato can be taken off.
+Short repeated key strokes work well.
+
+
+
+>From benson@star.dec.com Tue Mar 31 13:40:35 1987
+>From: <benson@star.dec.com>
+Date: Tuesday, 20 Jan 1987 20:45:12-PST
+To: ames!rutgers!mit-eddie!bacchus!paul
+Subject: CZ patches
+
+...
+
+  OK, Paul, sounds like a good offer. Here are 3 patches... The best synth bass
+  I've come up with, the best synth drums I've come up with, and a "bell organ,"
+  whatever that is. Anxiously awaiting your patches...
+
+  - Tom
+
+  PS... I sent you mail last year about the patches you were sending out via
+        US mail... I got a response from you, but no patches... Still available?
+
+
+ 
+TONE NAME-  MASSIVE BASS              CARTRIDGE NO.           TONE NO.
+ 
+PARAMETER
+ 
+ LINE SELECT   MODULATION         DETUNE            VIBRATO        OCTAVE
+|1,2,12',11'| |ring|noise| |+/-|oct|note|fine| |wave|dly|rt|dep| |+/-|range|
+|   12'     | | off| off | | + | 0 |  0 |  4 | | 1  |33 |23| 06| | - |  1  |
+|___________| |____|_____| |___|___|____|____| |____|___|__|___| |___|_____|
+ 
+************************************    ************************************
+(1)					(2)
+DCO 1					DCO 2
+  WAVE FORM  			 	  WAVE FORM
+|first|second|				|first|second|
+| 4   |  4   |                          | 3   |  4   |                      
+|_____|______|                          |_____|______|                        
+ (1-8)  (0-8)                            (1-8)  (0-8)  
+               ENV(PITCH)                             ENV(PITCH)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|50 |   |   |   |   |   |   |   |0-99 rate|50 |   |   |   |   |   |   |   |
+levl| 0 |   |   |   |   |   |   |   |0-99 levl| 0 |   |   |   |   |   |   |   |
+s/e | e |   |   |   |   |   |   |   |     s/e | e |   |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCW 1                                   DCW 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     7     |(0-9)                      |     7     |(0-9)
+|___________|                           |___________|
+ 
+               ENV(WAVE)                             ENV(WAVE)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|97 |43 |50 |50 |   |   |   |   |0-99 rate|97 |43 |50 |50 |   |   |   |   |
+levl|99 |79 |87 | 0 |   |   |   |   |0-99 levl|99 |79 |87 | 0 |   |   |   |   |
+s/e |   |   | s | e |   |   |   |   |     s/e |   |   | s | e |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCA 1                                   DCA 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     9     |(0-9)                      |     9     |(0-9)
+|___________|                           |___________|
+ 
+               ENV(AMP)                             ENV(AMP)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |21 |61 |   |   |   |   |   |0-99 rate|99 |21 |61 |   |   |   |   |   |
+levl|99 |88 | 0 |   |   |   |   |   |0-99 levl|99 |88 | 0 |   |   |   |   |   |
+s/e |   | s | e |   |   |   |   |   |     s/e |   | s | e |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+ 
+*****************************************************************************
+COMMENT: 
+ 
+Based on Elec Guitar preset C-5.   Play in the second octave.
+ 
+*****************************************************************************
+
+
+ 
+
+
+TONE NAME- THWACK DRUMS               CARTRIDGE NO.           TONE NO.
+ 
+PARAMETER
+ 
+ LINE SELECT   MODULATION         DETUNE            VIBRATO        OCTAVE
+|1,2,12',11'| |ring|noise| |+/-|oct|note|fine| |wave|dly|rt|dep| |+/-|range|
+|   12'     | | off| on  | | + | 0 | 10 | 0  | |  3 | 0 |55| 85| | - |  1  |
+|___________| |____|_____| |___|___|____|____| |____|___|__|___| |___|_____|
+ 
+************************************    ************************************
+(1)					(2)
+DCO 1					DCO 2
+  WAVE FORM  			 	  WAVE FORM
+|first|second|				|first|second|
+|  5  |   1  |                          |  6  |   4  |                      
+|_____|______|                          |_____|______|                        
+ (1-8)  (0-8)                            (1-8)  (0-8)  
+               ENV(PITCH)                             ENV(PITCH)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|92 |99 |   |   |   |   |   |   |0-99 rate|99 |99 |13 |   |   |   |   |   |
+levl|93 | 0 |   |   |   |   |   |   |0-99 levl|99 |53 | 0 |   |   |   |   |   |
+s/e |   | e |   |   |   |   |   |   |     s/e |   | s | e |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCW 1                                   DCW 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     0     |(0-9)                      |      8    |(0-9)
+|___________|                           |___________|
+ 
+               ENV(WAVE)                             ENV(WAVE)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |99 |99 |   |   |   |   |   |0-99 rate|99 |94 |50 |   |   |   |   |   |
+levl|99 |86 | 0 |   |   |   |   |   |0-99 levl|99 |99 | 0 |   |   |   |   |   |
+s/e |   |   | e |   |   |   |   |   |     s/e |   | s | e |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCA 1                                   DCA 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     0     |(0-9)                      |      1    |(0-9)
+|___________|                           |___________|
+ 
+               ENV(AMP)                             ENV(AMP)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |41 |52 |   |   |   |   |   |0-99 rate|99 |53 |52 |   |   |   |   |   |
+levl|99 | 0 | 0 |   |   |   |   |   |0-99 levl|81 |35 | 0 |   |   |   |   |   |
+s/e |   | s | e |   |   |   |   |   |     s/e |   |   | e |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+ 
+*****************************************************************************
+COMMENT: 
+ 
+Based on "Tom toms 1" from Casio "Pro-tone data book."  Play octaves 2+3.
+ 
+*****************************************************************************
+ 
+
+
+TONE NAME- BELL ORGAN                  CARTRIDGE NO.           TONE NO.
+ 
+PARAMETER
+ 
+ LINE SELECT   MODULATION         DETUNE            VIBRATO        OCTAVE
+|1,2,12',11'| |ring|noise| |+/-|oct|note|fine| |wave|dly|rt|dep| |+/-|range|
+|   12'     | | off|  off| | + | 3 | 07 | 08 | | 1  |49 |50| 10| | - |  1  |
+|___________| |____|_____| |___|___|____|____| |____|___|__|___| |___|_____|
+ 
+************************************    ************************************
+(1)					(2)
+DCO 1					DCO 2
+  WAVE FORM  			 	  WAVE FORM
+|first|second|				|first|second|
+|  2  |  5   |                          |  2  |  2   |                      
+|_____|______|                          |_____|______|                        
+ (1-8)  (0-8)                            (1-8)  (0-8)  
+               ENV(PITCH)                             ENV(PITCH)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|50 |   |   |   |   |   |   |   |0-99 rate|50 |   |   |   |   |   |   |   |
+levl| 0 |   |   |   |   |   |   |   |0-99 levl| 0 |   |   |   |   |   |   |   |
+s/e | e |   |   |   |   |   |   |   |     s/e | e |   |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCW 1                                   DCW 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     0     |(0-9)                      |      7    |(0-9)
+|___________|                           |___________|
+ 
+               ENV(WAVE)                             ENV(WAVE)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |   |   |   |   |   |   |   |0-99 rate|99 |50 |52 |50 |   |   |   |   |
+levl| 0 |   |   |   |   |   |   |   |0-99 levl|70 |68 |97 | 0 |   |   |   |   |
+s/e | e |   |   |   |   |   |   |   |     s/e |   |   | s | e |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCA 1                                   DCA 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|      0    |(0-9)                      |      0    |(0-9)
+|___________|                           |___________|
+ 
+               ENV(AMP)                             ENV(AMP)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |55 |31 |31 |   |   |   |   |0-99 rate|99 |81 |31 |31 |   |   |   |   |
+levl|99 |89 |65 | 0 |   |   |   |   |0-99 levl|90 |86 |29 | 0 |   |   |   |   |
+s/e |   |   | s | e |   |   |   |   |     s/e |   |   | s | e |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+ 
+*****************************************************************************
+COMMENT: 
+ 
+Based on "fairy tale" preset, B-8.
+ 
+*****************************************************************************
+
+
+>From seismo!philabs!bunker!msr@EDDIE.MIT.EDU Tue Mar 31 13:41:34 1987
+Date: Thu, 29 Jan 87 08:39:59 est
+>From: <seismo!philabs!bunker!msr@EDDIE.MIT.EDU>
+Return-Path: <bunker!msr>
+To: mit-eddie!mit-athena!paul
+Subject: third try
+
+Paul,
+	I'd sure like to get a copy of your CZ patches, so here's one that
+I use often.  I didn't come up with it from scratch; it's a sight modification
+of one of the existing patches, I don't remember which one.
+
+------------------------------------------------------------------------------
+Line Select  Modulation        Detune                 Vibrato          Octave
+                         +/- Octave Note Fine  Wave Delay Rate Depth  +/- Range
+1+1'                     +   1           8     1    38    60   4          0
+
+DCO 1
+Wave Form
+First Second
+2     3
+    
+Step   1   2
+Rate   99  68
+Level  33  0
+           END
+
+DCW 1
+Key Follow 9
+
+Step   1   2   3   4
+Rate   73  99  99  00
+Level  88  96  99  00
+               SUS END
+
+DCA 1
+Key Follow 0
+Step  1   2   3   4
+Rate  82  99  88  62
+Level 81  99  96  00
+              SUS END
+
+* Use it at the extreme low end for a fat slightly distorted deep organy
+  sound.  I don't know how else to explain it.
+
+
+
+Mike Romaniw - Bunker Ramo/Olivetti, Shelton, CT - (203)337-1407
+uucp address: ...decvax!ittatc!bunker!msr
+
+
+
+>From munnari!latcs1.oz!john@seismo.CSS.GOV Tue Mar 31 13:42:18 1987
+Date: Mon, 2 Feb 87 17:46:37 est
+>From: munnari!latcs1.oz!john@seismo.CSS.GOV (John Pritchard)
+To: paul@athena.mit.edu
+Subject: free CZ patches
+
+Hello! I am responding to the offer you made in rec.music.synth. Please mail
+me your set of CZ patches in return for my "marimba" patch.
+	- John Pritchard.
+
+ACSNET/CSNET: john@latcs1.oz
+UUCP: {seismo,hplabs,mcvax,ukc,nttlab}!munnari!latcs1.oz!john
+ARPA: john%latcs1.oz@seismo.css.gov
+-------------------------------------------------------------
+
+line	mod	detune		vibrato		octave
+1+2		+ 2 00 01	1 51 60 05	-1
+
+DCO 1
+wave 
+1 0
+rate	level
+50	00e
+
+DCW 1
+key 
+5
+rate	level
+99	27
+48	00e
+
+DCA 1
+key 
+6
+rate	level
+94	99
+32	00s
+45	00e
+
+DCO 2
+wave 
+2 0
+rate	level
+50	00e
+
+DCW 2
+key 
+1
+rate	level
+99	12
+12	00e
+
+DCA 2
+key 
+3
+rate	level
+95	99
+54	36
+28	00s
+60	00e
+
+
+>From rutgers!allegra!daimler!cvm@EDDIE.MIT.EDU Tue Mar 31 13:43:24 1987
+>From: rutgers!allegra!daimler!cvm@EDDIE.MIT.EDU
+Date: Wed, 18 Feb 87 08:36:28 EST
+To: allegra!rutgers!mit-eddie!mit-trillian!paul
+Subject: CZ sounds
+
+Paul, 
+
+(I've been trying to get this to you for awhile now. uucp keeps coughing
+it back up in my face. Please let me know if you get it.)
+
+Here are a couple of my patches. They're probably not 
+the greatest in the world but they've been useful in various
+contexts. (I tend to use an SPX-90 *a lot*, so the sounds might
+loose translation w/out the effect.) Let me know what you think.
+
+In addition to your new patches, I'm still waiting on your previous 
+batch of patches from some 4+ months ago. I thought I was on your
+mailing list for those (..at least you told me I was...).  If I 
+could get those too I'd appreciate it. 
+
+Thanks!
+
+-Chris Malley
+--------------------------------------------------------------
+UUCP:   ..{allegra,ihnp4,princeton,vax135}!daimler!cvm
+        ..ucbvax!ihnp4!daimler!cvm 
+USmail: AT&T Bell Laboratories
+        Room 4N-D17
+        184 Liberty Corner Road
+        PO Box 4908
+        Warren, NJ 07060-0908
+Phone:  (201)580-4392
+
+************* Patch Hoarders of America, Unite! **************
+--------------------------------------------------------------
+
+------------------------------------------------------------------
+
+Name: Space Shots
+
+line	mod	detune		vibrato		octave
+1+1'   off/off	- 0 00 06	3 0 35 93	(whatever you like best)
+
+DCO 1
+wave 
+8 0
+rate	level
+99	33
+33      0       END
+
+DCW 1
+key 
+0
+rate	level
+99  	99
+46	99
+37	52	SUS
+26	0	END
+
+DCA 1
+key 
+0
+rate	level
+99	50
+77	99
+67	91	SUS
+79	92
+26	0	END
+
+
+Comments: 
+This sounds kind of like the laser fire in a cheap video game.
+To change the number of shots fired each time you push a key,
+change the rate of DCA 1, STEP 5.   
+To vary the speed at which shots are fired, vary the vibrato 
+rate (most effective if you do this while playing.) 
+
+------------------------------------------------------------------
+
+Name: Glissando Filter Sweep
+
+line	mod	detune		vibrato		octave
+1+1'   off/off	- 0 00 06	1 0 0 6		- 1
+
+DCO 1
+wave 
+8 0
+rate	level
+99	33
+70      0       END
+
+DCW 1
+key 
+0
+rate	level
+99  	99
+46	99
+37	52	SUS
+26	0	END
+
+DCA 1
+key 
+0
+rate	level
+99	50
+77	99
+67	91	SUS
+79	59
+33	0	END
+
+
+Comments: 
+This sound creates a "high-to-low" filter sweep in discrete increments
+(hence, glissando) each time a key is pressed. The sweep is most noticable
+in the lower range of the keyboard. For really gothic song intros, 
+try setting DETUNE OCTAVE to -1 and playing single notes going slowly 
+>from high to low on the keyboard.
+(Notice that the parameter values of this sound are very similar 
+to those of Space Shots. By tweaking the vibrato, DCO1, DCA1
+it becomes a semi-musical sound.)
+
+------------------------------------------------------------------
+
+
+
+
+
+>From rutgers!liberty!swatsun!thebes!obrien@EDDIE.MIT.EDU Tue Mar 31 13:44:19 1987
+Date: Mon, 2 Mar 87 14:23:58 EST
+>From: rutgers!liberty!swatsun!thebes!obrien@EDDIE.MIT.EDU (Tom O'Brien)
+To: liberty!rutgers!mit-eddie!mit-athena!paul
+
+Paul:
+
+Here are some of my patches for your CZ exchange.  I'd appreciate seeing as
+many patches as you're willing to send.
+
+=========
+Name: Diva Harmonic
+An ethereal third harmonic fades in as the fundamental fades out.
+Play slowly & hold down the keys for several seconds for full effect. 
+Reminiscent of some of the music in the film _Diva_.
+
+Line 1+2'  Octave 0
+Detune +  OCT 1, NOTE 7 FINE 0
+Vibrato: Wave 1 Delay 0 Rate 0 Depth 0
+Modulation: None
+
+DCO 1 Wave 1 Env 0/0/END
+DCW 1 Key 0 Env 53/5 37/0/END
+DCA 1 Key 0 Env 38/99 30/0/END
+
+DCO 2 Wave 1 Env 0/0/END
+DCW 2 Key 0 Env 32/5 25/0/END
+DCA 2 Key 0 Env 32/99 30/0/END
+
+=========
+Name: Landing 747
+The best sound comes from keys at the low end of the keyboard, I think.
+Hold down the key to let the effect complete its cycle.
+Holding several adjacent keys works well, too.
+ 
+Line 1+2'  Octave -1
+Detune -  OCT 1, NOTE 0 FINE 0
+Vibrato: Wave 1 Delay 31 Rate 36 Depth 0
+Modulation: Noise
+
+DCO 1 Wave 5 Env 99/95 9/43/SUS 8/0/END
+DCW 1 Key 0 Env 99/73/SUS 9/62 9/0/END
+DCA 1 Key 6 Env 56/88/SUS 10/28 37/0/END
+
+DCO 2 Wave 5 Env 99/80 24/43/SUS 8/0/END
+DCW 2 Key 0 Env 99/81/SUS 9/62 9/0/END
+DCA 2 Key 2 Env 53/81/SUS 10/37 30/0/END
+
+========
+Name: Thompson Bass
+Similar to the plucked bass sound used on several Thompson Twins records.
+After an initial transient, the note fades to a muted drone.
+
+Line 1+2'  Octave -1
+Detune -  OCT 0, NOTE 0 FINE 0
+Vibrato: Wave 1 Delay 0 Rate 0 Depth 0
+Modulation: None
+
+DCO 1 Wave 3 Env 0/0/END
+DCW 1 Key 9 Env 99/94 55/23/SUS 37/0/END
+DCA 1 Key 0 Env 99/99 63/70/SUS 50/0/END
+
+DCO 2 Wave 3 Env 0/0/END
+DCW 2 Key 9 Env 99/94 55/23/SUS 37/0/END
+DCA 2 Key 0 Env 99/99 63/70/SUS 50/0/END
+
+==========
+Happy listening.
+
+
+					Tom O'Brien
+					Math Department
+					Swarthmore College
+					...cbosgd!bpa!swatsun!obrien
+
+
+
+
+
+
+					-Paul
+
+

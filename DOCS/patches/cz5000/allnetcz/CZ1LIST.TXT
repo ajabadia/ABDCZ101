@@ -1,0 +1,21 @@
+Listing of patches in cz-1.txt
+
+TONE Name- MELLO FAT BASS              CARTRIDGE NO.           TONE NO.
+TONE Name- CHAIN GANG              CARTRIDGE NO.           TONE NO.
+TONE Name harpsichord #1           CARTRIDGE NO.           TONE NO.
+TONE Name harpsichord #2           CARTRIDGE NO.           TONE NO.
+TONE Name - Pipe Organ             CARTRIDGE NO.           TONE NO.
+TONE Name- CHIFF STRINGS              CARTRIDGE NO.           TONE NO.
+TONE Name- PIANO               CARTRIDGE NO.           TONE NO.
+TONE Name- Rhodes Piano                CARTRIDGE NO.           TONE NO.
+TONE Name- Piano                     CARTRIDGE NO.           TONE NO.
+TONE Name- 8-note Polyphonic      CARTRIDGE NO.           TONE NO.
+TONE Name-         Ring Modulo 1           CARTRIDGE NO.           TONE NO.
+TONE Name- Slow Saw Sweep           CARTRIDGE NO.           TONE NO.
+TONE Name- 96 Tears                 CARTRIDGE NO.           TONE NO.
+TONE Name- Lucky Man                CARTRIDGE NO.           TONE NO.
+TONE Name- Reverse Perc             CARTRIDGE NO.           TONE NO.
+TONE Name- Clap Plus                CARTRIDGE NO.           TONE NO.
+TONE Name- Pseudophone              CARTRIDGE NO.           TONE NO.
+TONE Name- Ring Mod Synth Bass      CARTRIDGE NO.           TONE NO.
+TONE Name-8 Note PIANO

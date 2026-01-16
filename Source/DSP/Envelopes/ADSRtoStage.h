@@ -1,5 +1,8 @@
 #pragma once
 
+// Based on TinyADSR (Public Domain) and CZ-101 Logic
+// Licensed under MIT
+
 #include <cmath>
 #include <array>
 #include <algorithm>
@@ -45,33 +48,26 @@ struct ADSRtoStageConverter {
         sustainLevel = std::clamp(sustainLevel, 0.0f, 1.0f);
         releaseMs = std::clamp(releaseMs, 0.0f, 8000.0f);
         
-        // Función interna: convertir milisegundos → coeficiente de decay
-        auto msToRateCoeff = [sampleRate](float ms) -> float {
-            if (ms < 1.0f) ms = 1.0f;
-            if (ms > 8000.0f) ms = 8000.0f;
-            
-            // Convertir a segundos
-            float sec = ms / 1000.0f;
-            
-            // Exponential decay: e^(-k*t)
-            // Para 60dB en tiempo T: k = 5.5 / T
-            float k = 5.5f / (sec * static_cast<float>(sampleRate));
-            
-            // Coeficiente per-sample: rate = e^(-k)
-            float coeff = std::exp(-k);
-            
-            // Clamp para estabilidad numérica
-            return std::clamp(coeff, 0.001f, 0.99f);
+        // Internal helper: convert milliseconds -> MultiStageEnvelope Rate (0.0 - 1.0)
+        // This unifies the mapping between ADSR controls and the 8-stage engine.
+        // Formula is based on the inverse of MultiStageEnvelope::rateToSeconds:
+        // rate = 1.0 - pow((seconds - 0.001) / 30, 0.25)
+        // ADSR to Stage Formula
+        // Audit Fix [E]: Clamp sec to >= 0.001 to avoid NaN in pow()
+        auto msToRate = [](float ms) -> float {
+            float sec = std::clamp(ms / 1000.0f, 0.001f, 30.0f);
+            float r = std::pow(std::clamp((sec - 0.001f) / 30.0f, 0.0f, 1.0f), 0.25f);
+            return std::clamp(1.0f - r, 0.0f, 1.0f);
         };
         
         // ===== STAGE 0: ATTACK =====
         // Rampa desde 0 hacia 1.0
-        outRates[0] = msToRateCoeff(attackMs);
+        outRates[0] = msToRate(attackMs);
         outLevels[0] = 1.0f;
         
         // ===== STAGE 1: DECAY =====
         // Rampa desde 1.0 hacia sustain
-        outRates[1] = msToRateCoeff(decayMs);
+        outRates[1] = msToRate(decayMs);
         outLevels[1] = sustainLevel;
         
         // ===== STAGE 2: SUSTAIN HOLD =====
@@ -81,7 +77,7 @@ struct ADSRtoStageConverter {
         
         // ===== STAGE 3: RELEASE =====
         // Rampa desde sustain hacia 0
-        outRates[3] = msToRateCoeff(releaseMs);
+        outRates[3] = msToRate(releaseMs);
         outLevels[3] = 0.0f;
         
         // ===== STAGES 4-7: UNUSED =====

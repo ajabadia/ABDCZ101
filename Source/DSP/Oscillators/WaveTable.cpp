@@ -149,16 +149,18 @@ float WaveTable::getTrapezoid(float phase) const noexcept
 
 float WaveTable::interpolate(const std::array<float, TABLE_SIZE>& table, float phase) const noexcept
 {
-    // Wrap phase to [0.0, 1.0]
-    phase = phase - std::floor(phase);
-    
+    // Fast wrap phase to [0.0, 1.0)
+    // Assuming phase is mostly positive and small
+    if (phase >= 1.0f) phase -= static_cast<float>(static_cast<int>(phase));
+    else if (phase < 0.0f) phase += 1.0f - static_cast<float>(static_cast<int>(phase));
+
     // Convert to table index
     const float indexFloat = phase * static_cast<float>(TABLE_SIZE);
-    const int index0 = static_cast<int>(indexFloat) % TABLE_SIZE;
-    const int index1 = (index0 + 1) % TABLE_SIZE;
+    const int index0 = static_cast<int>(indexFloat);
+    const int index1 = (index0 + 1) & (TABLE_SIZE - 1); // Power of 2 mask
     
-    // Linear interpolation
-    const float frac = indexFloat - std::floor(indexFloat);
+    // Linear interpolation - using index0 instead of floor for performance
+    const float frac = indexFloat - static_cast<float>(index0);
     return table[index0] + frac * (table[index1] - table[index0]);
 }
 

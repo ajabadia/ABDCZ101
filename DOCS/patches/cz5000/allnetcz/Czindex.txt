@@ -1,0 +1,427 @@
+Index of CZ101 patches converted from text files by Kenji Baugham
+http://www.geocities.com/sunsetstrip/lounge/6766/joes.html
+kenjib@rocketmail.com
+
+
+Drums.syx
+1-Heavy Knock
+2-Phil-In-A-Box
+3-Sampled Snap
+4-Snap Percussion
+
+
+Syndrums.syx
+1-Chain Gang
+2-Claps Plus
+3-Drum Hit
+4-Drum Wash | Try Detune Octave 2 & 3
+5-Kick #1 | TR505 Extender
+6-Kick #2 | TR505 Extender
+7-Reverse Percussion
+8-Simmons SDS-7 | Duran Duran's Rio
+9-Simmons Tom Sound
+10-Small Bass Thing
+11-Snare #1 | TR505 Extender
+12-Snare #2
+13-Snare Double
+14-Snare Drum (Garbage)
+15-Thwack Drums
+
+
+Tunedrum.syx
+1-Chunky Blocks
+2-Oil Drum/Jars/Toy Piano | Try through Distortion Pedal
+3-Perc China
+4-Perc Metal
+5-Perc Tin Can
+6-Synth Block
+7-Tuned Drum
+8-Woody Metal | Try detune octave 3
+
+
+Bass.syx
+1-Bass Guitar
+2-CZ Bass
+3-Electric Bass
+4-Woodbass
+5-CZ Slap Bass
+
+
+Brass1.syx
+1-Art of Noise Trumpet | Mix with preset #2
+2-Brass!
+3-Cheezy Horn Fade
+4-CZ Brass #3
+5-ELP SynthHorn
+6-Fat Ensemble
+7-Funky Horn
+8-Lazy Trumpet | Mix with preset #2
+9-Ministry Horns
+10-Muted Horn
+11-Muted Horn Riser
+12-New Horn
+13-Organ Brass
+14-Spit Horns
+15-Symphonic Ensemble | Try octave up
+16-Synth Brass 2
+
+
+Brass2.syx
+1-Synth Brass
+2-Trevor Horns | Octave punches with reverb and chorus
+3-Trumpet
+4-Trumpet
+5-Pseudophone
+
+
+Chromdrm.syx
+1-Vibraphone
+2-Bells
+3-Carillon
+4-CZ Glockenspiel
+5-Music Box
+6-CZ Xylophone
+
+
+Flute.syx
+1-Flute
+2-Reverb Flute
+3-Reverb Flute
+
+
+Guitar.syx
+1-Acoustic Guitar
+2-Semi Acoustic Guitar
+3-Feedback
+4-Guitar With Distortion
+5-Lead Guitar
+6-Mean Electric Guitar
+7-Electric Guitar
+
+
+Orchestr.syx
+1-Brass Stings
+2-Orchestra | Stings and brass
+3-Orchestral Moods | Strings creep in
+4-Synth Ensemble
+
+
+Organ.syx
+1-Bell Organ
+2-Fat Distorted Organ
+3-Soft Organ
+4-Synth Organ | Try detune octave 2
+5-Crazy | From Prince's Let's Go Crazy
+6-Organ W/Slow Leslie
+7-Pipe Organ
+8-Pipe Organ
+9-Pipe Organ
+10-Pipe Organ | Needs Reverb
+11-Soap Organ
+12-Swerl
+13-96 Tears | From the song 96 Tears
+14-Another Rhodes
+15-Hammond 1
+16-Jazz Organ
+
+
+Organ2.syx
+1-Soap Organ 2
+2-Synth Celesta
+
+
+Piano.syx
+1-Honkey Keys
+2-Honky Tonk Piano
+3-Stuttering Toy Piano
+4-Toy Piano
+5-8 Note Poly Piano
+6-Acoustic Piano
+7-Best Piano
+8-Bright Piano
+9-CZ Piano
+10-Phased Grand
+11-Piano
+12-Piano
+13-Piano 1
+14-Piano 2
+15-Steinway
+16-Vibra Piano
+
+
+Epiano.syx
+1-Electric Piano
+2-Bright Electric Piano
+3-Cheesy EP Organ
+4-CZ Electric Piano
+5-CZ Fntpiano
+6-Eight Note Piano
+7-Piano 2
+8-Piano 2
+9-Pluck & Pad
+10-Rhodes Electric Piano
+11-Rhodes Piano
+12-Soft Tine EP
+13-Vibra E. Piano
+
+
+Strings.syx
+1-Banjo Sitar
+2-Funk Clav
+3-Harpsichord #2
+4-Harpsichord #1
+5-Harpsichord
+6-Synth Clav
+7-Cello
+8-Harp
+9-Harp
+10-Synth Harp
+11-Slow Violin
+
+
+Recorder.syx
+1-Recorder
+2-Recorder
+
+
+Animal.syx
+1-Buzzing Fly
+2-Bird Call #1
+3-Bird Call #2
+4-Weird Bird
+
+
+Effects.syx
+1-Cavern
+2-Dropped Bomb
+3-Herbie Scratch
+4-Laser 1
+5-Laser 2
+6-Noise Sweep
+7-Record Scratch
+8-Sonic Bubbles
+9-Space Shots | Play with DCA1 step 5 and vibrato rate realtime
+10-Star Trek Noise
+11-Video Game
+
+
+Mechanic.syx
+1-Drill
+2-Drilling
+3-Helicopter
+4-Helicopter? | Try up an octave or two
+5-Landing 747
+6-Rising Chopper
+7-Motorcycle
+8-Traffic Doppler
+9-Siren W/Doppler
+
+
+Nature.syx
+1-Electric Bubbles
+
+
+Synth.syx
+1-Church Cheese
+2-Cute Attack
+3-Fat Sample & Hold | Try 1+2'
+4-Lucky Man | Use with portamento
+5-Moog-Like | 1+2' for richer sound
+6-Oberheim-Like Moan
+7-Oracle
+8-Polyanalogue | Roland Juno106
+9-Aaaho
+10-Background Swell | Try really low
+11-CZ Orchestra
+12-CZ Synth
+13-Full Synth
+14-Grand Ethereal
+15-Honey Strings
+16-Module Two
+
+
+Synth2.syx
+1-Percussive Oboe
+2-Rich Reward
+3-Scratchy Trumpet
+4-Synth Sound
+
+
+Synbass.syx
+1-Bass 1
+2-Bass Bowp
+3-Bowr Bass
+4-Downline
+5-Electric Bass
+6-Fat Bass
+7-Fat Pluck
+8-Fat Synth Bass
+9-Fuzzy Bass
+10-Industrial Bass Bowp
+11-Krakatoa Bass
+12-Massive Bass
+13-Mellow Fat Bass | Turn vibrato off for a normal bass
+14-Mellow Synth Bass
+15-One Octave Bass
+16-Percussive Bass
+
+
+Synbass2.syx
+1-Random Bass Patch
+2-Reggae Split
+3-Ring Mod Synth Bass
+4-Small Bass Thing
+5-Synth Bass II
+6-TB303
+7-Thompson Bass | Thomson Twins style bass
+8-Two Octave Bass
+9-Unknown
+10-Yet Another Bass Sound
+
+
+Fmsynth.syx
+1-Bright Nasal Sweep
+2-Ring Modulo 1
+
+
+Jubby.syx
+1-Bass Bowp
+2-Bird Zip
+3-Industrial Bowp
+4-Meow Attack
+5-Nasal Echo
+6-Nasal Organ
+7-Perc Nasal Organ
+8-Perc Sustain
+9-Pluck & >WAH<
+10-Popcorn
+11-Regular Bowp
+12-Short & Sweep
+13-TB303
+
+
+Lead.syx
+1-Buzzzing
+2-Echo Lead
+3-Mars Sound
+4-Nasal Pad
+5-Percussive Oboe 2
+6-Slap Horn
+7-Slash Reed
+8-Voice 2
+
+
+Pad.syx
+1-CZ Fantasy
+2-Double Attack
+3-Fantasy
+4-Fantasy 1
+5-Fantasy 2
+6-Fantasy 3
+7-Fantasy Carousel
+8-Jangly
+9-Mild Harp
+10-Nightporter
+11-Nightporter
+12-Orchestral Moods | Strings creep in
+13-Pad
+14-Pad Sustain
+15-Pluck Sustain
+16-Pluck Extend
+
+
+Pad2.syx
+1-Rebecca
+2-Space
+3-Sustained Deep 2
+4-Swamp
+5-Synth Reed
+
+
+Resonant.syx
+1-Dragon Snore
+2-Glissando Filter Sweep | Try detune octave 1
+3-Rayz
+4-Slow Saw Sweep
+5-Spacious
+6-Sweep
+7-Swept Mute Ens
+8-Woh-Wow-Yeh
+
+
+Smooth.syx
+1-Downline
+2-Dream Dust
+3-Fen
+4-Float On
+5-Fuzzy
+6-Ice Blue
+7-Pseudosilk
+8-Space Voice
+9-Waw Voice
+10-Wild Kingdom
+
+
+Space.syx
+1-Bushy
+2-Crash Dive Tune
+3-Diva Harmonic
+4-Flutelight
+5-Hamburger Lady
+6-Interval Repeat 2
+7-Interval Repeat
+8-Laser 2
+9-Noise Sweep
+10-Octavibrato | Rythm sequence
+11-Rising Resonance
+12-Siren W/Doppler
+13-Sonic Bubbles
+14-Space Shots | Play with DCA1 step 5 and vibrato rate realtime
+15-Swept Reed
+16-Very Weird
+
+
+Synstrng
+1-Chiff Strings
+2-Coolstring
+3-CZ Strings
+4-CZ Violin
+5-Low Strings
+6-Mellow Strings
+7-Mellow Strings
+8-Reverb Strings
+9-Solostring
+10-String Ensemble
+11-Strings#2
+12-Strings#3
+13-Synth Strings
+
+
+Voice.syx
+1-Ciao
+2-CZ Hounds
+3-Voice 1
+4-Voice 2
+
+
+Choir.syx
+1-Choral
+2-Choral Oooh
+3-Invisible
+4-Minor Vox | Turn off noise mod?
+
+
+World.syx
+1-Bongos
+2-CZ Afro Percussion
+3-Kalimba
+4-Marimba
+5-Marimba
+6-Marimba
+7-Marimba
+8-CZ Steel Drum
+9-Steel Drum
+10-Steel Drum
+11-Koto
+12-Sitar
+13-Bagpipes

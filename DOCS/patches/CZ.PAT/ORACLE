@@ -1,0 +1,37 @@
+Tone Name:         Oracle
+
+Line Select:       1+1'
+Modulation:        Ring   = OFF   Noise = OFF
+Detune:            Octave = 0     Note  = 0      Fine = +7
+Vibrato:           Wave   = 2     Delay = 0      Rate = 60      Depth = 30
+Octave:            
+
+
+DCO1                                   DCO2
+----                                   ----
+
+First = 2     Second = 7               First =        Second = 
+
+Rate:         00                       Rate:          
+Level:        00                       Level:         
+Sus/End:      E                        Sus/End:       
+
+DCW1                                   DCW2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    
+
+Rate:         99 40                    Rate:          
+Level:        99 00                    Level:         
+Sus/End:      S  E                     Sus/End:       
+
+DCA1                                   DCA2
+----                                   ----
+
+Key Follow:   0                        Key Follow:    
+
+Rate:         99 30                    Rate:          
+Level:        99 00                    Level:         
+Sus/End:         E                     Sus/End:       
+
+Comment: An exotic-sounding tone.

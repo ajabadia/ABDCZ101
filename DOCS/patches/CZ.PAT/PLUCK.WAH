@@ -1,0 +1,28 @@
+Pluck & >WAH<  -  Messing around one day, just came up with it.
+-------------
+
+Line Select 2
+Detune: +  Octave: 1  Note: 08  Fine: 60
+Vibrato: Wave 1  Delay: 00  Rate: 00  Depth: 00
+Octave: Range  0
+
+DCO1: Waveform First:3  Second:4
+      Step1- Rate:20  Level:00  END
+
+DCW1: Key Follow: 4
+      Step1- Rate:65  Level:99           Step2- Rate:50  Level:00  END
+DCA1: Key Follow: 0
+      Step1- Rate:99  Level:99  SUS
+      Step2- Rate:50  Level:00  END
+ DC02: Waveform First:4  Second: 5
+      Step1- Rate:70  Level:00  END
+
+DCW2: Key Follow: 5
+      Step1- Rate:75  Level:99           Step2- Rate:50  Level:00
+Step3- Rate:99  Level:30
+      Step4- Rate:50  Level:70
+      Step5- Rate:00  Level:00  END
+      DCA2: Key Follow: 0
+      Step1- Rate:99  Level:00  SUS
+      Step2 to Step7- Rate:50  Level:00        Step8- Rate:50  Level:00
+END

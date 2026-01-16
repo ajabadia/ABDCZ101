@@ -1,0 +1,52 @@
+Name: Ministry horns
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line    mod     detune          vibrato         octave
+1+2     -       + 1 00 14       3 00 40 11      +1
+DCO1
+wave
+4 1
+rt lv
+86 99
+99 33
+68 00e
+DCO1
+key
+2
+rt lv
+67 99
+47 96
+37 52s
+26 00e
+DCA1
+key
+2
+rt lv
+82 99
+36 91s
+79 59
+55 00e
+DCO2
+wave
+1 0
+rt lv
+97 99
+89 00e
+DCW2
+key
+7
+rt lv
+97 87
+43 79
+50 74s
+52 00e
+DCA2
+key
+0
+rt lv
+99 99
+21 97
+61 00e
+
+Comments:  Again, use tons of chorus & reverb.  Guaranteed to sound like Alain
+Jourgensen in short punches. Play parallel ocatves for bigger sound. 

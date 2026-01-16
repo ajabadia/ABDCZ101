@@ -1,0 +1,53 @@
+Name: Lazy Trumpet (#4)
+
+line    mod     detune          vibrato         octave
+1+1'            + 0 00 07                       0
+
+DCO 1
+wave 
+1 0
+rate    level
+99      33
+68      00e
+
+DCW 1
+key 
+2
+rate    level
+67      99
+47      96
+37      52s
+26      00e
+
+
+DCA 1
+key 
+2
+rate    level
+70      90
+70      65
+70      95
+70      75
+70      99s
+50      00e
+
+DCO 2
+wave 
+
+rate    level
+
+
+DCW 2
+key 
+
+rate    level
+
+
+DCA 2
+key 
+
+rate    level
+
+
+Comments: I mix this with the Casio Trumpet, set Bend Range to 2, and
+get some pretty cool leads with this (a long echo helps).

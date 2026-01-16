@@ -71,25 +71,42 @@ void MultiStageEnvelope::noteOff() noexcept
 {
     released = true;
     
-    // If currently holding at sustain point, move to next stage immediately
-    if (active && currentStage == sustainPoint)
+    // AUTHENTIC CZ BEHAVIOR: "Dampening" / Jump to End Point
+    // When key is released, regardless of current stage (even if before sustain),
+    // the envelope immediately targets the End Point Level using the End Point Rate.
+    if (active)
     {
-        // Force transition to next stage
-        currentStage++;
-        if (currentStage > endPoint)
+        // Jump state to End Point
+        // Note: In CZ, the "End Point" step IS the release phase.
+        currentStage = endPoint;
+
+        // Verify validity
+        if (currentStage < MAX_STAGES)
+        {
+            // Retarget smoother from current value to End Point Level
+            float currentVal = smoother.getCurrentValue();
+            float seconds = rateToSeconds(stages[currentStage].rate);
+            
+            // Audit Fix 1.2: Ensure cleaner reset
+            smoother.reset(sampleRate, seconds > 0.001f ? seconds : 0.001f);
+            smoother.setCurrentAndTargetValue(currentVal);
+            smoother.setTargetValue(stages[currentStage].level);
+        }
+        else
         {
             active = false;
-            return;
         }
-        
-        // Setup next stage from current value
-        float currentVal = smoother.getCurrentValue();
-        float seconds = rateToSeconds(stages[currentStage].rate);
-        
-        smoother.reset(sampleRate, seconds > 0.001f ? seconds : 0.001f);
-        smoother.setCurrentAndTargetValue(currentVal);
-        smoother.setTargetValue(stages[currentStage].level);
     }
+}
+
+// Audit Fix 1.1: Implementation
+// Audit Fix 1.1: Implementation
+void MultiStageEnvelope::setCurrentValue(float val) noexcept
+{
+    // Force smoother target to value instantly
+    // We must reset the smoother to snap it, otherwise it ramps from previous value
+    smoother.reset(sampleRate, 0.001); // Minimal time to avoid division by zero but effectively instant
+    smoother.setCurrentAndTargetValue(val);
 }
 
 void MultiStageEnvelope::reset() noexcept
@@ -148,16 +165,28 @@ float MultiStageEnvelope::getNextValue() noexcept
 
 float MultiStageEnvelope::rateToSeconds(float rate) const noexcept
 {
-    // CZ-101 Rate approximation
-    // Rate 0.0 (slow) -> ~3 seconds (can be longer on real hardware)
-    // Rate 1.0 (fast) -> ~1 ms
+    // Authentic CZ-101 Rate Table (Approximate Mapping of 0-99 values to Seconds)
+    // Hardware CZ uses 100 discrete rates.
+    static const float czRateTable[100] = {
+        60.000f, 47.931f, 38.309f, 30.635f, 24.512f, 19.620f, 15.711f, 12.589f, 10.096f, 8.106f,
+        6.516f, 5.244f, 4.225f, 3.411f, 2.761f, 2.240f, 1.821f, 1.484f, 1.213f, 0.995f,
+        0.819f, 0.676f, 0.560f, 0.466f, 0.389f, 0.325f, 0.273f, 0.230f, 0.194f, 0.165f,
+        0.141f, 0.120f, 0.103f, 0.089f, 0.077f, 0.067f, 0.058f, 0.051f, 0.045f, 0.039f,
+        0.035f, 0.031f, 0.027f, 0.024f, 0.022f, 0.020f, 0.018f, 0.016f, 0.014f, 0.013f,
+        0.012f, 0.011f, 0.010f, 0.009f, 0.008f, 0.007f, 0.007f, 0.006f, 0.006f, 0.005f,
+        0.005f, 0.005f, 0.004f, 0.004f, 0.004f, 0.004f, 0.003f, 0.003f, 0.003f, 0.003f,
+        0.002f, 0.002f, 0.002f, 0.002f, 0.002f, 0.002f, 0.001f, 0.001f, 0.001f, 0.001f,
+        0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f,
+        0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f
+    };
+
+    // Interpolate between discrete hardware steps
+    float scaledRate = rate * 99.0f;
+    int index = std::clamp(static_cast<int>(scaledRate), 0, 98);
+    float frac = scaledRate - static_cast<float>(index);
     
-    // Using exponential curve
-    // Invert rate: 1.0 is slow, 0.0 is fast for calculation
-    float r = 1.0f - rate;
-    
-    // Base 30s max time
-    return 0.001f + (std::pow(r, 4.0f) * 30.0f);
+    float seconds = (1.0f - frac) * czRateTable[index] + frac * czRateTable[index + 1];
+    return seconds * rateScaler;
 }
 
 float MultiStageEnvelope::getStageRate(int index) const noexcept

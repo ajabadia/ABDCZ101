@@ -140,7 +140,7 @@ echo.
 echo 6. Compilando proyecto (Release)...
 echo    (Esto puede tardar varios minutos...)
 
-"%CMAKE_PATH%" --build build --config Release > compilation_error.log 2>&1
+"%CMAKE_PATH%" --build build --config Release
 if %errorlevel% neq 0 (
     echo Error: Compilacion fallida
     echo Log guardado en: compilation_error.log
@@ -155,8 +155,8 @@ echo.
 echo 7. Copiando ejecutable...
 
 if exist "build\CZ101Emulator_artefacts\Release\Standalone\CZ-101 Emulator.exe" (
-    copy "build\CZ101Emulator_artefacts\Release\Standalone\CZ-101 Emulator.exe" "CZ101Emulator.exe"
-    echo    Ejecutable copiado a: CZ101Emulator.exe
+    copy "build\CZ101Emulator_artefacts\Release\Standalone\CZ-101 Emulator.exe" "CZ-5000_Emulator.exe" /Y
+    echo    Ejecutable copiado a: CZ-5000_Emulator.exe
 ) else (
     echo Warning: Ejecutable no encontrado en ruta esperada
     echo Busca en: build\CZ101Emulator_artefacts\
@@ -172,4 +172,4 @@ echo   - Standalone: CZ101Emulator.exe
 echo   - VST3: build\CZ101Emulator_artefacts\Release\VST3\
 echo.
 
-pause
+REM pause

@@ -1,0 +1,13 @@
+Soundlib Library of Patches
+
+Patches are either written by me or translated by me from text files found on the internet.
+This file can be opened with the soundlib application.  The source has been acknowledged
+when possible.
+
+Soundlib can be obtained here:
+http://www.webcom.com/playloud/SoundLib
+
+
+Kenji Baugham
+http://www.geocities.com/sunsetstrip/lounge/6766/joes.html
+kenjib@rocketmail.com

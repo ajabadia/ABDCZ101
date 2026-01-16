@@ -1,0 +1,36 @@
+General Comments  - CZ-Edit v33
+ 
+CZEdit provides a way to edit all parms for CZ-type synths on one screen.
+Patches can be retrieved and sent indivdually or in banks. You can search
+through the database for patches whose name contains a string you specify
+(like "BASS" or "STRINGS"). Changes made to patches on the edit screen can
+be heard in the CZ right away with the QuickSend option. You can copy the
+patch in the editor to a new DB.
+ 
+CZEdit was written in 1988 by Gary P. Richardi. If you find it useful,
+let me know by internet E-Mail to gprichar@vnet.ibm.com or gary_p_r@aol.com.
+This program is distributed as FreeWare on as asis basis and may be copied
+freely. I most likely won't be upgrading the code since I don't use the CZ
+much anymore so I'm not asking for registration or providing formal
+support. I may add code to configure the MIDI Channel and MPU IRQ, which
+are hard-coded at 1 and 9 respectively, if I get enough requests.
+ 
+CZEDIT.EXE is a self-extracting ZIP file. I suggest you create a
+subdirectory, say CZEDIT\, before extracting the files. No installation
+beyond ZIP file extraction is required.
+ 
+CZEDIT.EXE contains the following files:
+ 
+ Length  Method   Size  Ratio   Date    Time    CRC-32  Attr  Name
+ ------  ------   ----- -----   ----    ----   -------- ----  ----
+  86736  DeflatN  41672  52%  11-04-94  12:19  002224bc --w-  CZEDIT33.EXE
+  43264  DeflatN   8532  81%  04-09-94  19:22  e9e22122 --w-  CZDB1.DAT
+   4608  DeflatN   1002  79%  02-11-89  18:29  4f859052 --w-  IBANK01.DAT
+    512  DeflatN    190  63%  04-09-94  20:23  9a0ed7ac --w-  TEMPDB.DAT
+   6929  DeflatN   1760  75%  04-09-94  19:22  27d4291f --w-  CZDB1.INX
+    738  DeflatN    124  84%  02-11-89  18:56  79d3c337 --w-  IBANK01.INX
+     82  DeflatN     69  16%  04-09-94  20:23  0fd759a2 --w-  TEMPDB.INX
+   4695  DeflatN   2143  55%  11-04-94  12:48  541e49f9 --w-  CZEDIT.HLP
+ ------          ------  ---                                  -------
+ 147564           55492  63%                                        8
+ 

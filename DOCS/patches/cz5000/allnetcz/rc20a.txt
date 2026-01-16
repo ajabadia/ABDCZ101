@@ -1,0 +1,87 @@
+This is the 64 RC-20 RAM cartridge patches for the CZ-1 converted 
+for use on the CZ-101,1000,3000,5000.
+Missing from the patches are the name data and the velocity, level 
+information. The patches would sound the similar on the CZ-1 if played 
+at full velocity.
+There are 4 banks of .syx files with 16 patches
+
+Bank 1 (1-16)
+
+    PIANO 6     
+    PIANO 7     
+    PIANO 8     
+    PIANO 9     
+  ELEC.PIANO 4  
+  ELEC.PIANO 5  
+  ELEC.PIANO 6  
+  ELEC.PIANO 7   
+ HARPSICHORD 3  
+ HARPSICHORD 4  
+ FUNKY CLAVI.5  
+ FUNKY CLAVI.6  
+   TOY PIANO    
+  HONKY-TONK 2  
+   CELESTA 1    
+   CELESTA 2 
+
+Bank 2  (17-32)
+   
+  FOLK GUITAR   
+ JAZZ GUITAR 2  
+ ELEC.GUITAR 2  
+ FUSION GUITAR  
+  DIST.GUITAR   
+  ELEC.BASS 3   
+  SLAP BASS 4   
+  SLAP BASS 5   
+   WOOD BASS    
+    BANJO 2     
+     HARP 3     
+     HARP 4     
+   GLASS HARP   
+     KOTO 2     
+     KOTO 3     
+  TAISHO KOTO  
+
+Bank 3 (33-48)
+   
+   SHAMISEN    
+    TSUZUMI     
+    SITAR 2     
+    JAW HARP    
+    BONANG 1    
+    BONANG 2    
+  VIBRAPHONE 3  
+  VIBRAPHONE 4  
+  GLASS SOUND   
+   MARIMBA 2    
+  THUMB PIANO   
+     AGOGO      
+    CHIME 1     
+    CHIME 2     
+    BELLS 2     
+    BELLS 3 
+
+Bank 4 (49-64)
+ 
+     GONG      
+SYN.PERCUSSION 1
+SYN.PERCUSSION 2
+SYN.PERCUSSION 3
+SYN.PERCUSSION 4
+   SHORT SLAP   
+  STEEL DRUM 2  
+     MALLET     
+   BASS DRUM    
+    TAIKO 1     
+    TAIKO 2     
+ SYNTH.DRUMS 3  
+ SYNTH.DRUMS 4  
+ SYNTH.DRUMS 5  
+   SCRATCH 1    
+   SCRATCH 2    
+
+Note: Some of these patches don't translate well, such as 
+the SHAMISEN patch. This patch on the CZ-1 bends only as the 
+velocity increases, and the noise in section 2 is set at half 
+the volume. Still others patches sound fine when translated. 

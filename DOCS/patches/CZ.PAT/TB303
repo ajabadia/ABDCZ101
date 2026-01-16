@@ -1,0 +1,71 @@
+From Brent_Wilson@mindlink.bc.ca Mon Aug 29 10:41:25 CDT 1994
+Article: 32504 of rec.music.makers.synth
+Path: news.uiowa.edu!uunet!cs.utexas.edu!howland.reston.ans.net!agate!deep.rsoft.bc.ca!mindlink.bc.ca!a9575
+From: Brent_Wilson@mindlink.bc.ca (Brent Wilson)
+Newsgroups: rec.music.makers.synth
+Subject: Re: CZ patches (Quasi 303)
+Date: Sat, 27 Aug 94 01:50:15 -0700
+Organization: MIND LINK! - British Columbia, Canada
+Lines: 56
+Distribution: world
+Message-ID: <52471@mindlink.bc.ca>
+NNTP-Posting-Host: mindlink.bc.ca
+
+Ok, if any of you have a CZ seires synth from Casio, and are pulling your
+hair out trying to find a Roland TB-303, I have created a 303-like sound
+with the CZ.  Here's the parameters.  It's a good bassy, acid sound and I
+have used it in a few of my tracks.  Enjoy.
+
+Line Select: 2   Modulation: None
+
+Detune: Negative, Octave: 1, Note: 00, Fine: 60
+
+Vibrato: Wave: 4, Delay: 00, Rate: 00, Depth: 99
+
+Octave: -1
+
+DCO1:  Waveform: First 8, Second 5
+       Step 1: rate 60, Level 66, SUS
+       Step 2: rate 0, Level 0
+       Step 3: rate 0, level 0 END
+
+DCW1:  Key Follow 9
+       Step 1: rate 99, Level 70 SUS
+       Steps 2-7: Rate 50, Level 0
+       Step 8: Rate 50, Level 0 END
+
+DCA1:  Key Follow 0
+       Step 1: Rate 99, Level 99
+       All other steps same as DCW1
+
+DCO2:  Waveform: First 5, Second 8
+       Step 1: rate 60, Level 66 SUS
+       Step 2: rate 50, Level 0 END
+
+DCW2:  Key Follow 5
+       Step 1: Rate 99, Level 99
+       Step 2: rate 40, level 0
+       Step 3: rate 0, level 0 END
+
+DCA2:  Key Follow 5
+       Step 1: Rate 99, Level 99 SUS
+       Step 2: rate 50, level 0 END
+
+
+Hope this is useful to somebody :)  I have about 8 or 9 other patches that
+I have created, but have not logged them down on paper yet, so if anyone
+wants them, Please E-Mail me directly, and I'll transcribe the whole mess.
+
+Enjoy.
+
+-Brent Wilson
+
+--
+ ----------------------------------------------
+| "I Graduated from the school of hard knocks  |
+|  and the kindergarten of getting the shit    |
+|  kicked out of you."                         |
+ ----------------------------------------------
+[ a9575@Mindlink.bc.ca ]  *KORDOS*
+
+

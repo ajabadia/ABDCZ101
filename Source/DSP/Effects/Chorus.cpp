@@ -72,7 +72,9 @@ void Chorus::process(float* leftChannel, float* rightChannel, int numSamples)
     {
         // Update LFO
         lfoPhase += lfoIncrement;
-        if (lfoPhase >= 1.0f) lfoPhase -= 1.0f;
+        // Audit Fix 2.10: Handle negative phase/large increments
+        while (lfoPhase >= 1.0f) lfoPhase -= 1.0f;
+        while (lfoPhase < 0.0f) lfoPhase += 1.0f;
         
         // Calculate LFO values
         // Left: Sin(phase)
@@ -86,19 +88,22 @@ void Chorus::process(float* leftChannel, float* rightChannel, int numSamples)
         float delayR = baseDelay + (depthSamples * lfoValR);
         
         // Circular buffer read pointers
+        // Audit Fix 1.6: Use fmod for robust circular buffer wrapping
         float readPosL = static_cast<float>(writeIndex) - delayL;
+        readPosL = std::fmod(readPosL, static_cast<float>(bufferSize));
         if (readPosL < 0.0f) readPosL += bufferSize;
         
         float readPosR = static_cast<float>(writeIndex) - delayR;
+        readPosR = std::fmod(readPosR, static_cast<float>(bufferSize));
         if (readPosR < 0.0f) readPosR += bufferSize;
         
         // Read wet samples
         float wetL = getInterpolatedSample(delayBufferL, readPosL);
         float wetR = getInterpolatedSample(delayBufferR, readPosR);
         
-        // Write inputs to buffer
-        delayBufferL[writeIndex] = leftChannel[i];
-        delayBufferR[writeIndex] = rightChannel[i];
+        // Write inputs to buffer with Denormal Protection
+        delayBufferL[writeIndex] = leftChannel[i] + 1.0e-18f;
+        delayBufferR[writeIndex] = rightChannel[i] + 1.0e-18f;
         
         // Mix
         leftChannel[i] = (leftChannel[i] * (1.0f - mix * 0.5f)) + (wetL * mix);

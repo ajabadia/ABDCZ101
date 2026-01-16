@@ -200,6 +200,56 @@ static void runVerificationTests(const juce::String& cmd)
              
         juce::JUCEApplication::getInstance()->systemRequestedQuit();
     }
+    // -------------------------------------------------------------------------
+    // 4. OFFLINE GOLDEN MASTER RENDER
+    // -------------------------------------------------------------------------
+    if (cmd.contains("--render-gold"))
+    {
+        std::cout << "[TEST] Running Offline Golden Master Render..." << std::endl;
+        
+        auto processor = std::make_unique<CZ101AudioProcessor>();
+        // FORCE Deterministic State
+        processor->setNonRealtime(true); 
+        processor->prepareToPlay(44100.0, 512);
+        
+        // Load Known State (e.g. Factory Preset 0 - Violin)
+        processor->getPresetManager().loadPreset(0); 
+        
+        juce::File outputFile = juce::File::getCurrentWorkingDirectory().getChildFile("golden_master.wav");
+        if (outputFile.exists()) outputFile.deleteFile();
+        
+        juce::WavAudioFormat format;
+        std::unique_ptr<juce::AudioFormatWriter> writer(format.createWriterFor(new juce::FileOutputStream(outputFile), 44100.0, 2, 16, {}, 0));
+        
+        if (writer)
+        {
+            int durationSamples = 44100 * 2; // 2 seconds
+            int blockSize = 512;
+            juce::AudioBuffer<float> buffer(2, blockSize);
+            juce::MidiBuffer midi;
+            
+            // Note Event
+            midi.addEvent(juce::MidiMessage::noteOn(1, 60, (juce::uint8)100), 0);
+            
+            int samplesWritten = 0;
+            while(samplesWritten < durationSamples)
+            {
+                buffer.clear();
+                processor->processBlock(buffer, midi);
+                midi.clear(); // Clear events after first block
+                
+                writer->writeFromAudioSampleBuffer(buffer, 0, buffer.getNumSamples());
+                samplesWritten += buffer.getNumSamples();
+            }
+            std::cout << "✅ Rendered: " << outputFile.getFileName() << " (" << outputFile.getSize() << " bytes)" << std::endl;
+        }
+        else
+        {
+            std::cout << "❌ Failed to create output file." << std::endl;
+        }
+        
+        juce::JUCEApplication::getInstance()->systemRequestedQuit();
+    }
 }
 
 
@@ -209,39 +259,67 @@ class CZ101StandaloneApp : public juce::JUCEApplication
 public:
     CZ101StandaloneApp() {}
 
-    const juce::String getApplicationName() override { return "CZ-101 Emulator"; }
+    const juce::String getApplicationName() override { return "ABD Z5001"; }
     const juce::String getApplicationVersion() override { return "1.0.0"; }
     bool moreThanOneInstanceAllowed() override { return true; }
 
     //==============================================================================
+    //==============================================================================
     void initialise(const juce::String& commandLine) override
     {
-        // Check for Verification Tests
-        runVerificationTests(commandLine);
-
-        // 1. Create the Window (Main Entry Point)
-        // We pass 'headless' if detected, though typical JUCE StandaloneWindow requires GUI.
-        // For true headless on RPi without X11, JUCE usually needs specific linux backend flags.
-        // However, assuming X11 is present or we want "Plug & Play" behavior:
+        DBG("CZ101 Standalone: initialise() started");
         
-        mainWindow.reset(new MainWindow(getApplicationName(), new CZ101AudioProcessor(), settings.get()));
+        // 0. Init Logger (Current Directory for debug)
+        auto logFile = juce::File::getCurrentWorkingDirectory().getChildFile("cz5000_debug.log");
+                           
+        if (!logFile.getParentDirectory().exists())
+             logFile.getParentDirectory().createDirectory();
 
-        // 2. Auto-Connect Logic (The crucial part for Headless/RPi)
-        auto& deviceManager = mainWindow->getDeviceManager();
+        fileLogger.reset(new juce::FileLogger(logFile, "CZ-101 Log"));
+        juce::Logger::setCurrentLogger(fileLogger.get());
         
-        // A. Audio: Initialise with default devices if not already set
-        // (StandalonePluginHolder does this, but we reinforce it)
-        juce::String err = deviceManager.initialiseWithDefaultDevices(0, 2);
-        if (err.isNotEmpty())
+        juce::Logger::writeToLog("--- ABD Z5001 Started ---\nVersion: " + getApplicationVersion());
+
+        // 1. Initialize Settings
+        juce::PropertiesFile::Options options;
+        options.applicationName = "ABD Z5001";
+        options.filenameSuffix = ".settings";
+        options.folderName = "CZ101_Emulator";
+        options.osxLibrarySubFolder = "Application Support";
+        settings = std::make_unique<juce::PropertiesFile>(options);
+        
+        // 2. Initialize Audio Device Manager FIRST (Audit Fix)
+        // Restore from settings if possible, else defaults.
+        if (settings != nullptr)
         {
-            juce::Logger::writeToLog("Warning: Could not initialise default audio device: " + err);
+            auto xml = settings->getXmlValue("audioDeviceState");
+            if (xml != nullptr)   
+                deviceManager.initialise(0, 2, xml.get(), true);
+            else
+                deviceManager.initialiseWithDefaultDevices(0, 2);
         }
         else
         {
-            juce::Logger::writeToLog("Audio Device Initialised: " + deviceManager.getCurrentAudioDevice()->getName());
+            deviceManager.initialiseWithDefaultDevices(0, 2);
         }
 
-        // B. MIDI: Enable ALL available inputs automatically
+        // 3. Create Processor
+        // We manage the processor's lifetime via the MainWindow (or here?)
+        // Standard pattern: Owner passes ownership to Window, or keeps unique_ptr.
+        // MainWindow expects a raw pointer in constructor and takes ownership via unique_ptr member.
+        // Let's create it here.
+        auto* processor = new CZ101AudioProcessor();
+
+        // 4. Create Window
+        // We pass reference to our deviceManager so Window can manage callbacks/selector
+        mainWindow.reset(new MainWindow(getApplicationName(), processor, *settings, deviceManager));
+
+        // 5. Auto-Connect MIDI logic
+        if (deviceManager.getCurrentAudioDevice() != nullptr)
+        {
+            juce::Logger::writeToLog("Audio Device Ready: " + deviceManager.getCurrentAudioDevice()->getName());
+        }
+
         auto midiInputs = juce::MidiInput::getAvailableDevices();
         for (auto& device : midiInputs)
         {
@@ -252,10 +330,8 @@ public:
             }
         }
         
-        // Ensure the player is listening to these newly enabled devices
         mainWindow->syncMidiCallbacks();
         
-        // Check for specific headless flag to maybe minimize or hide
         if (commandLine.contains("--headless"))
         {
             juce::Logger::writeToLog("Running in HEADLESS mode (Window Hidden)");
@@ -269,7 +345,17 @@ public:
 
     void shutdown() override
     {
-        mainWindow = nullptr; // Deletes the window and processor
+        if (mainWindow != nullptr)
+            mainWindow->setVisible(false);
+
+        mainWindow = nullptr; // Deletes the window (and processor if owned)
+        settings = nullptr;
+        
+        // Device Manager is owned by App, destroys here automatically
+        
+        juce::Logger::writeToLog("--- Application Shutdown ---");
+        juce::Logger::setCurrentLogger(nullptr);
+        fileLogger = nullptr;
     }
 
     //==============================================================================
@@ -282,109 +368,94 @@ public:
 
     //==============================================================================
     /*
-        Custom Main Window using explicit AudioDeviceManager and AudioProcessorPlayer.
-        We avoid juce::StandalonePluginHolder to prevent internal header dependency issues.
+        Custom Main Window using explicit AudioDeviceManager reference.
     */
-    class MainWindow : public juce::DocumentWindow, private juce::ChangeListener
+    class MainWindow : public juce::DocumentWindow, 
+                       private juce::ChangeListener,
+                       private juce::Timer
     {
     public:
-        MainWindow(const juce::String& name, juce::AudioProcessor* createdProcessor, juce::PropertiesFile* settings)
+        MainWindow(const juce::String& name, juce::AudioProcessor* createdProcessor, 
+                   juce::PropertiesFile& settings, juce::AudioDeviceManager& dm)
             : DocumentWindow(name, juce::Desktop::getInstance().getDefaultLookAndFeel()
                                        .findColour(juce::ResizableWindow::backgroundColourId),
                              juce::DocumentWindow::allButtons),
-              m_processor(createdProcessor) // We take ownership via unique_ptr below
+              m_processor(createdProcessor), // Take ownership
+              deviceManager(dm)              // Store reference
         {
-            setUsingNativeTitleBar(true);
-            setResizable(true, true);
+            setUsingNativeTitleBar(false);
             setResizable(true, true);
             setResizeLimits(400, 300, 10000, 10000);
+            setTitleBarButtonsRequired(juce::DocumentWindow::allButtons, false);
 
-            // Settings Button (Standard "Options..." Top Left)
-            addAndMakeVisible(settingsButton);
-            settingsButton.setButtonText("Options...");
-            settingsButton.onClick = [this] { showAudioSettings(); };
-            
-            // 1. Setup Audio & MIDI
-            // Initialise with 0 inputs, 2 outputs.
-            // We can load setup from settings if we wanted, but let's stick to auto-defaults for now.
-            auto err = deviceManager.initialiseWithDefaultDevices(0, 2);
-            if (err.isNotEmpty())
-                juce::Logger::writeToLog("Device Manager Init Error: " + err);
+            if (settings.getValue("windowState").isNotEmpty())
+               restoreWindowStateFromString(settings.getValue("windowState"));
 
             // 2. Setup Processor Player
-            // This connects the AudioProcessor to the DeviceManager callbacks
             player.setProcessor(m_processor.get());
             deviceManager.addAudioCallback(&player);
-            deviceManager.addAudioCallback(&player);
-            // deviceManager.addMidiInputDeviceCallback({}, &player); // Not needed generic add?
-            // actually we do manual per-device add below. 
-            // Actually deviceManager.addMidiInputCallback("", ...) doesn't add all.
-            // We need to add callback per enabled device. But AudioProcessorPlayer handles this if we bridge it.
-            // Wait, AudioProcessorPlayer IS a MidiInputCallback. 
-            // We need to register it to the device manager for *each* enabled input.
             
-            // 3. Create Editor
-            createEditor();
-
-            // 4. Restore State
-            if (settings != nullptr)
+            // Wire up Audio Settings Request
+            if (auto* cz = dynamic_cast<CZ101AudioProcessor*>(m_processor.get()))
             {
-               // Load window position
-               restoreWindowStateFromString(settings->getValue("windowState"));
-               
-               // Load Audio Device Setup
-               auto xml = settings->getXmlValue("audioDeviceState");
-               if (xml != nullptr)
-                   deviceManager.initialise(0, 2, xml.get(), true);
+                cz->requestAudioSettings = [this]() { showAudioSettings(); };
             }
 
-            // Listen for device changes
+            createEditor();
+
             deviceManager.addChangeListener(this);
             
-            // Finalize window
-            setVisible(true);
-            
-            resized(); // Ensure button is placed
+            // Audit Fix 6.2: Auto-reconnect Watchdog
+            startTimer(5000); 
+
+            resized(); 
         }
         
         void resized() override
         {
             juce::DocumentWindow::resized();
-            // detailed positioning of button in title bar area? 
-            // Place at Top Right to avoid PresetBrowser (Top Left)
-            settingsButton.setBounds(getWidth() - 110, 6, 100, 24);
-            settingsButton.toFront(true);
         }
 
         ~MainWindow() override
         {
+            stopTimer();
+            settingsWindow = nullptr; // Close settings if open
             deviceManager.removeChangeListener(this);
             deviceManager.removeAudioCallback(&player);
-            // deviceManager.removeMidiInputCallback({}, &player);
             
-            // Remove callbacks from all active midi inputs
              auto midiInputs = juce::MidiInput::getAvailableDevices();
             for (auto& device : midiInputs)
                  if (deviceManager.isMidiInputDeviceEnabled(device.identifier))
                      deviceManager.removeMidiInputDeviceCallback(device.identifier, &player);
 
             player.setProcessor(nullptr);
-            setContentOwned(nullptr, true); // Delete editor
+            setContentOwned(nullptr, true);
         }
 
         void closeButtonPressed() override
         {
+            // Save window state
+            // (Accessing settings from App is hard from here without reference, but we passed settings ref? No, passed in ctor only).
+            // Usually we save in shutdown() if we had pointer. 
+            // For now, just quit.
             juce::JUCEApplication::getInstance()->systemRequestedQuit();
         }
 
         void changeListenerCallback(juce::ChangeBroadcaster*) override
         {
-            // Device changed
+            juce::Logger::writeToLog("Audio Device Change Detected.");
         }
         
-        juce::AudioDeviceManager& getDeviceManager() { return deviceManager; }
+        void timerCallback() override
+        {
+             if (deviceManager.getCurrentAudioDevice() == nullptr)
+             {
+                 juce::Logger::writeToLog("Watchdog: Audio device lost! Attempting auto-reconnect...");
+                 deviceManager.initialiseWithDefaultDevices(0, 2);
+                 syncMidiCallbacks();
+             }
+        }
         
-        // Helper to register the player as MIDI callback for all enabled devices
         void syncMidiCallbacks()
         {
             auto midiInputs = juce::MidiInput::getAvailableDevices();
@@ -392,7 +463,6 @@ public:
             {
                 if (deviceManager.isMidiInputDeviceEnabled(device.identifier))
                 {
-                    // Remove first to be safe (no duplicates)
                     deviceManager.removeMidiInputDeviceCallback(device.identifier, &player);
                     deviceManager.addMidiInputDeviceCallback(device.identifier, &player);
                 }
@@ -415,13 +485,20 @@ public:
             }
         }
 
-        juce::AudioDeviceManager deviceManager;
+        juce::AudioDeviceManager& deviceManager; // Reference to App's manager
         juce::AudioProcessorPlayer player;
-        juce::TextButton settingsButton;
         std::unique_ptr<juce::AudioProcessor> m_processor;
         
+        juce::Component::SafePointer<juce::DialogWindow> settingsWindow;
+
         void showAudioSettings()
         {
+            if (settingsWindow != nullptr)
+            {
+                settingsWindow->toFront(true);
+                return;
+            }
+
             juce::DialogWindow::LaunchOptions opt;
             opt.dialogTitle = "Audio/MIDI Settings";
             opt.dialogBackgroundColour = getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId);
@@ -437,15 +514,23 @@ public:
             selector->setSize(500, 450);
             opt.content.setOwned(selector);
             
-            opt.launchAsync();
+            settingsWindow = opt.launchAsync();
         }
         
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)
     };
 
 private:
+public: 
+    // Audit Fix: Make deviceManager public member of App so Window can ref it, 
+    // OR keep private and pass ref (done above).
+    // Device Manager must outlive Window.
+    juce::AudioDeviceManager deviceManager; 
+
+private:
     std::unique_ptr<MainWindow> mainWindow;
     std::unique_ptr<juce::PropertiesFile> settings;
+    std::unique_ptr<juce::FileLogger> fileLogger;
 };
 
 //==============================================================================

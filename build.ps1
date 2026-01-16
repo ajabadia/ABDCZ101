@@ -1,191 +1,126 @@
-# CZ-101 Emulator Build Script
-# Basado en DeepMindSynth build script con mejoras
+# CZ-5000 Emulator Build Script for Standalone Executable
+# Combina la lógica de auto-detección del .bat con las capacidades de PowerShell.
+
+$ErrorActionPreference = "Stop"
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "CZ-101 Emulator Build Script" -ForegroundColor Cyan
+Write-Host "CZ-5000 Emulator Build Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
-# 1. Buscar CMake
+# --- 0. Limpiar Build Anterior --- 
+$buildDir = "build"
+Write-Host "`n0. Preparando para una compilación limpia..." -ForegroundColor Yellow
+if (Test-Path $buildDir) {
+    Write-Host "   Limpiando directorio de build anterior..." -ForegroundColor Gray
+    Remove-Item -Path $buildDir -Recurse -Force
+}
+New-Item -ItemType Directory -Path $buildDir | Out-Null
+Write-Host "   ✅ Directorio de build limpio y preparado." -ForegroundColor Green
+
+# --- 1. Localizar CMake --- 
 Write-Host "`n1. Buscando CMake..." -ForegroundColor Yellow
 
-$cmakePaths = @(
-    # PATH primero
-    (Get-Command cmake -ErrorAction SilentlyContinue).Source,
-    # Visual Studio 2022
-    "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe",
-    "C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe",
-    "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe",
-    # CMake standalone
-    "C:\Program Files\CMake\bin\cmake.exe",
-    "C:\Program Files (x86)\CMake\bin\cmake.exe"
-)
-
 $cmakeExe = $null
-foreach ($path in $cmakePaths) {
-    if ($path -and (Test-Path $path)) {
-        $cmakeExe = $path
-        Write-Host "   ✅ CMake encontrado: $path" -ForegroundColor Green
-        break
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+
+if (Test-Path $vswhere) {
+    try {
+        $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.CMake.Project -property installationPath
+        $potentialCMake = Join-Path $vsPath "Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
+        if (Test-Path $potentialCMake) {
+            $cmakeExe = $potentialCMake
+            Write-Host "   ✅ CMake localizado en Visual Studio: $cmakeExe" -ForegroundColor Green
+        }
+    } catch {
+        # vswhere puede fallar si no encuentra el componente
     }
 }
 
 if (-not $cmakeExe) {
-    Write-Host "   ❌ CMake no encontrado" -ForegroundColor Red
-    Write-Host "   Instala CMake desde: https://cmake.org/download/" -ForegroundColor Yellow
-    Write-Host "   O ejecuta desde 'Developer Command Prompt for VS 2022'" -ForegroundColor Yellow
-    exit 1
-}
-
-# 2. Verificar JUCE
-Write-Host "`n2. Verificando JUCE..." -ForegroundColor Yellow
-
-if (-not (Test-Path "C:\JUCE\CMakeLists.txt")) {
-    Write-Host "   ❌ JUCE no encontrado en C:\JUCE\" -ForegroundColor Red
-    Write-Host "   Verifica la instalación de JUCE" -ForegroundColor Yellow
-    exit 1
-}
-Write-Host "   ✅ JUCE encontrado en C:\JUCE\" -ForegroundColor Green
-
-# 3. Verificar Git
-Write-Host "`n3. Verificando Git..." -ForegroundColor Yellow
-
-try {
-    $gitVersion = git --version 2>&1
-    Write-Host "   ✅ $gitVersion" -ForegroundColor Green
-}
-catch {
-    Write-Host "   ⚠️  Git no encontrado (opcional)" -ForegroundColor Yellow
-}
-
-# 4. Limpiar build anterior (opcional)
-Write-Host "`n4. Preparando directorio de build..." -ForegroundColor Yellow
-
-if (Test-Path "build") {
-    $response = Read-Host "   ¿Limpiar build anterior? (s/N)"
-    if ($response -eq 's' -or $response -eq 'S') {
-        Write-Host "   Limpiando build..." -ForegroundColor Yellow
-        Remove-Item -Path "build" -Recurse -Force -ErrorAction SilentlyContinue
-    }
-}
-
-if (-not (Test-Path "build")) {
-    New-Item -ItemType Directory -Path "build" | Out-Null
-    Write-Host "   ✅ Directorio build creado" -ForegroundColor Green
-}
-
-# 5. Configurar proyecto
-Write-Host "`n5. Configurando proyecto con CMake..." -ForegroundColor Yellow
-Write-Host "   (Esto puede tardar la primera vez...)" -ForegroundColor Gray
-
-Push-Location build
-try {
-    # Configurar con Visual Studio 2022
-    $configArgs = @(
-        "..",
-        "-G", "Visual Studio 17 2022",
-        "-A", "x64"
-    )
-    
-    Write-Host "   Ejecutando: cmake $($configArgs -join ' ')" -ForegroundColor Gray
-    
-    & $cmakeExe $configArgs 2>&1 | Tee-Object -Variable configOutput | ForEach-Object {
-        if ($_ -match "error|fatal") {
-            Write-Host "   $_" -ForegroundColor Red
-        }
-        elseif ($_ -match "warning") {
-            Write-Host "   $_" -ForegroundColor Yellow
-        }
-        else {
-            Write-Host "   $_" -ForegroundColor Gray
-        }
-    }
-    
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "`n   ❌ Error en configuración de CMake" -ForegroundColor Red
-        Write-Host "   Revisa los errores arriba" -ForegroundColor Yellow
+    $cmakeExe = Get-Command cmake -ErrorAction SilentlyContinue
+    if ($cmakeExe) {
+        Write-Host "   ✅ CMake localizado en el PATH del sistema: $($cmakeExe.Source)" -ForegroundColor Green
+    } else {
+        Write-Host "   ❌ No se pudo encontrar CMake." -ForegroundColor Red
+        Write-Host "   Asegúrate de que Visual Studio tenga instalado el componente 'Herramientas de CMake para C++' o que CMake esté en tu PATH." -ForegroundColor Yellow
+        Read-Host "Presiona Enter para salir"
         exit 1
     }
-    
-    Write-Host "`n   ✅ Configuración completada" -ForegroundColor Green
-    
-    # 6. Compilar proyecto
-    Write-Host "`n6. Compilando proyecto (Release)..." -ForegroundColor Yellow
-    Write-Host "   (Esto puede tardar varios minutos...)" -ForegroundColor Gray
-    
-    $buildArgs = @(
-        "--build", ".",
-        "--config", "Release",
-        "--target", "CZ101Emulator_Standalone"
-    )
-    
-    Write-Host "   Ejecutando: cmake $($buildArgs -join ' ')" -ForegroundColor Gray
-    
-    & $cmakeExe $buildArgs 2>&1 | Tee-Object -Variable buildOutput | ForEach-Object {
-        if ($_ -match "error|fatal|failed") {
-            Write-Host "   $_" -ForegroundColor Red
-        }
-        elseif ($_ -match "warning") {
-            Write-Host "   $_" -ForegroundColor Yellow
-        }
-        elseif ($_ -match "Building|Compiling|Linking") {
-            Write-Host "   $_" -ForegroundColor Cyan
-        }
-        else {
-            # Silenciar output verbose
-        }
-    }
-    
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "`n   ❌ Error en compilación" -ForegroundColor Red
-        Write-Host "   Revisa los errores arriba" -ForegroundColor Yellow
-        
-        # Guardar log de errores
-        $buildOutput | Out-File -FilePath "..\compilation_error.log"
-        Write-Host "   Log guardado en: compilation_error.log" -ForegroundColor Yellow
-        exit 1
-    }
-    
-    Write-Host "`n   ✅ Compilación exitosa!" -ForegroundColor Green
-    
-    # 7. Copiar ejecutable
-    Write-Host "`n7. Copiando ejecutable..." -ForegroundColor Yellow
-    
-    $exePath = "CZ101Emulator_artefacts\Release\Standalone\CZ-101 Emulator.exe"
-    $destPath = "..\CZ101Emulator.exe"
-    
-    if (Test-Path $exePath) {
-        Copy-Item -Path $exePath -Destination $destPath -Force
-        Write-Host "   ✅ Ejecutable copiado a: CZ101Emulator.exe" -ForegroundColor Green
-    }
-    else {
-        Write-Host "   ⚠️  Ejecutable no encontrado en ruta esperada" -ForegroundColor Yellow
-        Write-Host "   Busca en: build\CZ101Emulator_artefacts\" -ForegroundColor Gray
-    }
-    
-    # 8. Mostrar plugins generados
-    Write-Host "`n8. Plugins generados:" -ForegroundColor Yellow
-    
-    $vst3Path = "CZ101Emulator_artefacts\Release\VST3\CZ-101 Emulator.vst3"
-    if (Test-Path $vst3Path) {
-        Write-Host "   ✅ VST3: $vst3Path" -ForegroundColor Green
-    }
-    
-    Write-Host "`n========================================" -ForegroundColor Cyan
-    Write-Host "BUILD COMPLETADO EXITOSAMENTE" -ForegroundColor Green
-    Write-Host "========================================" -ForegroundColor Cyan
-    
-    Write-Host "`nArchivos generados:" -ForegroundColor Cyan
-    Write-Host "  - Standalone: CZ101Emulator.exe" -ForegroundColor White
-    Write-Host "  - VST3: build\CZ101Emulator_artefacts\Release\VST3\" -ForegroundColor White
-    
+}
+
+# --- 2. Incrementar Versión de Build ---
+Write-Host "`n2. Incrementando versión de build..." -ForegroundColor Yellow
+
+$versionFile = "build_no.txt"
+if (-not (Test-Path $versionFile)) { "0" | Out-File $versionFile }
+[int]$buildNo = Get-Content $versionFile
+$buildNo++
+$buildNo | Out-File $versionFile
+
+$headerPath = "Source\Core\BuildVersion.h"
+$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
+$headerContent = "#pragma once`n`n"
+$headerContent += "#define CZ_BUILD_VERSION `"$buildNo`"`n"
+$headerContent += "#define CZ_BUILD_TIMESTAMP `"$timestamp`"`n"
+
+# Asegurarse de que el directorio Core exista
+if (-not (Test-Path (Split-Path $headerPath))) {
+    New-Item -ItemType Directory -Path (Split-Path $headerPath) | Out-Null
+}
+
+$headerContent | Out-File $headerPath -Encoding utf8
+Write-Host "   ✅ Build #$buildNo. Fichero de versión generado en: $headerPath" -ForegroundColor Green
+
+# --- 3. Configurar y Compilar ---
+Push-Location $buildDir
+try {
+    Write-Host "`n3. Configurando proyecto con CMake..." -ForegroundColor Yellow
+    & $cmakeExe -B . -A x64 ..
+    if ($LASTEXITCODE -ne 0) { throw "La configuración de CMake ha fallado." }
+    Write-Host "   ✅ Configuración completada." -ForegroundColor Green
+
+    Write-Host "`n4. Compilando el ejecutable Standalone (Release)..." -ForegroundColor Yellow
+    & $cmakeExe --build . --config Release --target CZ101Emulator_Standalone
+    if ($LASTEXITCODE -ne 0) { throw "La compilación ha fallado." }
+    Write-Host "   ✅ Compilación completada." -ForegroundColor Green
 }
 catch {
-    Write-Host "`n❌ Error inesperado: $_" -ForegroundColor Red
+    Write-Host "`n   ❌ ERROR: $_" -ForegroundColor Red
+    Pop-Location
+    Read-Host "Presiona Enter para salir"
     exit 1
 }
 finally {
-    Pop-Location
+    # Pop-Location se ejecuta siempre, incluso si hay un error
 }
 
-Write-Host "`nPresiona Enter para salir..." -ForegroundColor Gray
-Read-Host
+# --- 4. Finalizar ---
+Write-Host "`n5. Finalizando..." -ForegroundColor Yellow
+
+# La ruta al artefacto puede variar ligeramente dependiendo de la versión de JUCE/CMake
+$exeName = "CZ-101 Emulator.exe"
+$exeSrcPath = "CZ101Emulator_artefacts\Release\Standalone\$exeName"
+
+$finalExeName = "CZ-5000_Emulator.exe"
+$destPath = "..\$finalExeName"
+
+if (Test-Path $exeSrcPath) {
+    Copy-Item -Path $exeSrcPath -Destination $destPath -Force
+    Pop-Location
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host "  BUILD EXITOSA! (Build #$buildNo)" -ForegroundColor Green
+    Write-Host "  Ejecutable: $finalExeName" -ForegroundColor White
+    Write-Host "========================================`n" -ForegroundColor Cyan
+    
+    $response = Read-Host "¿Quieres ejecutarlo ahora? (S/N)"
+    if ($response -eq 's' -or $response -eq 'S') {
+        Start-Process $finalExeName
+    }
+} else {
+    Pop-Location
+    Write-Host "   ⚠️  ADVERTENCIA: No se encontró el .exe compilado en la ruta esperada." -ForegroundColor Yellow
+    Write-Host "   Ruta buscada: `"build\$exeSrcPath`"" -ForegroundColor Gray
+}
+
+Read-Host "Presiona Enter para salir"

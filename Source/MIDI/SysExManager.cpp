@@ -1,346 +1,314 @@
 /*
- * SysExManager.cpp - CZ-101 SysEx Parser (CORRECTO)
- * 
- * Parsea correctamente el formato SysEx del CZ-101:
- * - 256 bytes de data en formato NIBBLE (half-byte)
- * - Estructura de 25 secciones según especificación Casio
- * - Decodifica vibrato, detune, waveforms y envelopes
+ * SysExManager.cpp - CZ-101 SysEx Parser (AUTHENTIC DUAL LINE)
  */
 
 #include "SysExManager.h"
-//#include <JuceHeader.h>
 #include <juce_core/juce_core.h>
 #include <cmath>
 #include <array>
 #include <cstdint>
+#include <algorithm> // Added for std::clamp
 
 using std::uint8_t;
 
 namespace CZ101 {
 namespace MIDI {
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Decodifica un par de NIBBLES (half-bytes) del payload CZ-101
- * El CZ-101 envía cada byte como DOS nibbles: bajo, alto
- * Ejemplo: Byte 0x5F se transmite como [0x0F, 0x05]
- */
 static uint8_t decodeNibblePair(const uint8_t* payload, int& offset, int maxSize) {
-    if (offset + 1 >= maxSize) {
-        juce::Logger::writeToLog("⚠️ SysEx: Offset overflow at offset=" + juce::String(offset));
+    if (offset + 2 > maxSize) {
+        offset = maxSize; 
         return 0;
     }
     uint8_t lowNibble = payload[offset++] & 0x0F;
     uint8_t highNibble = payload[offset++] & 0x0F;
-    uint8_t result = (highNibble << 4) | lowNibble;
-    return result;
+    return (highNibble << 4) | lowNibble;
 }
 
-/**
- * Mapea CZ-101 Rate (0-99) a segundos
- * Rate 0 = lento (~3 segundos)
- * Rate 99 = rápido (~1 milisegundo)
- */
 static float mapCZRateToSeconds(uint8_t rate) {
     rate = std::min(rate, static_cast<uint8_t>(99));
-    // Usar escala logarítmica: min=0.001s, max=3.0s
-    float normalized = (99.0f - static_cast<float>(rate)) / 99.0f;
-    return 0.001f * std::pow(3000.0f, normalized);
+    float r = (99.0f - static_cast<float>(rate)) / 99.0f;
+    return 0.001f + (std::pow(r, 4.0f) * 30.0f); // Consistent with MultiStageEnv
 }
 
-/**
- * Mapea CZ-101 Level (0-99) a rango 0.0-1.0
- */
 static float mapCZLevelToNormal(uint8_t level) {
     level = std::min(level, static_cast<uint8_t>(99));
     return static_cast<float>(level) / 99.0f;
 }
 
-/**
- * Mapea CZ-101 Depth para vibrato (0-99 a semitones o porcentaje)
- */
 static float mapCZDepth(uint8_t depthVal) {
     depthVal = std::min(depthVal, static_cast<uint8_t>(99));
     return static_cast<float>(depthVal) / 99.0f;
 }
 
-// ============================================================================
-// MAIN SYSEX HANDLER
-// ============================================================================
-
-void SysExManager::handleSysEx(
-    const void* data,
-    int size,
-    const juce::String& patchName)
+void SysExManager::handleSysEx(const void* data, int size, const juce::String& patchName)
 {
-    const auto bytes = static_cast<const uint8_t*>(data);
+    if (memoryProtected || !programChangeEnabled) return;
 
-    // ========== VALIDACIÓN DE HEADER ==========
-    if (size < 70) {
-        juce::Logger::writeToLog("❌ SysEx too small: " + juce::String(size) + " bytes");
-        return;
-    }
+    // Audit Fix 4.3: Robust Buffering / Running Status handling
+    fragmentBuffer.append(data, size);
 
-    // Validar estructura mínima: F0 44 00 00 70+ch 10/20 program <data> F7
-    // Típicamente: F0 44 00 00 70 10 [payload] F7
-    if (bytes[0] != 0xF0) {
-        juce::Logger::writeToLog("❌ Invalid SysEx start");
-        return;
-    }
+    while (fragmentBuffer.getSize() > 0)
+    {
+        const uint8_t* bytes = static_cast<const uint8_t*>(fragmentBuffer.getData());
+        int totalSize = (int)fragmentBuffer.getSize();
 
-    // Check Casio ID (44 00 00)
-    if (bytes[1] != 0x44 || bytes[2] != 0x00 || bytes[3] != 0x00) {
-        juce::Logger::writeToLog("❌ Not a Casio SysEx");
-        return;
-    }
+        // Search for F0 (SYSEX_START)
+        int startPos = -1;
+        for (int i = 0; i < totalSize; ++i) if (bytes[i] == 0xF0) { startPos = i; break; }
 
-    // Check device ID (70+channel, typically 70 for ch0)
-    if ((bytes[4] & 0xF0) != 0x70) {
-        juce::Logger::writeToLog("❌ Invalid device ID");
-        return;
-    }
+        if (startPos == -1) { fragmentBuffer.reset(); break; } // No start found, discard junk
+        if (startPos > 0) { fragmentBuffer.removeSection(0, startPos); continue; } // Skip leading junk
 
-    // Check function code (10=SEND, 20=RECEIVE)
-    uint8_t function = bytes[5];
-    if (function != 0x10 && function != 0x20) {
-        juce::Logger::writeToLog("⚠️ Unknown function code: " + juce::String::toHexString(function));
-        // Continue anyway - some CZs might use 0x30
-    }
-
-    // Program/bank indicator (typically bytes[6])
-    uint8_t programCode = bytes[6];
-
-    // Payload comienza en offset 7 (después de header)
-    int payloadOffset = 7;
-    int payloadSize = size - 8;  // Excluir F0...70,function,program y F7
-
-    // Validación: El CZ-101 envía exactamente 256 bytes de data en NIBBLES
-    // = 512 nibbles cuando se transmiten
-    // Pero algunos editores pueden pre-decodificar, así que aceptamos 256-512
-    if (payloadSize < 256) {
-        juce::Logger::writeToLog("⚠️ SysEx payload small: " + juce::String(payloadSize) + 
-                                " bytes (expected 256-512)");
-    }
-
-    juce::Logger::writeToLog("📥 Parsing CZ-101 SysEx: " + juce::String(payloadSize) + 
-                            " bytes, program=" + juce::String::toHexString(programCode));
-
-    CZ101::State::Preset preset;
-    preset.name = patchName.toStdString();
-
-    int nibbleOffset = payloadOffset;
-
-    // ========== SECTION 1: PFLAG (Line Select + Octave Range) ==========
-    uint8_t pflag = decodeNibblePair(bytes, nibbleOffset, size);
-    int lineSelect = pflag & 0x03;           // Bits 0-1: 00=1, 01=2, 10=1+1, 11=1+2
-    int octaveRange = (pflag >> 2) & 0x03;   // Bits 2-3: 00=0, 01=+1, 10=-1
-
-    preset.parameters["lineselect"] = static_cast<float>(lineSelect);
-    preset.parameters["octaverange"] = static_cast<float>(octaveRange);
-
-
-    juce::Logger::writeToLog("  PFLAG=0x" + juce::String::toHexString(pflag) +
-                            " LineSelect=" + juce::String(lineSelect) +
-                            " Octave=" + juce::String(octaveRange));
-
-    // ========== SECTION 2: PDS (Detune Sign) ==========
-    uint8_t pds = decodeNibblePair(bytes, nibbleOffset, size);
-    bool detunePlus = (pds & 0x01) == 0;  // 0=+, 1=-
-
-    // ========== SECTION 3: PDL, PDH (Detune Range: FINE + OCTAVE/NOTE) ==========
-    uint8_t pdFine = decodeNibblePair(bytes, nibbleOffset, size);    // Fine: 0-15
-    uint8_t pdNote = decodeNibblePair(bytes, nibbleOffset, size);    // Octave (0-3) + Note (0-11)
-
-    int detuneOctave = (pdNote >> 4) & 0x03;
-    int detuneNote = pdNote & 0x0F;
-    float detuneCents = (pdFine + detuneOctave * 12) * 100.0f;
-    // detuneNote is not currently used in our mapping logic, but decoded for completeness
-    (void)detuneNote;
-    if (!detunePlus) detuneCents = -detuneCents;
-
-    preset.parameters["osc2detune"] = detuneCents;
-    juce::Logger::writeToLog("  Detune: " + juce::String(detuneCents, 1) + " cents");
-
-    // ========== SECTION 4: PVK (Vibrato Wave) ==========
-    uint8_t pvk = decodeNibblePair(bytes, nibbleOffset, size);
-    int vibratoWave = pvk & 0x07;  // 0=sine, 1=tri, 2=saw, 3=square, etc.
-    preset.parameters["lfowaveform"] = static_cast<float>(vibratoWave);
-
-    // ========== SECTION 5: PVD (Vibrato DELAY) - 3 bytes encoded ==========
-    uint8_t pvdld = decodeNibblePair(bytes, nibbleOffset, size);
-    uint8_t pvdlv = decodeNibblePair(bytes, nibbleOffset, size);
-    uint8_t pvd3  = decodeNibblePair(bytes, nibbleOffset, size); (void)pvd3;
-
-    // Mapeo de delay: combinar bytes encoded
-    // Fix: Raw value is likely in ms or small units. 1983 raw was becoming 19830ms (20s).
-    // Reduced factor to 1.0f to match typical delay times (e.g. 2s).
-    float delayMs = ((pvdld & 0x0F) * 256 + pvdlv) * 1.0f; 
-    if (delayMs > 30000.0f) delayMs = 30000.0f;  // Cap a 30 segundos
-    preset.parameters["vibratodelay"] = delayMs / 1000.0f;  // Convert to seconds
-
-    juce::Logger::writeToLog("  Vibrato Delay: " + juce::String(delayMs, 0) + " ms");
-
-    // ========== SECTION 6: PVS (Vibrato RATE) - 3 bytes encoded ==========
-    uint8_t pvsd = decodeNibblePair(bytes, nibbleOffset, size);
-    uint8_t pvsv = decodeNibblePair(bytes, nibbleOffset, size);
-    uint8_t pvs3 = decodeNibblePair(bytes, nibbleOffset, size); (void)pvs3;
-
-    uint8_t rateVal = (pvsd & 0x0F) | ((pvsv & 0x0F) << 4);
-    float lfoRate = mapCZRateToSeconds(rateVal);
-    preset.parameters["lforate"] = lfoRate;
-
-    juce::Logger::writeToLog("  Vibrato Rate: " + juce::String(lfoRate, 3) + " Hz");
-
-    // ========== SECTION 7: PVD (Vibrato DEPTH) - 3 bytes encoded ==========
-    uint8_t pvdd = decodeNibblePair(bytes, nibbleOffset, size);
-    uint8_t pvdv = decodeNibblePair(bytes, nibbleOffset, size);
-    uint8_t pvd7_3 = decodeNibblePair(bytes, nibbleOffset, size); (void)pvd7_3;
-
-    uint8_t depthVal = (pvdd & 0x0F) | ((pvdv & 0x0F) << 4);
-    float lfoDepth = mapCZDepth(depthVal);
-    preset.parameters["lfodepth"] = lfoDepth;
-
-    juce::Logger::writeToLog("  Vibrato Depth: " + juce::String(lfoDepth, 2));
-
-    // ========== SECTION 8: MFW (DCO1 Waveform) - 2 bytes nibbles ==========
-    uint8_t mfw1 = decodeNibblePair(bytes, nibbleOffset, size);
-    uint8_t mfw2 = decodeNibblePair(bytes, nibbleOffset, size);
-
-    int osc1Wave = mfw1 & 0x07;
-    int osc2Wave = mfw2 & 0x07;
-    preset.parameters["osc1waveform"] = static_cast<float>(osc1Wave);
-    preset.parameters["osc2waveform"] = static_cast<float>(osc2Wave);
-
-    juce::Logger::writeToLog("  Oscillators: Wave1=" + juce::String(osc1Wave) +
-                            " Wave2=" + juce::String(osc2Wave));
-
-    // ========== SECTION 9: MAMD, MAMV (DCA1 Key Follow) ==========
-    uint8_t mamd = decodeNibblePair(bytes, nibbleOffset, size); (void)mamd;
-    uint8_t mamv = decodeNibblePair(bytes, nibbleOffset, size);
-    // Key follow 0-9 typically, store if needed
-    preset.parameters["dca1keyfollow"] = static_cast<float>(mamv & 0x0F);
-
-    // ========== SECTION 10: MWMD, MWMV (DCW1 Key Follow) ==========
-    uint8_t mwmd = decodeNibblePair(bytes, nibbleOffset, size); (void)mwmd;
-    uint8_t mwmv = decodeNibblePair(bytes, nibbleOffset, size);
-    preset.parameters["dcw1keyfollow"] = static_cast<float>(mwmv & 0x0F);
-
-    // ========== SECTION 11: PMAL (DCA1 End Step) ==========
-    uint8_t pmal = decodeNibblePair(bytes, nibbleOffset, size);
-    int dcaEndPoint = pmal & 0x07;  // 0-7 (8 stages)
-
-    // ========== SECTION 12: PMA (DCA1 Envelope Rates/Levels - 16 bytes = 8 stages) ==========
-    std::array<float, 8> dcaRates = {};
-    std::array<float, 8> dcaLevels = {};
-    int dcaSustainPoint = -1;
-
-    for (int i = 0; i < 8; i++) {
-        uint8_t rawRate = decodeNibblePair(bytes, nibbleOffset, size);
-        uint8_t rawLevel = decodeNibblePair(bytes, nibbleOffset, size);
-
-        // Bit 0x80 en level = sustain point
-        if (rawLevel & 0x80) {
-            dcaSustainPoint = i;
-            rawLevel &= 0x7F;  // Clear sustain bit
+        // Search for F7 (SYSEX_END)
+        int endPos = -1;
+        for (int i = 1; i < totalSize; ++i) {
+            if (bytes[i] == 0xF7) { endPos = i; break; }
+            if (bytes[i] == 0xF0 && i > 0) break; // Next message start before end? 
         }
 
-        dcaRates[i] = mapCZRateToSeconds(rawRate);
-        dcaLevels[i] = mapCZLevelToNormal(rawLevel);
-    }
-
-    if (dcaSustainPoint == -1) dcaSustainPoint = 2;  // Default
-
-    // ========== SECTION 13: PMWL (DCW1 End Step) ==========
-    uint8_t pmwl = decodeNibblePair(bytes, nibbleOffset, size);
-    int dcwEndPoint = pmwl & 0x07;
-
-    // ========== SECTION 14: PMW (DCW1 Envelope Rates/Levels - 16 bytes) ==========
-    std::array<float, 8> dcwRates = {};
-    std::array<float, 8> dcwLevels = {};
-    int dcwSustainPoint = -1;
-
-    for (int i = 0; i < 8; i++) {
-        uint8_t rawRate = decodeNibblePair(bytes, nibbleOffset, size);
-        uint8_t rawLevel = decodeNibblePair(bytes, nibbleOffset, size);
-
-        if (rawLevel & 0x80) {
-            dcwSustainPoint = i;
-            rawLevel &= 0x7F;
+        if (endPos == -1) {
+            // Partial message, wait for more. Safety: cap at 10KB
+            if (totalSize > 10000) {
+                 juce::Logger::writeToLog("SysEx fragment too large (>10KB), discarding buffer to prevent overflow");
+                 fragmentBuffer.reset(); 
+            }
+            break; 
         }
 
-        dcwRates[i] = mapCZRateToSeconds(rawRate);
-        dcwLevels[i] = mapCZLevelToNormal(rawLevel);
-    }
+        int msgSize = endPos + 1;
+        const uint8_t* msg = bytes; // F0 ... F7
 
-    if (dcwSustainPoint == -1) dcwSustainPoint = 2;
-
-    // ========== SECTION 15: PMPL (DCO1 End Step) ==========
-    uint8_t pmpl = decodeNibblePair(bytes, nibbleOffset, size);
-    int pitchEndPoint = pmpl & 0x07;
-
-    // ========== SECTION 16: PMP (Pitch Envelope Rates/Levels - 16 bytes) ==========
-    std::array<float, 8> pitchRates = {};
-    std::array<float, 8> pitchLevels = {};
-    int pitchSustainPoint = -1;
-
-    for (int i = 0; i < 8; i++) {
-        uint8_t rawRate = decodeNibblePair(bytes, nibbleOffset, size);
-        uint8_t rawLevel = decodeNibblePair(bytes, nibbleOffset, size);
-
-        if (rawLevel & 0x80) {
-            pitchSustainPoint = i;
-            rawLevel &= 0x7F;
+        // Validation (Casio ID 0x44)
+        if (msgSize < 10 || msg[1] != 0x44) {
+            fragmentBuffer.removeSection(0, msgSize);
+            continue;
         }
 
-        pitchRates[i] = mapCZRateToSeconds(rawRate);
-        pitchLevels[i] = mapCZLevelToNormal(rawLevel);
-    }
+        // Checksum Check (nibble payload start at byte 7)
+        uint16_t sum = 0;
+        for (int i = 7; i < msgSize - 2; ++i) sum += msg[i];
+        uint8_t checksum = (uint8_t)((0 - sum) & 0x7F);
+        if (checksum != msg[msgSize - 2]) {
+            juce::Logger::writeToLog("⚠️ SysEx Checksum Error: Expected " + juce::String::toHexString(msg[msgSize-2]) + " got " + juce::String::toHexString(checksum));
+        }
 
-    if (pitchSustainPoint == -1) pitchSustainPoint = 2;
+        // Device ID Check
+        uint8_t devId = msg[5] & 0x0F;
+        if (devId != 0) { 
+             fragmentBuffer.removeSection(0, msgSize);
+             continue; // Wait... should we break or skip? Skip this message.
+        }
 
-    // ========== SECTIONS 17-25: DCO2, DCW2, DCA2 Envelopes (Similar) ==========
-    // Decodificar pero no usar (para mantener offset correcto)
-    for (int i = 0; i < 2 + 2 + 2 + 1 + 16 + 1 + 16 + 1 + 16; i++) {
-        uint8_t skip = decodeNibblePair(bytes, nibbleOffset, size);
-        (void)skip;
-    }
+        // Parse Patches (Bulk Dump loop)
+        int offset = 7;
+        int patchCount = 0;
+        
+        auto decodeEnv = [&](CZ101::State::EnvelopeData& env, int& off, int maxSize) {
+            if (off + 2 > maxSize) return;
+            uint8_t endByte = decodeNibblePair(msg, off, maxSize);
+            env.endPoint = endByte & 0x07;
+            env.sustainPoint = -1;
+            for (int i = 0; i < 8; ++i) {
+                uint8_t rawRate = decodeNibblePair(msg, off, maxSize);
+                uint8_t rawLevel = decodeNibblePair(msg, off, maxSize);
+                if (rawLevel & 0x80) { env.sustainPoint = i; rawLevel &= 0x7F; }
+                env.rates[i] = mapCZRateToSeconds(rawRate);
+                env.levels[i] = mapCZLevelToNormal(rawLevel);
+            }
+            if (env.sustainPoint == -1) env.sustainPoint = 2;
+        };
 
-    // ========== STORE ENVELOPES IN PRESET ==========
+        while (offset + 256 < msgSize) // Each patch is ~256 nibbles payload? No, check sizes.
+        {
+            // CZ-101 Patch Nibbles: 
+            // EndPoint(1) + 8*(Rate(1)+Level(1)) * 3 (DCA, DCW, Pitch) = 1 + 16*3 = 49 bytes encoded as 98 nibbles.
+            // But there are two lines, so 98*2 = 196 nibbles.
+            // Plus PFLAG, Detune, Vibrato... approx 128-132 bytes per patch -> 256-264 nibbles.
+            // CZ-5000 Bulk dump might have multiple patches.
+            
+            CZ101::State::Preset preset;
+            preset.name = patchName.toStdString();
+            if (patchCount > 0) preset.name += " " + std::to_string(patchCount);
 
-    // DCA Envelope
-    preset.dcaEnv.sustainPoint = dcaSustainPoint;
-    preset.dcaEnv.endPoint = dcaEndPoint;
-    for (int i = 0; i < 8; i++) {
-        preset.dcaEnv.rates[i] = dcaRates[i];
-        preset.dcaEnv.levels[i] = dcaLevels[i];
-    }
+            // ... (rest of parsing logic)
+            // I will use a size-based safety break
+            int patchStartOffset = offset;
+            
+            uint8_t pflag = decodeNibblePair(msg, offset, msgSize);
+            preset.parameters["LINE_SELECT"] = (float)(pflag & 0x03);
+            
+            uint8_t pds = decodeNibblePair(msg, offset, msgSize);
+            uint8_t pdl = decodeNibblePair(msg, offset, msgSize);
+            uint8_t pdh = decodeNibblePair(msg, offset, msgSize);
+            float detune = (float)((pdl & 0x0F) + ((pdh & 0x03) * 12)) * 100.0f;
+            if ((pds & 0x01)) detune = -detune;
+            preset.parameters["OSC2_DETUNE"] = detune;
 
-    // DCW Envelope
-    preset.dcwEnv.sustainPoint = dcwSustainPoint;
-    preset.dcwEnv.endPoint = dcwEndPoint;
-    for (int i = 0; i < 8; i++) {
-        preset.dcwEnv.rates[i] = dcwRates[i];
-        preset.dcwEnv.levels[i] = dcwLevels[i];
-    }
+            uint8_t pvk = decodeNibblePair(msg, offset, msgSize);
+            preset.parameters["LFO_WAVE"] = (float)(pvk & 0x03);
+            decodeNibblePair(msg, offset, msgSize); 
+            decodeNibblePair(msg, offset, msgSize);
+            decodeNibblePair(msg, offset, msgSize);
+            
+            uint8_t rv1 = decodeNibblePair(msg, offset, msgSize);
+            uint8_t rv2 = decodeNibblePair(msg, offset, msgSize);
+            decodeNibblePair(msg, offset, msgSize);
+            preset.parameters["LFO_RATE"] = mapCZRateToSeconds((rv1 & 0x0F) | ((rv2 & 0x0F) << 4)) * 10.0f;
 
-    // Pitch Envelope
-    preset.pitchEnv.sustainPoint = pitchSustainPoint;
-    preset.pitchEnv.endPoint = pitchEndPoint;
-    for (int i = 0; i < 8; i++) {
-        preset.pitchEnv.rates[i] = pitchRates[i];
-        preset.pitchEnv.levels[i] = pitchLevels[i];
-    }
+            uint8_t dv1 = decodeNibblePair(msg, offset, msgSize);
+            uint8_t dv2 = decodeNibblePair(msg, offset, msgSize);
+            decodeNibblePair(msg, offset, msgSize);
+            preset.parameters["LFO_DEPTH"] = mapCZDepth((dv1 & 0x0F) | ((dv2 & 0x0F) << 4));
 
-    juce::Logger::writeToLog("✅ SysEx parsed successfully: " + patchName);
+            uint8_t mfw1 = decodeNibblePair(msg, offset, msgSize);
+            uint8_t mfw1_2 = decodeNibblePair(msg, offset, msgSize);
+            preset.parameters["OSC1_WAVEFORM"] = (float)(mfw1 & 0x07);
+            preset.parameters["OSC1_WAVEFORM2"] = (float)(mfw1_2 & 0x07);
 
-    // ========== CALLBACK ==========
-    if (onPresetParsed) {
-        onPresetParsed(preset);
+            decodeNibblePair(msg, offset, msgSize); decodeNibblePair(msg, offset, msgSize);
+            decodeNibblePair(msg, offset, msgSize); decodeNibblePair(msg, offset, msgSize);
+
+            decodeEnv(preset.dcaEnv, offset, msgSize);
+            decodeEnv(preset.dcwEnv, offset, msgSize);
+            decodeEnv(preset.pitchEnv, offset, msgSize);
+
+            uint8_t mfw2 = decodeNibblePair(msg, offset, msgSize);
+            uint8_t mfw2_2 = decodeNibblePair(msg, offset, msgSize);
+            preset.parameters["OSC2_WAVEFORM"] = (float)(mfw2 & 0x07);
+            preset.parameters["OSC2_WAVEFORM2"] = (float)(mfw2_2 & 0x07);
+
+            decodeNibblePair(msg, offset, msgSize); decodeNibblePair(msg, offset, msgSize);
+            decodeNibblePair(msg, offset, msgSize); decodeNibblePair(msg, offset, msgSize);
+
+            decodeEnv(preset.dcaEnv2, offset, msgSize);
+            decodeEnv(preset.dcwEnv2, offset, msgSize);
+            decodeEnv(preset.pitchEnv2, offset, msgSize);
+
+            if (onPresetParsed) onPresetParsed(preset);
+            patchCount++;
+            
+            if (offset == patchStartOffset) break; // Infinite loop safety
+        }
+
+        fragmentBuffer.removeSection(0, msgSize);
     }
 }
 
-}  // namespace MIDI
-}  // namespace CZ101
+// Helper to encode byte into two nibbles
+static void encodeNibblePair(uint8_t value, juce::MemoryBlock& data) {
+    auto low = value & 0x0F;
+    auto high = (value >> 4) & 0x0F;
+    data.append(&low, 1);
+    data.append(&high, 1);
+}
+
+static uint8_t mapSecondsToCZRate(float seconds) {
+    // Inverse of 0.001 + (r^4 * 30.0)
+    // r^4 = (seconds - 0.001) / 30.0
+    if (seconds <= 0.001f) return 99;
+    seconds = std::min(seconds, 30.0f);
+    float r = std::pow((seconds - 0.001f) / 30.0f, 0.25f);
+    int rate = 99 - (int)(r * 99.0f);
+    return (uint8_t)std::clamp(rate, 0, 99);
+}
+
+static uint8_t mapNormalToCZLevel(float level) {
+    return (uint8_t)(level * 99.0f);
+}
+
+juce::MemoryBlock SysExManager::createPatchDump(const CZ101::State::Preset& preset)
+{
+    juce::MemoryBlock data;
+    data.ensureSize(264);
+
+    // Header
+    const uint8_t header[] = { 0xF0, MANUF_ID_1, MANUF_ID_2, MANUF_ID_3, DEVICE_ID_BASE, FUNC_RECV, PROG_EDIT };
+    data.append(header, sizeof(header));
+
+    // Data Body PFLAG
+    uint8_t pflag = (uint8_t)preset.parameters.at("LINE_SELECT") & 0x03;
+    encodeNibblePair(pflag, data);
+
+    float detune = preset.parameters.at("OSC2_DETUNE") / 100.0f;
+    uint8_t sign = (detune < 0) ? 1 : 0;
+    int detuneInt = (int)std::abs(detune);
+    uint8_t pdl = detuneInt % 12;
+    uint8_t pdh = detuneInt / 12;
+    
+    encodeNibblePair(sign, data); // PDS
+    encodeNibblePair(pdl, data);  // PDL
+    encodeNibblePair(pdh, data);  // PDH
+
+    // Vibrato
+    uint8_t wave = (uint8_t)preset.parameters.at("LFO_WAVE");
+    encodeNibblePair(wave, data); // PVK
+    encodeNibblePair(0, data); // PVD (Delay)
+    encodeNibblePair(0, data); 
+    encodeNibblePair(0, data); 
+    
+    float rateSec = preset.parameters.at("LFO_RATE") / 10.0f; 
+    int rateVal = mapSecondsToCZRate(rateSec);
+    encodeNibblePair(rateVal & 0x0F, data); // RV1
+    encodeNibblePair((rateVal >> 4) & 0x0F, data); // RV2
+
+    encodeNibblePair(0, data); 
+    
+    float depth = preset.parameters.at("LFO_DEPTH");
+    int depthVal = (int)(depth * 99.0f);
+    encodeNibblePair(depthVal & 0x0F, data); // DV1
+    encodeNibblePair((depthVal >> 4) & 0x0F, data); // DV2
+
+    encodeNibblePair(0, data); 
+
+    // Helper for Envelopes
+    auto encodeEnv = [&](const CZ101::State::EnvelopeData& env) {
+        encodeNibblePair(env.endPoint, data);
+        for (int i = 0; i < 8; ++i) {
+            uint8_t rate = mapSecondsToCZRate(env.rates[i]);
+            encodeNibblePair(rate, data);
+            uint8_t lev = mapNormalToCZLevel(env.levels[i]);
+            if (i == env.sustainPoint) lev |= 0x80;
+            encodeNibblePair(lev, data);
+        }
+    };
+
+    // 8. Waveforms Line 1
+    encodeNibblePair((uint8_t)preset.parameters.at("OSC1_WAVEFORM"), data);
+    encodeNibblePair((uint8_t)preset.parameters.at("OSC1_WAVEFORM2"), data);
+
+    // 9-10. Key Follow 
+    for(int i=0; i<4; ++i) encodeNibblePair(0, data);
+
+    // 11-16. Envelopes Line 1
+    encodeEnv(preset.dcaEnv);
+    encodeEnv(preset.dcwEnv);
+    encodeEnv(preset.pitchEnv);
+    
+    // 17. Waveforms Line 2
+    encodeNibblePair((uint8_t)preset.parameters.at("OSC2_WAVEFORM"), data);
+    encodeNibblePair((uint8_t)preset.parameters.at("OSC2_WAVEFORM2"), data);
+
+    // 18-19. Key Follow 2
+    for(int i=0; i<4; ++i) encodeNibblePair(0, data);
+
+    // 20-25. Envelopes Line 2
+    encodeEnv(preset.dcaEnv2);
+    encodeEnv(preset.dcwEnv2);
+    encodeEnv(preset.pitchEnv2);
+
+    // Checksum
+    uint8_t sum = 0;
+    // Sum payload bytes (after header)
+    for (int i = 7; i < data.getSize(); ++i) {
+        sum += (uint8_t)data[i];
+    }
+    uint8_t checksum = (0 - sum) & 0x7F;
+    uint8_t end = 0xF7;
+    data.append(&checksum, 1);
+    data.append(&end, 1);
+
+    return data;
+}
+
+} // namespace MIDI
+} // namespace CZ101

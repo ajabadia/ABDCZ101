@@ -1,301 +1,225 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "UI/LCDStateManager.h" // Required for unique_ptr destructor
 
+// --- CONSTRUCTOR ---
 CZ101AudioProcessor::CZ101AudioProcessor()
     : AudioProcessor(BusesProperties()
                      .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       voiceManager(),
-      parameters(*this),
+      undoManager(),
+      parameters(*this, &undoManager),
       presetManager(&parameters, &voiceManager),
       midiProcessor(voiceManager, presetManager),
       sysExManager()
 {
-    parameters.createParameters();
-
+    DBG("CZ101 Processor: Constructor Start");
     // Setup File Logger
-    auto logFile = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
-                   .getChildFile("CZ101Emulator")
-                   .getChildFile("cz101_debug.log");
+    auto logFile = juce::File::getCurrentWorkingDirectory().getChildFile("cz5000_debug.log");
                    
-    fileLogger = std::make_unique<juce::FileLogger>(logFile, "CZ-101 Emulator Log");
+    fileLogger = std::make_unique<juce::FileLogger>(logFile, "CZ-5000 Emulator Log");
     juce::Logger::setCurrentLogger(fileLogger.get());
     juce::Logger::writeToLog("Logger initialized at: " + logFile.getFullPathName());
     
     // Bind SysEx Callback
+    juce::Logger::writeToLog("Binding SysEx Callback...");
     sysExManager.onPresetParsed = [this](const CZ101::State::Preset& p) {
-        // 1. Load into PresetManager (updates currentPreset and calls applyPresetToProcessor internally)
-        // Note: loadPresetFromStruct calls applyPresetToProcessor which updates APVTS.
-        // It also applies envelopes to VoiceManager.
-        // HOWEVER, our applyPresetToVoiceEngine handles EXTRA logic (Line Select, calculated Levels).
-        // loadPresetFromStruct basically does a subset of what we need OR essentially the same.
-        // Let's call BOTH for safety:
-        // - loadPresetFromStruct: Updates 'currentPreset', applies basic params + envelopes.
-        // - applyPresetToVoiceEngine: Applies derived logic (Line Select 1+1' -> osc levels) + syncs params again.
-        // Redundant sync is fine. Key is updating currentPreset struct.
-        presetManager.loadPresetFromStruct(p);
+        // 1. Prepare POD for Audio Thread
+        EnvelopeStatePOD pod;
+        pod.pitchEnv = p.pitchEnv; pod.dcwEnv = p.dcwEnv; pod.dcaEnv = p.dcaEnv;
+        pod.pitchEnv2 = p.pitchEnv2; pod.dcwEnv2 = p.dcwEnv2; pod.dcaEnv2 = p.dcaEnv2;
         
-        applyPresetToVoiceEngine(p);
+        int s1, sz1, s2, sz2;
+        presetFifo.prepareToWrite(1, s1, sz1, s2, sz2);
+        if (sz1 > 0) presetBuffer[s1] = pod;
+        else if (sz2 > 0) presetBuffer[s2] = pod;
+        presetFifo.finishedWrite(sz1 + sz2);
+        
+        // 2. Defer Parameter/Host notification to Message Thread
+        pendingSysExPreset = std::make_unique<CZ101::State::Preset>(p);
+        hasPendingSysEx = true;
+        triggerAsyncUpdate();
     };
     
+    juce::Logger::writeToLog("Setting SysEx Manager...");
     midiProcessor.setSysExManager(&sysExManager);
+    midiProcessor.setAPVTS(&parameters.getAPVTS());
     
-    // Load default preset once parameters are ready
-    if (!presetManager.getPresets().empty())
-        presetManager.loadPreset(0);
+    // Initialize LCD State Manager here to ensure it persists and avoids dangling references
+    juce::Logger::writeToLog("CZ101 Processor: Initializing LCD State Manager");
+    lcdStateManager = std::make_unique<CZ101::UI::LCDStateManager>(parameters.getAPVTS());
+    juce::Logger::writeToLog("CZ101 Processor: Constructor End");
 }
 
-void CZ101AudioProcessor::applyPresetToVoiceEngine(const CZ101::State::Preset& preset)
+CZ101AudioProcessor::~CZ101AudioProcessor() 
+{ 
+    juce::Logger::setCurrentLogger(nullptr); 
+}
+
+// --- APPLY PRESET ENVELOPES (Lock-Free) ---
+void CZ101AudioProcessor::applyPresetEnvelopes(const EnvelopeStatePOD& pod)
 {
-    // Apply Pitch Envelope
-    for (int i = 0; i < 8; i++) {
-        voiceManager.setPitchStage(i, preset.pitchEnv.rates[i], 
-                                  preset.pitchEnv.levels[i]);
+    // Envelopes: These update the VoiceManager directly as they are not mapped to APVTS parameters for performance reasons
+    // Line 1
+    for (int i = 0; i < 8; ++i) {
+        voiceManager.setPitchStage(1, i, pod.pitchEnv.rates[i], pod.pitchEnv.levels[i]);
+        voiceManager.setDCWStage(1, i, pod.dcwEnv.rates[i], pod.dcwEnv.levels[i]);
+        voiceManager.setDCAStage(1, i, pod.dcaEnv.rates[i], pod.dcaEnv.levels[i]);
     }
-    voiceManager.setPitchSustainPoint(preset.pitchEnv.sustainPoint);
-    voiceManager.setPitchEndPoint(preset.pitchEnv.endPoint);
-    
-    // Apply DCW Envelope
-    for (int i = 0; i < 8; i++) {
-        voiceManager.setDCWStage(i, preset.dcwEnv.rates[i], 
-                                preset.dcwEnv.levels[i]);
+    voiceManager.setPitchSustainPoint(1, pod.pitchEnv.sustainPoint);
+    voiceManager.setPitchEndPoint(1, pod.pitchEnv.endPoint);
+    voiceManager.setDCWSustainPoint(1, pod.dcwEnv.sustainPoint);
+    voiceManager.setDCWEndPoint(1, pod.dcwEnv.endPoint);
+    voiceManager.setDCASustainPoint(1, pod.dcaEnv.sustainPoint);
+    voiceManager.setDCAEndPoint(1, pod.dcaEnv.endPoint);
+
+    // Line 2
+    for (int i = 0; i < 8; ++i) {
+        voiceManager.setPitchStage(2, i, pod.pitchEnv2.rates[i], pod.pitchEnv2.levels[i]);
+        voiceManager.setDCWStage(2, i, pod.dcwEnv2.rates[i], pod.dcwEnv2.levels[i]);
+        voiceManager.setDCAStage(2, i, pod.dcaEnv2.rates[i], pod.dcaEnv2.levels[i]);
     }
-    voiceManager.setDCWSustainPoint(preset.dcwEnv.sustainPoint);
-    voiceManager.setDCWEndPoint(preset.dcwEnv.endPoint);
-    
-    // Apply DCA Envelope
-    for (int i = 0; i < 8; i++) {
-        voiceManager.setDCAStage(i, preset.dcaEnv.rates[i], 
-                                preset.dcaEnv.levels[i]);
-    }
-    voiceManager.setDCASustainPoint(preset.dcaEnv.sustainPoint);
-    voiceManager.setDCAEndPoint(preset.dcaEnv.endPoint);
-
-    // --- Extended Parameter Mapping (Oscillators, LFO, Effects) ---
-
-    auto getParam = [&](const std::string& key, float defaultVal) -> float {
-        auto it = preset.parameters.find(key);
-        return (it != preset.parameters.end()) ? it->second : defaultVal;
-    };
-
-    // 1. Oscillators & Line Select
-    int osc1Wave = (int)getParam("osc1waveform", 0.0f);
-    int osc2Wave = (int)getParam("osc2waveform", 0.0f);
-    
-    // CZ-101 Line Select: 0=1, 1=2, 2=1+1', 3=1+2
-    // If not present (e.g. envelope-only test), assume 0 (Line 1) or check waveforms?
-    // If we have waveforms but no line select, we might check if they are non-zero?
-    // But mostly legitimate SysEx will have lineselect.
-    int lineSel = (int)getParam("lineselect", 0.0f);
-
-    float osc1Lvl = 0.0f;
-    float osc2Lvl = 0.0f;
-    
-    switch (lineSel) {
-        case 0: osc1Lvl = 1.0f; osc2Lvl = 0.0f; break; // Line 1
-        case 1: osc1Lvl = 0.0f; osc2Lvl = 1.0f; break; // Line 2
-        case 2: osc1Lvl = 1.0f; osc2Lvl = 1.0f; break; // Line 1+1'
-        case 3: osc1Lvl = 1.0f; osc2Lvl = 1.0f; break; // Line 1+2
-        default: osc1Lvl = 1.0f; osc2Lvl = 0.0f; break;
-    }
-    
-
-    // Fallback: If map is empty (old SysEx logic), force Osc1
-    if (preset.parameters.empty()) {
-        osc1Lvl = 1.0f;
-    }
-
-    voiceManager.setOsc1Waveform(osc1Wave);
-    voiceManager.setOsc2Waveform(osc2Wave);
-    voiceManager.setOsc1Level(osc1Lvl);
-    voiceManager.setOsc2Level(osc2Lvl);
-    
-    float detune = getParam("osc2detune", 0.0f);
-    voiceManager.setOsc2Detune(detune);
-    
-    // 2. Filter (Global Open)
-    filterL.setCutoff(20000.0f); 
-    filterR.setCutoff(20000.0f);
-    
-    // 3. LFO
-    if (preset.parameters.count("lforate")) {
-        lfo.setFrequency(getParam("lforate", 1.0f));
-    }
-    if (preset.parameters.count("lfowaveform")) {
-        lfo.setWaveform((CZ101::DSP::LFO::Waveform)(int)getParam("lfowaveform", 0.0f));
-    }
-    if (preset.parameters.count("lfodepth")) {
-        voiceManager.setVibratoDepth(getParam("lfodepth", 0.0f));
-    }
-    
-    // 4. Master Tune
-    int octRange = (int)getParam("octaverange", 0.0f); 
-    float masterTuneShift = 0.0f;
-    if (octRange == 1) masterTuneShift = 12.0f;
-    if (octRange == 2) masterTuneShift = -12.0f;
-    voiceManager.setMasterTune(masterTuneShift);
-
-    // --- SYNC TO APVTS (UI & UpdateParameters Loop) ---
-    // Critical: Update the parameters so the AudioProcessorValueTreeState reflects the changes.
-    // Otherwise updateParameters() inside processBlock will overwrite everything with stale UI values.
-
-    if (parameters.osc1Waveform) parameters.osc1Waveform->setValueNotifyingHost(parameters.osc1Waveform->convertTo0to1((float)osc1Wave));
-    if (parameters.osc2Waveform) parameters.osc2Waveform->setValueNotifyingHost(parameters.osc2Waveform->convertTo0to1((float)osc2Wave));
-    
-    // Level scaling: 0.0-1.0 matches parameter range
-    if (parameters.osc1Level) parameters.osc1Level->setValueNotifyingHost(osc1Lvl);
-    if (parameters.osc2Level) parameters.osc2Level->setValueNotifyingHost(osc2Lvl);
-    
-    if (parameters.osc2Detune) {
-        // Detune coming from SysEx is in cents (+/-). Param might be normalized 0..1 or scaled.
-        // Check Parameters.cpp for range. Usually NormalisableRange handles mapping if we usesetValueNotifyingHost?
-        // Wait, setValueNotifyingHost EXPECTS 0..1 NORMALIZED value.
-        // We need to use the parameter's range to map Real->Normalized.
-        // RangedAudioParameter::convertTo0to1(realValue)
-        parameters.osc2Detune->setValueNotifyingHost(parameters.osc2Detune->convertTo0to1(detune));
-    }
-
-    if (parameters.lfoRate)    parameters.lfoRate->setValueNotifyingHost(parameters.lfoRate->convertTo0to1(getParam("lforate", 1.0f)));
-    if (parameters.lfoDepth)   parameters.lfoDepth->setValueNotifyingHost(parameters.lfoDepth->convertTo0to1(getParam("lfodepth", 0.0f)/2.0f)); // Undo scaling in updateParams (depth*2)
-    if (parameters.lfoWaveform) parameters.lfoWaveform->setValueNotifyingHost(parameters.lfoWaveform->convertTo0to1((float)(int)getParam("lfowaveform", 0.0f)));
-
+    voiceManager.setPitchSustainPoint(2, pod.pitchEnv2.sustainPoint);
+    voiceManager.setPitchEndPoint(2, pod.pitchEnv2.endPoint);
+    voiceManager.setDCWSustainPoint(2, pod.dcwEnv2.sustainPoint);
+    voiceManager.setDCWEndPoint(2, pod.dcwEnv2.endPoint);
+    voiceManager.setDCASustainPoint(2, pod.dcaEnv2.sustainPoint);
+    voiceManager.setDCAEndPoint(2, pod.dcaEnv2.endPoint);
 }
 
-CZ101AudioProcessor::~CZ101AudioProcessor()
-{
-    juce::Logger::setCurrentLogger(nullptr);
+// --- BASIC PLUGIN INFO ---
+const juce::String CZ101AudioProcessor::getName() const { return JucePlugin_Name; }
+bool CZ101AudioProcessor::acceptsMidi() const { return true; }
+bool CZ101AudioProcessor::producesMidi() const { return false; }
+bool CZ101AudioProcessor::isMidiEffect() const { return false; }
+// Audit Fix 2.2: Return max reasonable tail (CZ-101 envelope max).
+double CZ101AudioProcessor::getTailLengthSeconds() const { return 8.0; } 
+int CZ101AudioProcessor::getNumPrograms() { return static_cast<int>(presetManager.getPresets().size()); }
+int CZ101AudioProcessor::getCurrentProgram() { return presetManager.getCurrentPresetIndex(); }
+void CZ101AudioProcessor::setCurrentProgram(int index) 
+{ 
+    if (index != getCurrentProgram())
+        presetManager.loadPreset(index); 
 }
-
-// ... (Top of file usually)
-
-void CZ101AudioProcessor::saveCurrentPreset(const juce::String& name)
-{
-    // 1. Capture current state from params/voices into CurrentPreset
-    presetManager.copyStateFromProcessor();
-    
-    // 2. Save it to the current slot (in memory)
-    // Note: To persist to disk, we rely on getStateInformation/setStateInformation or a dedicated file save.
-    // For now, this updates the runtime preset so switching presets doesn't lose edits, if we stay in session.
-    // Wait, switching AWAY saves? No, usually "Save" button confirms the save.
-    // Switching away usually reloads the destination preset.
-    
-    int idx = getCurrentProgram();
-    presetManager.savePreset(idx, name.toStdString());
-    
-    // Also update host notification?
-    updateHostDisplay();
-}
-
-const juce::String CZ101AudioProcessor::getName() const
-{
-    return JucePlugin_Name;
-}
-
-bool CZ101AudioProcessor::acceptsMidi() const
-{
-    return true;
-}
-
-bool CZ101AudioProcessor::producesMidi() const
-{
-    return false;
-}
-
-bool CZ101AudioProcessor::isMidiEffect() const
-{
-    return false;
-}
-
-double CZ101AudioProcessor::getTailLengthSeconds() const
-{
-    return 0.0;
-}
-
-int CZ101AudioProcessor::getNumPrograms()
-{
-    return 1;
-}
-
-int CZ101AudioProcessor::getCurrentProgram()
-{
-    return 0;
-}
-
-void CZ101AudioProcessor::setCurrentProgram(int index)
-{
-    juce::ignoreUnused(index);
-}
-
-const juce::String CZ101AudioProcessor::getProgramName(int index)
-{
-    juce::ignoreUnused(index);
+const juce::String CZ101AudioProcessor::getProgramName(int index) 
+{ 
+    if (index >= 0 && index < getNumPrograms())
+        return presetManager.getPresets()[index].name;
     return {};
 }
-
-void CZ101AudioProcessor::changeProgramName(int index, const juce::String& newName)
-{
-    juce::ignoreUnused(index, newName);
+void CZ101AudioProcessor::changeProgramName(int index, const juce::String& newName) 
+{ 
+    presetManager.renamePreset(index, newName.toStdString()); 
 }
 
-void CZ101AudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
+// --- EDITOR ---
+bool CZ101AudioProcessor::hasEditor() const { return true; }
+juce::AudioProcessorEditor* CZ101AudioProcessor::createEditor() 
+{ 
+    return new CZ101AudioProcessorEditor(*this); 
+}
+
+// --- PREPARE TO PLAY ---
+void CZ101AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    // juce::Logger::writeToLog("CZ101Processor: prepareToPlay Start");
+    currentSampleRate.store(sampleRate);
+    
+    // Audit Fix 4.1: FIFO resizing
     voiceManager.setSampleRate(sampleRate);
-    filterL.setSampleRate(sampleRate);
-    filterR.setSampleRate(sampleRate);
     delayL.setSampleRate(sampleRate);
     delayR.setSampleRate(sampleRate);
     reverb.setSampleRate(sampleRate);
     chorus.prepare(sampleRate);
-    lfo.setSampleRate(sampleRate);
-    lfo.setFrequency(1.0f);
     
-    // Patch 1: Deep Persistence (User Fix)
-    juce::File presetsDir = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
-                            .getChildFile("CZ101Emulator");
+    // Audit Fix: Initialize Vis Buffer size
+    visBuffer.setSize(1, VIS_FIFO_SIZE);
+    visBuffer.clear();
     
-    if (!presetsDir.exists()) {
-        presetsDir.createDirectory();
-        // Simple logging if we had a logger, or just proceed
-    }
+    juce::File presetsDir = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory).getChildFile("CZ101Emulator");
+    if (!presetsDir.exists()) presetsDir.createDirectory();
+    juce::File bankFile = presetsDir.getChildFile(CZ101::State::PresetManager::USER_BANK_FILENAME);
     
-    juce::File bankFile = presetsDir.getChildFile("userbank.json");
-    
+    // juce::Logger::writeToLog("CZ101Processor: prepareToPlay Start");
     if (bankFile.existsAsFile()) {
+        juce::Logger::writeToLog("CZ101Processor: Loading Bank File: " + bankFile.getFullPathName());
         presetManager.loadBank(bankFile);
-        if (presetManager.getPresets().empty()) {
-            presetManager.createFactoryPresets();
-            presetManager.saveBank(bankFile);
-        }
-        presetManager.loadPreset(0);
+        if (presetManager.getPresets().empty()) presetManager.createFactoryPresets();
     } else {
+        juce::Logger::writeToLog("CZ101Processor: Creating Factory Presets");
         presetManager.createFactoryPresets();
         presetManager.saveBank(bankFile);
-        presetManager.loadPreset(0);
-    } // Default rate
+    }
+    
+    presetManager.loadPreset(0);
+    // juce::Logger::writeToLog("CZ101Processor: prepareToPlay End");
+    
+    // Modern Filters Setup
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.numChannels = 2; // Stereo
+    
+    modernLpf.prepare(spec);
+    modernLpf.setMode(juce::dsp::LadderFilterMode::LPF24);
+    
+    modernHpf.prepare(spec);
+    modernHpf.setType(juce::dsp::StateVariableTPTFilterType::highpass);
+
+    // Audit Fix 1.2: Reset Effects RNG/Phase
+    chorus.reset();
+    delayL.reset();
+    delayR.reset();
+    modernLpf.reset();
+    modernHpf.reset();
+    reverb.reset(); // Added missing reverb reset
+    
+    // Audit Fix 3.1: Initialize Latency
+    updateParameters();
 }
 
-void CZ101AudioProcessor::releaseResources()
-{
-}
+void CZ101AudioProcessor::releaseResources() {}
 
 bool CZ101AudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
-        return false;
-    return true;
+    return layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo();
 }
 
+// --- PROCESS BLOCK ---
 void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
-    
+
+#if JUCE_ARM
+    #if __ARM_FP
+        uint32_t fpscr;
+        __asm__ volatile ("vmrs %0, fpscr" : "=r" (fpscr));
+        fpscr |= (1 << 24); // Flush-to-zero
+        __asm__ volatile ("vmsr fpscr, %0" : : "r" (fpscr));
+    #endif
+#endif
+
     performanceMonitor.startMeasurement();
     
-    auto totalNumInputChannels = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
-    
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+    for (int i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i) 
         buffer.clear(i, 0, buffer.getNumSamples());
     
+    // Audit Fix [D]: LOCK-FREE. Process pending preset updates from SysEx
+    int s1, sz1, s2, sz2;
+    presetFifo.prepareToRead(1, s1, sz1, s2, sz2);
+    if (sz1 > 0) applyPresetEnvelopes(presetBuffer[s1]);
+    else if (sz2 > 0) applyPresetEnvelopes(presetBuffer[s2]);
+    presetFifo.finishedRead(sz1 + sz2);
+
+    // Optimized Bypass Path
+    if (parameters.getBypass() && parameters.getBypass()->get())
+    {
+        midiProcessor.processMidiBuffer(midiMessages);
+        performanceMonitor.stopMeasurement();
+        return;
+    }
+
+    processEnvelopeUpdates();
     updateParameters();
     
     midiProcessor.processMidiBuffer(midiMessages);
@@ -303,203 +227,496 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     auto* channelDataL = buffer.getWritePointer(0);
     auto* channelDataR = buffer.getWritePointer(1);
     
-    // float lfoVal = lfo.getNextValue(); // Removed block-level update
-    // voiceManager.updateLFO(lfoVal);
+    voiceManager.renderNextBlock(channelDataL, channelDataR, buffer.getNumSamples());
     
-    // Pass LFO to renderNextBlock for sample-accurate modulation
-    voiceManager.renderNextBlock(channelDataL, channelDataR, buffer.getNumSamples(), &lfo);
+    // Audit Fix: Consolidated with start of block update
+
+    // Effects Path (Gated by Authentic Mode)
+    bool isAuthentic = (parameters.getAuthenticMode() && parameters.getAuthenticMode()->get());
     
-    for (int i = 0; i < buffer.getNumSamples(); ++i)
+    if (!isAuthentic)
     {
-        channelDataL[i] = filterL.processSample(channelDataL[i]);
-        channelDataR[i] = filterR.processSample(channelDataR[i]);
+        // Modern Filters (Before effects)
+        juce::dsp::AudioBlock<float> block(buffer);
+        juce::dsp::ProcessContextReplacing<float> context(block);
+        modernLpf.process(context);
+        modernHpf.process(context);
+
+        chorus.process(channelDataL, channelDataR, buffer.getNumSamples());
         
-        channelDataL[i] = delayL.processSample(channelDataL[i]);
-        channelDataR[i] = delayR.processSample(channelDataR[i]);
+        for (int i=0; i<buffer.getNumSamples(); ++i) {
+            channelDataL[i] = delayL.processSample(channelDataL[i]);
+            if (channelDataR != channelDataL) channelDataR[i] = delayR.processSample(channelDataR[i]);
+        }
+        
+        reverb.processStereo(channelDataL, channelDataR, buffer.getNumSamples());
+    }
+    else
+    {
+        // Audit Fix: In Authentic mode, we still allow Chorus? 
+        // The real CZ-101 has a hardware chorus (analog BBD), so we should keep it.
+        // But the Delay/Reverb are definitely modern additions.
+        chorus.process(channelDataL, channelDataR, buffer.getNumSamples());
     }
     
-    // Process Reverb (Block-based)
-    // Process Reverb (Block-based)
-    float* left = buffer.getWritePointer(0);
-    float* right = buffer.getWritePointer(1);
-    
-    // Process Chorus (Block-based)
-    chorus.process(left, right, buffer.getNumSamples());
-    
-    // Re-get pointers (Chorus might have modified buffer/ptrs if it were internal buffer swap, though getWritePointer is persistent for block)
-    // However, good practice if using distinct buffers. Here we use the same buffer. 
-    // The user explicitly requested: "Fix: Obtener punteros después de chorus.process()" because "reverb.processStereo() requiere punteros".
-    // Actually getWritePointer is valid for the whole block. But let's follow the instruction.
-    left = buffer.getWritePointer(0);
-    right = buffer.getWritePointer(1);
-    
-    reverb.processStereo(left, right, buffer.getNumSamples());
-    
-    // --- VISUALIZATION COPY ---
-    // Push mono mix to circular buffer for the UI
+    // Visualization logic
     if (visFifo.getFreeSpace() >= buffer.getNumSamples())
     {
-         int start1, size1, start2, size2;
-         visFifo.prepareToWrite(buffer.getNumSamples(), start1, size1, start2, size2);
-         
-         // Helper to copy and mix down (Mono for display simpler for now)
-         auto* l = buffer.getReadPointer(0);
-         auto* r = buffer.getReadPointer(1);
-         
-         for (int i=0; i<size1; ++i) 
-             visBuffer.setSample(0, start1 + i, (l[i] + r[i]) * 0.5f);
-             
-         for (int i=0; i<size2; ++i) 
-             visBuffer.setSample(0, start2 + i, (l[size1 + i] + r[size1 + i]) * 0.5f);
-             
-         visFifo.finishedWrite(size1 + size2);
+        int start1, size1, start2, size2;
+        visFifo.prepareToWrite(buffer.getNumSamples(), start1, size1, start2, size2);
+        auto* l = buffer.getReadPointer(0);
+        auto* r = (buffer.getNumChannels() > 1) ? buffer.getReadPointer(1) : l;
+        
+        if (size1 > 0) visBuffer.copyFrom(0, start1, buffer, 0, 0, size1);
+        if (size2 > 0) visBuffer.copyFrom(0, start2, buffer, 0, size1, size2);
+        visFifo.finishedWrite(size1 + size2);
     }
     
     performanceMonitor.stopMeasurement();
 }
 
+// --- UPDATE PARAMETERS (Centralized Logic) ---
 void CZ101AudioProcessor::updateParameters()
 {
-    // --- VOICES (Oscillators & Envelopes) ---
-    // Direct update without checks (Assumes parameters are created safely in ctor)
-    voiceManager.setOsc1Level(parameters.osc1Level->get());
-    voiceManager.setOsc1Waveform(parameters.osc1Waveform->getIndex());
+    // Update Modern Filters
+    if (parameters.getModernLpfCutoff()) modernLpf.setCutoffFrequencyHz(parameters.getModernLpfCutoff()->get());
+    if (parameters.getModernLpfReso()) modernLpf.setResonance(parameters.getModernLpfReso()->get());
+    if (parameters.getModernHpfCutoff()) modernHpf.setCutoffFrequency(parameters.getModernHpfCutoff()->get());
 
-    voiceManager.setOsc2Level(parameters.osc2Level->get());
-    voiceManager.setOsc2Waveform(parameters.osc2Waveform->getIndex());
-    voiceManager.setOsc2Detune(parameters.osc2Detune->get());
-    
-    // Hard Sync
-    if (parameters.hardSync)
-        voiceManager.setHardSync(parameters.hardSync->get());
-    
-    if (parameters.ringMod)
-        voiceManager.setRingMod(parameters.ringMod->get());
+    // Retrieve base values from APVTS
+    int lineSel = parameters.getLineSelect() ? parameters.getLineSelect()->getIndex() : 2; 
+    float l1 = parameters.getOsc1Level()->get();
+    float l2 = parameters.getOsc2Level()->get();
+    int w1_1 = parameters.getOsc1Waveform()->getIndex();
+    int w1_2 = parameters.getOsc1Waveform2() ? (parameters.getOsc1Waveform2()->getIndex() == 0 ? 8 : parameters.getOsc1Waveform2()->getIndex() - 1) : 8;
+    int w2_1 = parameters.getOsc2Waveform()->getIndex();
+    int w2_2 = parameters.getOsc2Waveform2() ? (parameters.getOsc2Waveform2()->getIndex() == 0 ? 8 : parameters.getOsc2Waveform2()->getIndex() - 1) : 8;
 
-    if (parameters.glideTime)
-        voiceManager.setGlideTime(parameters.glideTime->get());
+    // 1. Line Select Muting Logic
+    if (lineSel == 0) l2 = 0.0f; // Line 1 Only
+    if (lineSel == 1) l1 = 0.0f; // Line 2 Only
 
-    // DCW
-    voiceManager.setDCWAttack(parameters.dcwAttack->get());
-    voiceManager.setDCWDecay(parameters.dcwDecay->get());
-    voiceManager.setDCWSustain(parameters.dcwSustain->get());
-    voiceManager.setDCWRelease(parameters.dcwRelease->get());
-
-    // DCA
-    voiceManager.setDCAAttack(parameters.dcaAttack->get());
-    voiceManager.setDCADecay(parameters.dcaDecay->get());
-    voiceManager.setDCASustain(parameters.dcaSustain->get());
-    voiceManager.setDCARelease(parameters.dcaRelease->get());
-
-    // --- EFFECTS ---
-    if (parameters.filterCutoff)
-    {
-        float cutoff = parameters.filterCutoff->get();
-        filterL.setCutoff(cutoff);
-        filterR.setCutoff(cutoff);
-    }
+    // 2. Line Select 1+1' Logic (Copy Line 1 to Line 2)
+    // Audit Fix [C]: Optimized with Cache to avoid constant copying
+    bool lineChanged = (lineSel != paramCache.lineSelect);
+    bool levelsChanged = (l1 != paramCache.osc1Level || l2 != paramCache.osc2Level);
+    bool wavesChanged = (w1_1 != paramCache.w1_1 || w1_2 != paramCache.w1_2 || w2_1 != paramCache.w2_1 || w2_2 != paramCache.w2_2);
     
-    if (parameters.filterResonance)
-    {
-        float res = parameters.filterResonance->get();
-        filterL.setResonance(res);
-        filterR.setResonance(res);
-    }
-    
-    if (parameters.delayTime)
-    {
-        delayL.setDelayTime(parameters.delayTime->get());
-        delayR.setDelayTime(parameters.delayTime->get());
-    }
-    
-    if (parameters.delayFeedback)
-    {
-        delayL.setFeedback(parameters.delayFeedback->get());
-        delayR.setFeedback(parameters.delayFeedback->get());
-    }
-    
-    if (parameters.delayMix)
-    {
-        delayL.setMix(parameters.delayMix->get());
-        delayR.setMix(parameters.delayMix->get());
-    }
-    
-    // Chorus Parameters
-    // This part of the original request was for `updateParameters`
-    // The audio processing part of the request was moved to `processBlock`
-    // as it's an audio processing function.
-    if (parameters.chorusRate)
-        chorus.setRate(parameters.chorusRate->get());
-    if (parameters.chorusDepth)
-        chorus.setDepth(parameters.chorusDepth->get());
-    if (parameters.chorusMix)
-        chorus.setMix(parameters.chorusMix->get());
-    
-    if (parameters.reverbSize && parameters.reverbMix)
-    {
-        // Reverb Params: room, damping, wet, dry, width
-        float size = parameters.reverbSize->get();
-        float mix = parameters.reverbMix->get();
+    if (lineSel == 2) { 
+        w2_1 = w1_1;
+        w2_2 = w1_2;
+        l2 = l1; 
         
-        // Map Mix to Wet/Dry (simple)
-        // Dry = 1.0, Wet=Mix? Or Dry=1-Mix?
-        // Let's keep dry 1.0 (typical send style or parallel) or balanced.
-        // For effect box: Dry reduces as Wet increases? 
-        // juce::Reverb typical: WetLevel 0..1, DryLevel 0..1
-        // Let's do: Dry = 1.0, Wet = Mix * 0.8
+        if (lineChanged || levelsChanged || wavesChanged) // Only copy if something relevant changed
+        {
+            for (int i=0; i<8; ++i) {
+                 float r, lv;
+                 voiceManager.getPitchStage(1, i, r, lv); voiceManager.setPitchStage(2, i, r, lv);
+                 voiceManager.getDCWStage(1, i, r, lv); voiceManager.setDCWStage(2, i, r, lv);
+                 voiceManager.getDCAStage(1, i, r, lv); voiceManager.setDCAStage(2, i, r, lv);
+            }
+            voiceManager.setPitchSustainPoint(2, voiceManager.getPitchSustainPoint(1));
+            voiceManager.setPitchEndPoint(2, voiceManager.getPitchEndPoint(1));
+            voiceManager.setDCWSustainPoint(2, voiceManager.getDCWSustainPoint(1));
+            voiceManager.setDCWEndPoint(2, voiceManager.getDCWEndPoint(1));
+            voiceManager.setDCASustainPoint(2, voiceManager.getDCASustainPoint(1));
+            voiceManager.setDCAEndPoint(2, voiceManager.getDCAEndPoint(1));
+        }
+    }
+
+    // Update Cache
+    paramCache.lineSelect = lineSel;
+    paramCache.osc1Level = l1; paramCache.osc2Level = l2;
+    paramCache.w1_1 = w1_1; paramCache.w1_2 = w1_2;
+    paramCache.w2_1 = w2_1; paramCache.w2_2 = w2_2;
+
+    // 3. Update VoiceManager engine
+    voiceManager.setOsc1Level(l1);
+    voiceManager.setOsc2Level(l2);
+    voiceManager.setOsc1Waveforms(w1_1, w1_2);
+    voiceManager.setOsc2Waveforms(w2_1, w2_2);
+    
+    voiceManager.setOsc2DetuneHardware(
+        parameters.getDetuneOctave() ? parameters.getDetuneOctave()->get() : 0,
+        parameters.getDetuneCoarse() ? parameters.getDetuneCoarse()->get() : 0,
+        parameters.getDetuneFine() ? parameters.getDetuneFine()->get() : 0
+    );
+    
+    if (parameters.getHardSync()) voiceManager.setHardSync(parameters.getHardSync()->get());
+    if (parameters.getRingMod()) voiceManager.setRingMod(parameters.getRingMod()->get());
+    if (parameters.getGlideTime()) voiceManager.setGlideTime(parameters.getGlideTime()->get());
+    if (parameters.getMasterVolume()) voiceManager.setMasterVolume(parameters.getMasterVolume()->get());
+
+    // --- MACRO PROCESSOR (Phase 7) ---
+    float macroBrilliance = parameters.getMacroBrilliance() ? parameters.getMacroBrilliance()->get() : 0.5f;
+    float macroTone = parameters.getMacroTone() ? parameters.getMacroTone()->get() : 0.5f;
+    float macroSpace = parameters.getMacroSpace() ? parameters.getMacroSpace()->get() : 0.0f;
+
+    // Tone Modifiers (0.5 = No change)
+    // < 0.5 = Slower (Pad), > 0.5 = Faster (Pluck)
+    float toneSpeedMult = std::pow(2.0f, (macroTone - 0.5f) * 2.0f); 
+    
+    // Brilliance Modifiers
+    // > 0.5 = Brighter (Higher Cutoff/DCW), < 0.5 = Darker
+    float brillianceOffset = (macroBrilliance - 0.5f) * 2000.0f;
+
+    // Space Modifiers (Additive Mix)
+    float spaceMix = macroSpace * 0.5f;
+
+    // 2. Update Modern Filter (with Brilliance)
+    if (parameters.getModernLpfCutoff()) {
+        float baseCutoff = parameters.getModernLpfCutoff()->get();
+        float finalCutoff = juce::jlimit(20.0f, 20000.0f, baseCutoff + brillianceOffset);
+        voiceManager.setFilterCutoff(finalCutoff);
+    }
+    if (parameters.getModernLpfReso()) voiceManager.setFilterResonance(parameters.getModernLpfReso()->get());
+    if (parameters.getModernHpfCutoff()) voiceManager.setHPF(parameters.getModernHpfCutoff()->get());
+
+    // 3. Update Envelopes (with Tone)
+    auto applyTone = [&](float val) { return juce::jlimit(0.0f, 10.0f, val / toneSpeedMult); };
+
+    // Envelope Parameters (These are secondary controls, primary is via applyPreset)
+    if (parameters.getDcwAttack()) voiceManager.setDCWAttack(applyTone(parameters.getDcwAttack()->get()));
+    if (parameters.getDcwDecay()) voiceManager.setDCWDecay(applyTone(parameters.getDcwDecay()->get()));
+    if (parameters.getDcwSustain()) voiceManager.setDCWSustain(parameters.getDcwSustain()->get());
+    if (parameters.getDcwRelease()) voiceManager.setDCARelease(applyTone(parameters.getDcwRelease()->get()));
+
+    if (parameters.getDcaAttack()) voiceManager.setDCAAttack(applyTone(parameters.getDcaAttack()->get()));
+    if (parameters.getDcaDecay()) voiceManager.setDCADecay(applyTone(parameters.getDcaDecay()->get()));
+    if (parameters.getDcaSustain()) voiceManager.setDCASustain(parameters.getDcaSustain()->get());
+    if (parameters.getDcaRelease()) voiceManager.setDCARelease(applyTone(parameters.getDcaRelease()->get()));
+
+    // LFO / Vibrato (Cached)
+    float lRate = parameters.getLfoRate() ? parameters.getLfoRate()->get() : 1.0f;
+    int lWave = parameters.getLfoWaveform() ? parameters.getLfoWaveform()->getIndex() : 0;
+    float lDepth = parameters.getLfoDepth() ? parameters.getLfoDepth()->get() : 0.0f;
+    float lDelay = parameters.getLfoDelay() ? parameters.getLfoDelay()->get() : 0.0f;
+    
+    if (lRate != paramCache.lfoRate) { voiceManager.setLFOFrequency(lRate); paramCache.lfoRate = lRate; }
+    if (lWave != paramCache.lfoWave) { voiceManager.setLFOWaveform(static_cast<CZ101::DSP::LFO::Waveform>(lWave)); paramCache.lfoWave = lWave; }
+    if (lDepth != paramCache.lfoDepth) { voiceManager.setVibratoDepth(lDepth); paramCache.lfoDepth = lDepth; }
+    if (lDelay != paramCache.lfoDelay) { voiceManager.setLFODelay(lDelay); paramCache.lfoDelay = lDelay; }
+
+    // 4. Update Modulation Matrix
+    // 4. Update Modulation Matrix (Cached)
+    float vDcw = parameters.getModVeloToDcw()->get();
+    float vDca = parameters.getModVeloToDca()->get();
+    float wDcw = parameters.getModWheelToDcw()->get();
+    float wLfo = parameters.getModWheelToLfoRate()->get();
+    float wVib = parameters.getModWheelToVibrato()->get();
+    float atDcw = parameters.getModAtToDcw()->get();
+    float atVib = parameters.getModAtToVibrato()->get();
+    float ktDcw = parameters.getKeyTrackDcw()->get();
+    float ktPitch = parameters.getKeyTrackPitch()->get();
+    int kfDcoVal = parameters.getKeyFollowDco()->getIndex();
+    int kfDcwVal = parameters.getKeyFollowDcw()->getIndex();
+    int kfDcaVal = parameters.getKeyFollowDca()->getIndex();
+
+    bool matrixChanged = (vDcw != paramCache.veloToDcw || vDca != paramCache.veloToDca ||
+                          wDcw != paramCache.wheelToDcw || wLfo != paramCache.wheelToLfo || wVib != paramCache.wheelToVib ||
+                          atDcw != paramCache.atToDcw || atVib != paramCache.atToVib ||
+                          ktDcw != paramCache.ktDcw || ktPitch != paramCache.ktPitch ||
+                          kfDcoVal != paramCache.kfDco || kfDcwVal != paramCache.kfDcw || kfDcaVal != paramCache.kfDca);
+                          
+    if (matrixChanged)
+    {
+        CZ101::Core::Voice::ModulationMatrix matrix;
+        matrix.veloToDcw = vDcw;
+        matrix.veloToDca = vDca;
+        matrix.wheelToDcw = wDcw;
+        matrix.wheelToLfoRate = wLfo;
+        matrix.wheelToVibrato = wVib;
+        matrix.atToDcw = atDcw;
+        matrix.atToVibrato = atVib;
+        matrix.keyTrackDcw = ktDcw;
+        matrix.keyTrackPitch = ktPitch;
+        matrix.kfDco = kfDcoVal;
+        matrix.kfDcw = kfDcwVal;
+        matrix.kfDca = kfDcaVal;
         
-        // juce::Reverb::Parameters struct setter
-        reverbParams.roomSize = size;
+        voiceManager.setModulationMatrix(matrix);
+        
+        // Update Cache
+        paramCache.veloToDcw = vDcw; paramCache.veloToDca = vDca;
+        paramCache.wheelToDcw = wDcw; paramCache.wheelToLfo = wLfo; paramCache.wheelToVib = wVib;
+        paramCache.atToDcw = atDcw; paramCache.atToVib = atVib;
+        paramCache.ktDcw = ktDcw; paramCache.ktPitch = ktPitch;
+        paramCache.kfDco = kfDcoVal; paramCache.kfDcw = kfDcwVal; paramCache.kfDca = kfDcaVal;
+    }
+
+    // 5. Update Effects
+    // 5. Update Effects (Cached) with Macro Space
+    float cRate = parameters.getChorusRate() ? parameters.getChorusRate()->get() : 0.5f;
+    float cDepth = parameters.getChorusDepth() ? parameters.getChorusDepth()->get() : 0.0f;
+    float cMix = parameters.getChorusMix() ? (parameters.getChorusMix()->get() + spaceMix) : spaceMix;
+    cMix = juce::jlimit(0.0f, 1.0f, cMix);
+    
+    if (cRate != paramCache.chorusRate) { chorus.setRate(cRate); paramCache.chorusRate = cRate; }
+    if (cDepth != paramCache.chorusDepth) { chorus.setDepth(cDepth); paramCache.chorusDepth = cDepth; }
+    if (cMix != paramCache.chorusMix) { chorus.setMix(cMix); paramCache.chorusMix = cMix; }
+    
+    float rSize = parameters.getReverbSize() ? parameters.getReverbSize()->get() : 0.5f;
+    float rMix = parameters.getReverbMix() ? (parameters.getReverbMix()->get() + spaceMix) : spaceMix;
+    rMix = juce::jlimit(0.0f, 1.0f, rMix);
+    
+    if (rSize != paramCache.revSize || rMix != paramCache.revMix)
+    {
+        reverbParams.roomSize = rSize;
         reverbParams.damping = 0.5f;
-        reverbParams.wetLevel = mix;
-        reverbParams.dryLevel = 1.0f - (mix * 0.5f);
+        reverbParams.wetLevel = rMix;
+        reverbParams.dryLevel = 1.0f - (rMix * 0.5f);
         reverbParams.width = 1.0f;
-        reverbParams.freezeMode = 0.0f;
-        
         reverb.setParameters(reverbParams);
+        
+        paramCache.revSize = rSize;
+        paramCache.revMix = rMix;
+    }
+
+    // 5. Update SysEx Protection State
+    bool isProtected = parameters.getProtectSwitch() ? parameters.getProtectSwitch()->get() : true;
+    bool isPrgEnabled = parameters.getSystemPrg() ? parameters.getSystemPrg()->get() : false;
+    sysExManager.setProtectionState(isProtected, isPrgEnabled);
+    
+    // 6. Arpeggiator
+    auto& arp = voiceManager.getArpeggiator();
+    if (auto* p = parameters.getArpEnabled()) arp.setEnabled(p->get());
+    if (auto* p = parameters.getArpLatch()) arp.setLatch(p->get());
+    if (auto* p = parameters.getArpRate()) arp.setRate(static_cast<CZ101::DSP::Arpeggiator::Rate>(p->getIndex()));
+    if (auto* p = parameters.getArpPattern()) arp.setPattern(static_cast<CZ101::DSP::Arpeggiator::Pattern>(p->getIndex()));
+    if (auto* p = parameters.getArpOctave()) arp.setOctaveRange(p->get());
+    if (auto* p = parameters.getArpGate()) arp.setGateTime(p->get());
+    if (auto* p = parameters.getArpSwing()) arp.setSwing(p->get());
+
+    // Tempo Sync Logic
+    double currentBpm = 120.0;
+    if (auto* ph = getPlayHead())
+    {
+        if (auto pos = ph->getPosition()) {
+             if (pos->getBpm()) currentBpm = *pos->getBpm();
+        }
+    }
+    // Fallback or Manual Override if Host not playing? 
+    // Usually plugins sync to host if available. If 0 or invalid, use internal.
+    // For standalone, getPlayHead might return null or default.
+    if (currentBpm <= 0.0) currentBpm = 120.0;
+    
+    // If we have an internal BPM parameter, we can use it if we are standalone or if user prefers.
+    // For now, let's use internal parameter if host doesn't provide valid BPM or if we want to support manual override.
+    // Ideally: If host is playing, use host. If not, use internal.
+    // Or: Always use internal if Standalone?
+    // Let's use internal `ARP_BPM` parameter as the default, and override with Host BPM if meaningful.
+    
+    float internalBpm = parameters.getArpBpm() ? parameters.getArpBpm()->get() : 120.0f;
+    
+    // Simple logic: If in a DAW (Host BPM != 0 and maybe "playing"), use Host. 
+    // Just using Host BPM if > 0 is standard.
+    // However, for Standalone, Host BPM might be fixed or 0.
+    
+    // Better Logic for Standalone App usage vs Plugin:
+    if (juce::JUCEApplication::isStandaloneApp()) {
+        currentBpm = internalBpm;
+    } else {
+        if (currentBpm <= 0.01) currentBpm = internalBpm;
     }
     
-    // LFO / Vibrato
-    if (parameters.lfoRate)
+    arp.setTempo(currentBpm);
+    
+    // Audit Fix: Update Delay Params
+    if (parameters.getDelayTime()) { 
+        float dt = parameters.getDelayTime()->get();
+        delayL.setDelayTime(dt); delayR.setDelayTime(dt); 
+    }
+    if (parameters.getDelayFeedback()) { float fb = parameters.getDelayFeedback()->get(); delayL.setFeedback(fb); delayR.setFeedback(fb); }
+    if (parameters.getDelayMix()) { float mix = parameters.getDelayMix()->get(); delayL.setMix(mix); delayR.setMix(mix); }
+
+    // Audit Fix 3.1: Latency Reporting
+    // Max latency is determined by Chorus (modulation) or Delay (if mix=1, but standard delay is echo).
+    // User requested explicit summing: setLatencySamples(chorus + delay).
+    int chorusDelaySamples = (parameters.getChorusMix() && parameters.getChorusMix()->get() > 0.0f) ? (int)(0.025 * getSampleRate()) : 0;
+    int delaySamples = (parameters.getDelayMix() && parameters.getDelayMix()->get() > 0.0f) ? (int)(parameters.getDelayTime()->get() * getSampleRate()) : 0;
+    
+    int latency = chorusDelaySamples + (delaySamples > 0 ? 1 : 0); // Minimal reported if active
+    if (getLatencySamples() != latency) setLatencySamples(latency);
+}
+
+// Audit Fix 2.1: Implement setNonRealtime to recalculate smoothing
+void CZ101AudioProcessor::setNonRealtime(bool isNonRealtime) noexcept
+{
+    juce::AudioProcessor::setNonRealtime(isNonRealtime);
+    
+    // Force recalculation of smoothing steps for all parameters
+    // This ensures that offline bounces use the correct smoothing regardless of the host's block size settings
+    voiceManager.setSampleRate(getSampleRate());
+    updateParameters();
+}
+
+juce::AudioParameterBool* CZ101AudioProcessor::getBypassParameter() const
+{
+    return parameters.getBypass();
+}
+
+// --- THREAD-SAFE ENVELOPE QUEUE ---
+void CZ101AudioProcessor::scheduleEnvelopeUpdate(const EnvelopeUpdateCommand& cmd)
+{
+    int start1, size1, start2, size2;
+    
+    // Audit Fix 1.1: Verify free space before writing to prevent overflow/crash
+    if (commandFifo.getFreeSpace() < 1) {
+        // juce::Logger::writeToLog("Warning: Command FIFO full, dropping envelope update");
+        return;
+    }
+
+    commandFifo.prepareToWrite(1, start1, size1, start2, size2);
+    if (size1 > 0) commandBuffer[start1] = cmd;
+    else if (size2 > 0) commandBuffer[start2] = cmd;
+    commandFifo.finishedWrite(size1 + size2);
+}
+
+void CZ101AudioProcessor::processEnvelopeUpdates()
+{
+    int start1, size1, start2, size2;
+    commandFifo.prepareToRead(100, start1, size1, start2, size2);
+    
+    // Audit Fix 3: De-duplicate logic with lambda
+    auto processRange = [&](int start, int size) {
+        for (int i = 0; i < size; ++i) {
+            auto& cmd = commandBuffer[start + i];
+            switch (cmd.type) {
+                case EnvelopeUpdateCommand::DCA_STAGE: voiceManager.setDCAStage(cmd.line, cmd.index, cmd.rate, cmd.level); break;
+                case EnvelopeUpdateCommand::DCA_SUSTAIN: voiceManager.setDCASustainPoint(cmd.line, cmd.index); break;
+                case EnvelopeUpdateCommand::DCA_END: voiceManager.setDCAEndPoint(cmd.line, cmd.index); break;
+                case EnvelopeUpdateCommand::DCW_STAGE: voiceManager.setDCWStage(cmd.line, cmd.index, cmd.rate, cmd.level); break;
+                case EnvelopeUpdateCommand::DCW_SUSTAIN: voiceManager.setDCWSustainPoint(cmd.line, cmd.index); break;
+                case EnvelopeUpdateCommand::DCW_END: voiceManager.setDCWEndPoint(cmd.line, cmd.index); break;
+                case EnvelopeUpdateCommand::PITCH_STAGE: voiceManager.setPitchStage(cmd.line, cmd.index, cmd.rate, cmd.level); break;
+                case EnvelopeUpdateCommand::PITCH_SUSTAIN: voiceManager.setPitchSustainPoint(cmd.line, cmd.index); break;
+                case EnvelopeUpdateCommand::PITCH_END: voiceManager.setPitchEndPoint(cmd.line, cmd.index); break;
+            }
+        }
+    };
+
+    if (size1 > 0) processRange(start1, size1);
+    if (size2 > 0) processRange(start2, size2);
+    commandFifo.finishedRead(size1 + size2);
+}
+
+// --- PERSISTENCE ---
+// --- PERSISTENCE ---
+void CZ101AudioProcessor::getStateInformation(juce::MemoryBlock& destData) 
+{
+    // 1. Capture full envelope state from VoiceManager/UI
+    presetManager.copyStateFromProcessor();
+    
+    // 2. Create Root XML
+    juce::XmlElement root("PluginState");
+    root.setAttribute("version", "1.0.0");
+    
+    // 3. APVTS State
+    auto state = parameters.getAPVTS().copyState();
+    if (auto stateXml = std::unique_ptr<juce::XmlElement>(state.createXml()))
+        root.addChildElement(stateXml.release());
+        
+    // 4. Detailed Envelope State
+    if (auto envXml = presetManager.exportEnvelopesToXml())
+        root.addChildElement(envXml.release());
+        
+    copyXmlToBinary(root, destData);
+}
+
+void CZ101AudioProcessor::setStateInformation(const void* data, int sizeInBytes) 
+{
+    std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
+    if (xmlState != nullptr)
     {
-        lfo.setFrequency(parameters.lfoRate->get());
+        // Check for new Container format
+        if (xmlState->hasTagName("PluginState"))
+        {
+            // Load APVTS
+            if (auto* paramsXml = xmlState->getChildElement(0)) // Assuming first child is APVTS or scan
+            {
+                // Better: Iterate
+                for (auto* child : xmlState->getChildIterator()) {
+                     if (child->hasTagName(parameters.getAPVTS().state.getType())) {
+                         parameters.getAPVTS().replaceState(juce::ValueTree::fromXml(*child));
+                     } else if (child->hasTagName("Envelopes")) {
+                         presetManager.importEnvelopesFromXml(*child);
+                     }
+                }
+            }
+        }
+        else if (xmlState->hasTagName(parameters.getAPVTS().state.getType()))
+        {
+            // Legacy fall-back
+            parameters.getAPVTS().replaceState(juce::ValueTree::fromXml(*xmlState));
+            // In legacy, we assume envelopes are default or partial.
+            // But we should try to reload current preset logic if possible?
+            // Legacy saves only params, so envelopes might be reset to default Init unless we handle it.
+            // For now, acceptable.
+        }
+    }
+}
+
+// --- AUTHENTIC INITIALIZE ---
+void CZ101AudioProcessor::initializeSection(InitSection section)
+{
+    if (section == InitSection::WAVEFORM || section == InitSection::ALL) {
+        if (parameters.getOsc1Waveform()) parameters.getOsc1Waveform()->setValueNotifyingHost(0.0f);
+        if (parameters.getOsc1Waveform2()) parameters.getOsc1Waveform2()->setValueNotifyingHost(0.0f);
+        if (parameters.getOsc2Waveform()) parameters.getOsc2Waveform()->setValueNotifyingHost(0.0f);
+        if (parameters.getOsc2Waveform2()) parameters.getOsc2Waveform2()->setValueNotifyingHost(0.0f);
+    }
+
+    if (section == InitSection::VIBRATO || section == InitSection::ALL) {
+        if (parameters.getLfoRate()) parameters.getLfoRate()->setValueNotifyingHost(0.0f);
+        if (parameters.getLfoDepth()) parameters.getLfoDepth()->setValueNotifyingHost(0.0f);
+        if (parameters.getLfoDelay()) parameters.getLfoDelay()->setValueNotifyingHost(0.0f);
+        if (parameters.getLfoWaveform()) parameters.getLfoWaveform()->setValueNotifyingHost(0.0f);
     }
     
-    if (parameters.lfoWaveform)
-    {
-        // Cast int/index to Waveform enum
-        lfo.setWaveform(static_cast<CZ101::DSP::LFO::Waveform>(parameters.lfoWaveform->getIndex()));
+    if (section == InitSection::DCA || section == InitSection::DCW || section == InitSection::ALL) {
+        bool doDCW = (section == InitSection::DCW || section == InitSection::ALL);
+        bool doDCA = (section == InitSection::DCA || section == InitSection::ALL);
+        
+        if (doDCW) {
+             scheduleEnvelopeUpdate(EnvelopeUpdateCommand { EnvelopeUpdateCommand::DCW_STAGE, 1, 0, 99.0f, 1.0f });
+             scheduleEnvelopeUpdate(EnvelopeUpdateCommand { EnvelopeUpdateCommand::DCW_STAGE, 1, 1, 99.0f, 0.0f });
+             scheduleEnvelopeUpdate(EnvelopeUpdateCommand { EnvelopeUpdateCommand::DCW_SUSTAIN, 1, 0, 0.0f, 0.0f });
+             scheduleEnvelopeUpdate(EnvelopeUpdateCommand { EnvelopeUpdateCommand::DCW_END, 1, 1, 0.0f, 0.0f });
+        }
+        
+        if (doDCA) {
+             scheduleEnvelopeUpdate(EnvelopeUpdateCommand { EnvelopeUpdateCommand::DCA_STAGE, 1, 0, 99.0f, 1.0f });
+             scheduleEnvelopeUpdate(EnvelopeUpdateCommand { EnvelopeUpdateCommand::DCA_STAGE, 1, 1, 99.0f, 0.0f });
+             scheduleEnvelopeUpdate(EnvelopeUpdateCommand { EnvelopeUpdateCommand::DCA_SUSTAIN, 1, 0, 0.0f, 0.0f });
+             scheduleEnvelopeUpdate(EnvelopeUpdateCommand { EnvelopeUpdateCommand::DCA_END, 1, 1, 0.0f, 0.0f });
+        }
     }
     
-    if (parameters.lfoDepth)
-    {
-        // Map 0.0-1.0 to semitones (e.g. 0 to 2 semitones depth)
-        float depth = parameters.lfoDepth->get() * 2.0f; 
-        voiceManager.setVibratoDepth(depth);
+    if (section == InitSection::DCO || section == InitSection::ALL) {
+        scheduleEnvelopeUpdate(EnvelopeUpdateCommand { EnvelopeUpdateCommand::PITCH_STAGE, 1, 0, 50.0f, 0.5f });
+        scheduleEnvelopeUpdate(EnvelopeUpdateCommand { EnvelopeUpdateCommand::PITCH_STAGE, 1, 1, 50.0f, 0.5f });
+        scheduleEnvelopeUpdate(EnvelopeUpdateCommand { EnvelopeUpdateCommand::PITCH_SUSTAIN, 1, 0, 0.0f, 0.0f });
+        scheduleEnvelopeUpdate(EnvelopeUpdateCommand { EnvelopeUpdateCommand::PITCH_END, 1, 1, 0.0f, 0.0f });
+    }
+    
+    if (section == InitSection::OCTAVE || section == InitSection::ALL) {
+        if (parameters.getOsc2Detune()) parameters.getOsc2Detune()->setValueNotifyingHost(parameters.getOsc2Detune()->convertTo0to1(0.0f));
     }
 }
 
-bool CZ101AudioProcessor::hasEditor() const
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new CZ101AudioProcessor(); }
+// Audit Fix 4.2: Handle SysEx parameter updates on Message Thread
+void CZ101AudioProcessor::handleAsyncUpdate()
 {
-    return true;
-}
-
-juce::AudioProcessorEditor* CZ101AudioProcessor::createEditor()
-{
-    return new CZ101AudioProcessorEditor(*this);
-}
-
-void CZ101AudioProcessor::getStateInformation(juce::MemoryBlock& destData)
-{
-    juce::ignoreUnused(destData);
-}
-
-void CZ101AudioProcessor::setStateInformation(const void* data, int sizeInBytes)
-{
-    juce::ignoreUnused(data, sizeInBytes);
-}
-
-juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
-{
-    return new CZ101AudioProcessor();
+    if (hasPendingSysEx.exchange(false))
+    {
+        std::unique_ptr<CZ101::State::Preset> p = std::move(pendingSysExPreset);
+        
+        if (p)
+        {
+            // Update Parameters and notify host (Message Thread)
+            // We pass false to updateVoice because we already updated it in the callback
+            presetManager.loadPresetFromStruct(*p, false);
+        }
+    }
 }

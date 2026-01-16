@@ -1,0 +1,25 @@
+Polyanalogue  - Trying to get my CZ to sound like a Roland Juno-106
+------------
+
+Line Select 1+2
+Detune: +  Octave: 0  Note: 00  Fine: 06
+Vibrato: Wave 1  Delay: 00  Rate: 00  Depth: 00
+Octave: Range 0
+
+DCO1: Waveform First:1  Second:0
+      Step1- Rate:99  Level:33           Step2- Rate:68  Level:00  END
+
+DCW1: Key Follow: 0
+      Step1- Rate:76  Level:99
+      Step2- Rate:47  Level:96
+      Step3- Rate:37  Level:52  SUS
+      Step4- Rate:26  Level:00  END
+
+DCA1: Key Follow: 0
+      Step1- Rate:99  Level:50           Step2- Rate:77  Level:99 Step3-
+Rate:67  Level:91  SUS
+      Step4- Rate:79  Level:59        Step5- Rate:33  Level:00  END
+
+*Duplicate the above parameters for DCO2, DCW2, and DCA1.
+
+

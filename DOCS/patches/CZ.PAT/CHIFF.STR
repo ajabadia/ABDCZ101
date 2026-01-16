@@ -1,0 +1,56 @@
+        TONE Name- CHIFF STRINGS              CARTRIDGE NO.           TONE NO.
+ 
+PARAMETER
+ 
+ LINE SELECT   MODULATION         DETUNE            VIBRATO        OCTAVE
+|1,2,12',11'| |ring|noise| |+/-|oct|note|fine| |wave|dly|rt|dep| |+/-|range|
+|  1+'1     | |    |     | | + | 0 | 0  | 07 | | 1  | 0 |0 |0  | | - |  1  |
+|___________| |____|_____| |___|___|____|____| |____|___|__|___| |___|_____|
+ 
+************************************    ************************************
+(1)                                     (2)
+DCO 1                                   DCO 2
+  WAVE FORM                               WAVE FORM
+|first|second|                          |first|second|
+|  1  |0     |                          |     |      |                      
+|_____|______|                          |_____|______|                        
+ (1-8)  (0-8)                            (1-8)  (0-8)  
+               ENV(PITCH)                             ENV(PITCH)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|85 |80 |00 |   |   |   |   |   |0-99 rate|   |   |   |   |   |   |   |   |
+levl|85 |66 |00 |   |   |   |   |   |0-99 levl|   |   |   |   |   |   |   |   |
+s/e |   |sus|end|   |   |   |   |   |     s/e |   |   |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCW 1                                   DCW 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     3     |(0-9)                      |      0    |(0-9)
+|___________|                           |___________|
+ 
+               ENV(WAVE)                             ENV(WAVE)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|80 |63 |42 |   |   |   |   |   |0-99 rate|   |   |   |   |   |   |   |   |
+levl|95 |70 |00 |   |   |   |   |   |0-99 levl|   |   |   |   |   |   |   |   |
+s/e |   |sus|end|   |   |   |   |   |     s/e |   |   |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCA 1                                   DCA 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     0     |(0-9)                      |   0       |(0-9)
+|___________|                           |___________|
+ 
+               ENV(AMP)                             ENV(AMP)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|75 |55 |40 |   |   |   |   |   |0-99 rate|   |   |   |   |   |   |   |   |
+levl|68 |99 |00 |   |   |   |   |   |0-99 levl|   |   |   |   |   |   |   |   |
+s/e |   |sus|end|   |   |   |   |   |     s/e |   |   |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+*****************************************************************************
+COMMENT: This sound was developed to improve one of the factory internals.
+It has been quite useful to me as an all-around string sound with that slight
+difference that makes it just a bit unusual.  I used the pitch envelope
+    to get that "chiff" sound.  It probably could have been done with
+    the noise modulator, but once I got the sound I wanted, I didn't
+    bother checking out a "more correct way".
+

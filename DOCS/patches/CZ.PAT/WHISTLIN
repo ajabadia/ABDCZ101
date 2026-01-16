@@ -1,0 +1,37 @@
+Name: Whistlin
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line    mod     detune          vibrato         octave
+
+DCO1
+wave
+
+rt lv
+
+DCO1
+key
+
+rt lv
+
+DCA1
+key
+
+rt lv
+
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:  Take the preset "Whistle" and change the detune to + 0 0 20

@@ -19,7 +19,7 @@ static Preset capturedPreset;
 static bool presetWasLoaded = false;
 
 PresetManager::PresetManager(Parameters*, Core::VoiceManager*) {}
-void PresetManager::loadPreset(int) {}
+void PresetManager::loadPreset(int, bool) {}
 void PresetManager::savePreset(int, const std::string&) {}
 void PresetManager::createFactoryPresets() {}
 void PresetManager::createBassPreset() {}
@@ -28,10 +28,10 @@ void PresetManager::createBrassPreset() {}
 void PresetManager::createStringPreset() {}
 void PresetManager::createBellsPreset() {}
 void PresetManager::applyPresetToProcessor() {}
-void PresetManager::applyEnvelopeToVoice(const EnvelopeData&, int) {}
+void PresetManager::applyEnvelopeToVoice(const EnvelopeData&, int, int) {}
 
 // The critical method we are testing
-void PresetManager::loadPresetFromStruct(const Preset& p) 
+void PresetManager::loadPresetFromStruct(const Preset& p, bool) 
 {
     capturedPreset = p;
     presetWasLoaded = true;

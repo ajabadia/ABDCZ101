@@ -1,0 +1,32 @@
+Name: Drill
+
+line    mod     detune          vibrato         octave
+1+1'    noise   + 2 00 40       1 36 66 62      0
+
+DCO 1
+wave 
+1 2 
+rate    level
+55      82s
+54      39
+00      00e
+
+DCW 1
+key 
+4
+rate    level
+82      92s
+26      45
+00      00e
+
+DCA 1
+key 
+0
+rate    level
+63      99s
+47      68
+70      00e
+
+Comments: 
+
+--------------------------

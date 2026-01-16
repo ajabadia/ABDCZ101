@@ -1,0 +1,125 @@
+This is the 100 original patches for the CZ-230S converted for use
+on the CZ-101,1000,3000,5000. (Can be dumped to CZ-1 also "E-1 to
+F-8".)
+These patched may be of interest if you ever wondered what Casio
+used as the 100 presets on the CZ-230S, or if you wanted to copy 
+these patches to your CZ-101,1000,3000,5000, or even to the CZ-1.
+There are 6 banks of .syx files with 16 patches, and the last bank 
+has only the 4 original presets in the CZ-230S user bank (96-99).
+
+Bank 1 (00-15)
+    BRASS ENS.1     
+    BRASS ENS.2     
+    BRASS ENS.3
+  SYMPHONIC ENS.1
+  SYMPHONIC ENS.2
+  SYMPHONIC ENS.3     
+   STRINGS ENS.1    
+   STRINGS ENS.2    
+   SYNTH ENS.1    
+   SYNTH ENS.2    
+   LIGHT HARP
+   MARS SOUND
+  SOUTHERN WING
+   MAGICAL WIND
+   FUNKY HORN
+   SLAP HORN  
+
+Bank 2  (16-31)
+   SWEET STRINGS
+   LIGHT ATTACK
+   SYNTH.HARP
+  METALLIC SOUND
+   JAZZ ORGAN 1
+   JAZZ ORGAN 2
+   PIPE ORGAN 1
+   PIPE ORGAN 2
+   ACCORDION
+  FEMALE CHORUS
+   MALE CHORUS
+  SPACE VOICE 1
+  SPACE VOICE 2
+    WAH VOICE
+    TRUMPET
+     FLUTE
+
+Bank 3 (32-47)
+    WHISTLE
+    VIOLIN
+     CELLO
+ BLUES HARMONICA
+   SHAKUHACHI
+     KOTO
+   SHAMISEN
+    QANUN
+  SYNTH.REED
+  PEARL DROP
+  DOUBLE REED
+  MEOW ATTACK
+  SOFT ATTACK
+   FANTASY 1
+   FANTASY 2
+  PLUNK EXTEND
+
+Bank 4 (48-63)
+   SPLASH REED
+   SYNTH.SITAR
+    PIANO 1
+    PIANO 2
+    PIANO 3
+ HONKY-TONK PIANO
+   ELEC.PIANO
+  HARPSICHORD 1
+  HARPSICHORD 2
+   SYNTH.CLAVL
+ METAL HONKY-TONK
+  DOUBLE ATTACK
+    BELLS
+   CARILLON
+  SYNTH.CELESTA
+  SYNTH.VIB.1
+
+  Bank 5 (64-79)
+  SYNTH.VIB.2
+  SYNTH.VIB.3
+   BELL-LYRA
+   XYLOPHONE
+ SOFT XYLOPHONE
+   MARIMBA
+  ACO.GUITAR 1
+  ACO.GUITAR 2
+ SEMIACO.GUITAR
+   FEEDBACK
+  ELEC.GUITAR 1
+  ELEC.GUITAR 2
+   ELEC.BASS 1
+   ELEC.BASS 2
+   SLAP BASS
+  METALLIC BASS
+
+Bank 6 (80-95)
+  SYNTH.DRUMS 1 
+  SYNTH.DRUMS 2
+  SYNTH.DRUMS 3
+  SYNTH.CLAPPER
+   TAMBOURINE
+    COWBELL
+     CONGA
+     TABLA
+ AFRO PERCUSSION
+   STEEL DRUM
+   MOTORCYCLE
+   JET ROAR
+   EXPOLSION
+ TYPHOON SOUND
+ CAVERNOUS SOUND
+  SCRATCH SOUND
+
+Bank 7 (96-99)
+ COMPUTER GAME
+  LASER GUN
+   MIRACLE
+    SWEEP
+
+
+

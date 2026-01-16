@@ -12,6 +12,7 @@ Delay::Delay()
 void Delay::setSampleRate(double sr) noexcept
 {
     sampleRate = sr;
+    reset();
 }
 
 void Delay::setDelayTime(float seconds) noexcept

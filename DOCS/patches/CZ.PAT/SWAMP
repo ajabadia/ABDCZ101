@@ -1,0 +1,19 @@
+Name: swamp
+By: Miles Bader
+Vibr: W: 1  Del: 0  R: 53  Dep: 7
+Oct: 0
+Line: 1+2'
+Mod: -
+DCO1: WF: 1,0  Env: 0/e
+DCW1: KF: 3    Env: 85/50/s, 30/0/e
+DCA1: KF: 2    Env: 80/99/s, 33/0/e
+DCO2: WF: 3,0  Env: 0/e
+DCW2: KF: 0    Env: 85/85, 30/0/e
+DCA2: KF: 2    Env: 80/99/s, 33/0/e
+Vel1: A: 3  W: 2  P: 0
+Vel2: A: 3  W: 0  P: 0
+Detune: +0,0,7
+Comments: A sort of ethereal sound.  The name is 'cause it made me think of
+        the songs on Stratos-fear (sp?) [Tangerine Dream]
+
+-Miles

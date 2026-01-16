@@ -1,0 +1,45 @@
+Name: Kalimba #3,452,156 
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line    mod     detune          vibrato         octave
+1+2     ring    + 2 10 00       1 60 50 03      0
+DCO1
+wave
+5 0
+rt lv
+96 75
+99 00e
+DCO1
+key
+9
+rt lv
+97 24
+88 00e
+DCA1
+key
+2
+rt lv
+95 99
+43 00e
+DCO2
+wave
+2 0
+rt lv
+97 74
+93 00e
+DCW2
+key
+9
+rt lv
+95 82
+64 00e
+DCA2
+key
+0
+rt lv
+96 99
+49 00e
+
+Comments:  Yup, more Afro-percussion.  This one has radically different timbres in
+different octaves (the second octave on the 101 keyboard is my
+favorite). Noise percussion makes some interesting sounds too.

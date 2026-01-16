@@ -1,0 +1,18 @@
+Name: swerl
+By: Miles Bader
+Vibr: -
+Oct: -1
+Line: 1+2'
+Mod: -
+DCO1: WF: 3,2  Env: 0/e
+DCW1: KF: 9    Env: 35/90/s, 35/80, 0/0/e
+DCA1: KF: 0    Env: 99/99/s, 33/0/e
+DCO2: WF: 2,3  Env: 0/e
+DCW2: KF: 4    Env: 85/70, 30/76/s, 30/0/e
+DCA2: KF: 2    Env: 99/99/s, 33/0/e
+Vel1: A: 3  W: 0  P: 0
+Vel2: A: 3  W: 0  P: 0
+Detune: +2,0,7
+Comments: Initially sounds bell-like, swelling to a much fatter sound,
+        more so the lower the note.  Started out as "octavibrato" from
+        Keyboard magazine.

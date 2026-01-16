@@ -1,0 +1,21 @@
+Name: Guitar with distortion
+>From: Robert Lansdale <lansd@gpu.utcs.toronto.edu>
+
+Detune: +, oct=2,note=7, fine=8
+Vibrato: wave=1,delay=0,rate=99,depth=24
+Octave=-1
+Line: 1+1'
+mod: ring
+
+DCO1:     1st wave = 8, 2nd wave = 4
+          rate =00, level = 00 (end)
+
+DCW1:     Key follow = 0
+          Rate = 99, level = 21 (sus)
+                 33          00 (end)
+
+DCA1:     Key follow = 0
+          rate = 99, level = 99 (sus)
+                 31          83
+                 52          00 (end)
+

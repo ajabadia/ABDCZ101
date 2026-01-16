@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="ABDZ101">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/CZ101_Release_v1.0.0.zip!/" />
+      <root url="jar://$PROJECT_DIR$/CZ101Emulator.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,0 +1,58 @@
+Name: Woh-Wow-Yeh       FROM BARRY KIRSCH
+
+line    mod     detune          vibrato         octave
+1+2'            + 00 00 07              -1
+
+DCO 1
+wave 
+6 0
+rate    level
+51      33
+68      00e
+
+DCW 1
+key 
+2
+rate    level
+58      99
+47      96
+37      52s
+26      00e
+
+DCA 1
+key 
+2
+rate    level
+62      71
+36      91s
+79      59
+55      00e
+
+DCO 2
+wave 
+7 0
+rate    level
+53      33
+68      00e
+
+DCW 2
+key 
+2
+rate    level
+33      99
+47      96
+37      52s
+26      00e
+
+DCA 2
+key 
+2
+rate    level
+82      99
+36      91s
+79      59
+55      00e
+
+Comments: "All at once, the clouds are parting,
+            light streams down in bright unbroken beams..."
+          Is this a Rush sound or WHAT, I ask?  I love it anyway :) .

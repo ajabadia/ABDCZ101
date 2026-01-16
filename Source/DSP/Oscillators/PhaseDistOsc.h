@@ -15,13 +15,17 @@ namespace DSP {
 class PhaseDistOscillator
 {
 public:
-    enum Waveform
+    enum CzWaveform
     {
-        SINE = 0,
         SAWTOOTH,
         SQUARE,
-        TRIANGLE,
-        NUM_WAVEFORMS
+        PULSE,
+        DOUBLE_SINE,
+        SAW_PULSE,
+        RESONANCE_1,
+        RESONANCE_2,
+        RESONANCE_3,
+        NUM_CZ_WAVEFORMS
     };
     
     PhaseDistOscillator();
@@ -42,7 +46,12 @@ public:
      * @brief Set waveform type
      * @param waveform Waveform enum value
      */
-    void setWaveform(Waveform waveform) noexcept;
+    /**
+     * @brief Set composite waveforms (Authentic CZ Behavior)
+     * @param first First waveform (1-8)
+     * @param second Second waveform (0-8, 0=None/Off)
+     */
+    void setWaveforms(CzWaveform first, CzWaveform second) noexcept;
     
     /**
      * @brief Reset phase to zero
@@ -62,10 +71,20 @@ private:
     
     double sampleRate = 44100.0;
     float frequency = 440.0f;
-    Waveform currentWaveform = SINE;
+    CzWaveform firstWaveform = SAWTOOTH;
+    CzWaveform secondWaveform = SAWTOOTH; 
+    bool secondWaveformActive = false;
     
     float phase = 0.0f;           // Current phase [0.0, 1.0]
     float phaseIncrement = 0.0f;  // Phase increment per sample
+
+    /**
+     * @brief Applies phase distortion to the current phase based on the selected waveform and DCW amount.
+     * @param linearPhase The current, unmodified phase [0.0, 1.0].
+     * @param dcwValue The DCW amount [0.0, 1.0] controlling the intensity of the distortion.
+     * @return The distorted phase.
+     */
+    float applyPhaseDistortion(float linearPhase, float dcwValue, CzWaveform waveform) noexcept;
     
     /**
      * @brief PolyBLEP: Polynomial Bandlimited Step
@@ -79,13 +98,21 @@ private:
      */
     float polyBLEP(float t, float dt) const noexcept;
     
-    // Waveform renderers
-    float renderSine() noexcept;
-    float renderSawtooth() noexcept;
-    float renderSquare() noexcept;
-    float renderTriangle() noexcept;
-    
     void updatePhaseIncrement() noexcept;
+
+    struct Constants {
+        static constexpr float Resonance1Freq = 2.0f;
+        static constexpr float Resonance2Freq = 4.0f;
+        static constexpr float Resonance3Freq = 7.0f;
+        
+        static constexpr float Resonance1MaxMod = 0.15f;
+        static constexpr float Resonance2MaxMod = 0.20f;
+        static constexpr float Resonance3MaxMod = 0.25f;
+
+        static constexpr float HalfPhase = 0.5f;
+        static constexpr float QuarterPhase = 0.25f;
+        static constexpr float ThreeQuarterPhase = 0.75f;
+    };
 };
 
 } // namespace DSP

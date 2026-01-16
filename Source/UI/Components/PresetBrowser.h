@@ -17,27 +17,26 @@ public:
     
     std::function<void(int)> onPresetSelected;
     std::function<void()> onSaveRequested;
+    std::function<void()> onSystemModeRequested; // New Callback
+    std::function<void(int)> onInitRequested; // int -> InitSection enum mapped
     
     // Exposed for Editor
     void updatePresetList();
     int getSelectedItemIndex() const;
     void setSelectedItemIndex(int index);
     
+    void initBank();
+    void loadBank();
+    void saveBank();
+    
 private:
     State::PresetManager* presetManager = nullptr;
     juce::ComboBox presetCombo;
     juce::TextButton prevButton;
     juce::TextButton nextButton;
-    juce::TextButton saveButton;
     
     // Bank Management
-    juce::TextButton menuButton;
     std::unique_ptr<juce::FileChooser> fileChooser;
-    
-    void showMenu();
-    void initBank();
-    void loadBank();
-    void saveBank();
     
     // void updatePresetList(); // Moved to public
     void selectPreset(int index);

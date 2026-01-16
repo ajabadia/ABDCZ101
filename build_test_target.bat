@@ -94,6 +94,10 @@ echo.
 echo 6. Compilando proyecto (Test)...
 echo    (Esto puede tardar varios minutos...)
 
+echo    Configurando CMake...
+"%CMAKE_PATH%" -S . -B build
+if %errorlevel% neq 0 ( exit /b 1 )
+
 "%CMAKE_PATH%" --build build --config Release --target CZ101SysExTest
 if %errorlevel% neq 0 (
     echo Error: Compilacion fallida

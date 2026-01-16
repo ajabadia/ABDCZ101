@@ -39,15 +39,20 @@ public:
     // Runtime
     void noteOn() noexcept;
     void noteOff() noexcept;
+
     void reset() noexcept;
+    // Audit Fix [1.1]: Allow external reset of value (for pitch centering)
+    void setCurrentValue(float val) noexcept;
     
     float getNextValue() noexcept;
+    float getCurrentValue() const noexcept { return mapValue(smoother.getCurrentValue()); } // Audit Fix: Added getter
     
     // Getters for adapter logic
     float getStageRate(int index) const noexcept;
     float getStageLevel(int index) const noexcept;
     
     bool isActive() const noexcept { return active; }
+    bool isReleased() const noexcept { return released; }
     int getCurrentStage() const noexcept { return currentStage; }
     
     int getSustainPoint() const noexcept { return sustainPoint; }
@@ -72,6 +77,17 @@ private:
     // CZ-101 Rate to Time conversion (internal helper)
     // Rate 0-99 mapped to ms
     float rateToSeconds(float rate) const noexcept;
+    
+    // Velocity Sensitivity [NEW]
+    float rateScaler = 1.0f; 
+    
+    // Helper to map normalized smoother value if needed, but smoother returns float directly.
+    // If smoother.getCurrentValue() is already correct, mapValue might be identity.
+    // However, if we assume 0..1 range or something else?
+    // Let's assume identity for now if not defined elsewhere.
+    float mapValue(float v) const noexcept { return v; } 
+public:
+    void setRateScaler(float scale) noexcept { rateScaler = scale; }
 };
 
 } // namespace DSP

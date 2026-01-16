@@ -1,0 +1,14 @@
+Name        1) Real fat Oberheim-like moan
+
+line 1+1'       octave 0 or -1   vibrato  w1  d28  r49  d21
+det + 1 00 10
+
+DCO 1           DCW 1           DCA 1
+wave            key fol         key fol
+ 4  3           0               0
+rt  lv          rt  lv          rt  lv
+99  66          91  67s         77  60
+99  00e         00  00e         48  68
+                                39  99
+                                68  99s
+                                32  00e

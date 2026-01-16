@@ -31,3 +31,4 @@ JuceLibraryCode/
 *.log
 compilation_error.log
 tmp/
+*.zip

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Voice.h"
+#include "Voice.h"
+#include "../DSP/Arpeggiator.h"
 #include <vector>
 
 namespace CZ101 {
@@ -12,7 +14,7 @@ namespace Core {
 class VoiceManager
 {
 public:
-    static constexpr int MAX_VOICES = 8;
+    static constexpr int MAX_VOICES = 16; // 8 notes * 2 lines (or 16 notes single line mode?)
     
     enum VoiceStealingMode
     {
@@ -29,13 +31,15 @@ public:
     
     // Parameter Control (Proxy to all voices)
     // Oscillator 1
-    void setOsc1Waveform(int waveformIndex) noexcept;
+    // Oscillator 1
+    void setOsc1Waveforms(int firstIndex, int secondIndex) noexcept;
     void setOsc1Level(float level) noexcept;
     
     // Oscillator 2
-    void setOsc2Waveform(int waveformIndex) noexcept;
+    void setOsc2Waveforms(int firstIndex, int secondIndex) noexcept;
     void setOsc2Level(float level) noexcept;
     void setOsc2Detune(float cents) noexcept;
+    void setOsc2DetuneHardware(int oct, int coarse, int fineCents) noexcept;
     
     // DCW Envelope
     void setDCWAttack(float seconds) noexcept;
@@ -50,31 +54,31 @@ public:
     void setDCARelease(float seconds) noexcept;
     
     // 8-Stage Envelope Control
-    void setDCWStage(int index, float rate, float level) noexcept;
-    void setDCWSustainPoint(int index) noexcept;
-    void setDCWEndPoint(int index) noexcept;
+    void setDCWStage(int line, int index, float rate, float level) noexcept;
+    void setDCWSustainPoint(int line, int index) noexcept;
+    void setDCWEndPoint(int line, int index) noexcept;
 
     // Getters for UI
-    void getDCWStage(int index, float& rate, float& level) const noexcept;
-    int getDCWSustainPoint() const noexcept;
-    int getDCWEndPoint() const noexcept;
+    void getDCWStage(int line, int index, float& rate, float& level) const noexcept;
+    int getDCWSustainPoint(int line) const noexcept;
+    int getDCWEndPoint(int line) const noexcept;
 
-    void getDCAStage(int index, float& rate, float& level) const noexcept;
-    int getDCASustainPoint() const noexcept;
-    int getDCAEndPoint() const noexcept;
+    void getDCAStage(int line, int index, float& rate, float& level) const noexcept;
+    int getDCASustainPoint(int line) const noexcept;
+    int getDCAEndPoint(int line) const noexcept;
     
-    void getPitchStage(int index, float& rate, float& level) const noexcept;
-    int getPitchSustainPoint() const noexcept;
-    int getPitchEndPoint() const noexcept;
+    void getPitchStage(int line, int index, float& rate, float& level) const noexcept;
+    int getPitchSustainPoint(int line) const noexcept;
+    int getPitchEndPoint(int line) const noexcept;
     
-    void setDCAStage(int index, float rate, float level) noexcept;
-    void setDCASustainPoint(int index) noexcept;
-    void setDCAEndPoint(int index) noexcept;
+    void setDCAStage(int line, int index, float rate, float level) noexcept;
+    void setDCASustainPoint(int line, int index) noexcept;
+    void setDCAEndPoint(int line, int index) noexcept;
 
     // Pitch Envelope (DCO)
-    void setPitchStage(int index, float rate, float level) noexcept;
-    void setPitchSustainPoint(int index) noexcept;
-    void setPitchEndPoint(int index) noexcept;
+    void setPitchStage(int line, int index, float rate, float level) noexcept;
+    void setPitchSustainPoint(int line, int index) noexcept;
+    void setPitchEndPoint(int line, int index) noexcept;
 
     // Hard Sync
     void setHardSync(bool enabled) noexcept;
@@ -85,30 +89,59 @@ public:
     // Glide
     void setGlideTime(float seconds) noexcept;
     void setMasterTune(float semitones) noexcept;
+    void setMasterVolume(float level) noexcept;
     void setPitchBend(float semitones) noexcept;
+
+    // Modern Filter
+    void setFilterCutoff(float frequency) noexcept;
+    void setFilterResonance(float reso) noexcept;
+    void setHPF(float frequency) noexcept;
+    
+    // Modulation Routing
+    void setModWheel(float value) noexcept;
+    void setAftertouch(float value) noexcept;
+    void setModulationMatrix(const Voice::ModulationMatrix& matrix) noexcept;
     
     // LFO Control
     void setVibratoDepth(float semitones) noexcept;
-    void updateLFO(float currentLFOValue) noexcept;
+    void setLFOFrequency(float hz) noexcept;
+    void setLFOWaveform(DSP::LFO::Waveform waveform) noexcept;
+    void setLFODelay(float seconds) noexcept;
 
     void noteOn(int midiNote, float velocity) noexcept;
     void noteOff(int midiNote) noexcept;
     void allNotesOff() noexcept;
+    
     // Audio Processing
-    // Added LFO* to enable per-sample update
-    void renderNextBlock(float* outputL, float* outputR, int numSamples, DSP::LFO* lfo = nullptr) noexcept;
+    // LFO is now internal to Voices
+    void renderNextBlock(float* outputL, float* outputR, int numSamples) noexcept;
     
     int getActiveVoiceCount() const noexcept;
     int getCurrentNote() const noexcept { return lastMidiNote; }
 
+    DSP::Arpeggiator& getArpeggiator() { return arpeggiator; } // [NEW]
+
 private:
-    std::vector<Voice> voices; // Dynamic vector for voice pool
+    void startInternalVoice(int note, float velocity) noexcept;
+    void stopInternalVoice(int note) noexcept;
+
+    std::array<Voice, MAX_VOICES> voices; // Audit Fix 6.1: Fixed size array for memory stability
+    Voice referenceVoice;      // Audit Fix 1.5: Reference voice for stable parameter reading
+    DSP::Arpeggiator arpeggiator; // [NEW]
     VoiceStealingMode stealingMode = RELEASE_PHASE;
     int lastMidiNote = -1;
     
     int findFreeVoice() const noexcept;
     int findVoiceToSteal() const noexcept;
     int findVoicePlayingNote(int midiNote) const noexcept;
+    
+    // Helper to reduce repetition
+    template <typename Func>
+    void applyToAllVoices(Func&& func)
+    {
+        for (auto& v : voices) func(v);
+        func(referenceVoice);
+    }
 };
 
 } // namespace Core

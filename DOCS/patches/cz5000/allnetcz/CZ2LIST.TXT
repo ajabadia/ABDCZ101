@@ -1,0 +1,62 @@
+Listing of patches in cz-2.txt
+
+Name: 1) Real fat Oberheim-like moan
+Name: 2) Snare double for drum machine
+Name: Bushy             
+Name: Spacious
+Name: Wild Kingdom
+Name: Rising resonance
+Name: Chunky Blocks
+Name: Electric bubbles
+Name: Space Shots
+Name: Glissando Filter Sweep
+Name: "Choral oooh"
+Name: Reverb Strings
+Name: Reverb Flute (September 1986 Electronics & Music Maker)
+Name: Guitar with distortion
+Name: Mean Electric Guitar
+Name: YABS (Yet Another Bass Sound)
+Name: NOISE SWEEP
+Name: synth organ
+Name: drum hit
+Name: drum wash
+Name: Simmons SDS-7
+Name: Phil-in-a-box
+Name: Trevor Horns
+Name: organ brass
+Name: Herbie Scratch
+Name: Fuzzy bass
+Name: fat synth bass
+Name: 1-Octave bass
+Name: 2-Octave bass (Tony Levin)
+Name: ArtoNoise Trumpet (#3)
+Name: Lazy Trumpet (#4)
+Name: snap percussion
+Name: Star Trek noise
+Name: Woh-Wow-Yeh       FROM BARRY KIRSCH
+Name: Flutelight        ERIC PERSING, _KEYBOARD_ MAGAZINE
+Name: Nightporter
+Name: newhorn
+Tone Name:         Brass Strings
+Tone Name:         Ice Blue
+Tone Name:         Pseudosilk
+Tone Name:         Oracle
+Name: Buzzing Fly
+Name: Drill
+Name: Dropped Bomb
+Name: ECHO LEAD
+Name: coolstring
+Name: Fat Pluck
+Name: Fuzzy
+Name: "Space" (Couldn't think of a better name. Can you?)
+Name: "Crazy" 
+Name: "Choral"
+Name: jangly
+Name: swerl
+Name: aaaho [just need uuullman now]
+Name: fen
+Name: swamp
+Name: HARP
+Name: solostring
+Name: Acoustic Piano
+Name: Electric Piano

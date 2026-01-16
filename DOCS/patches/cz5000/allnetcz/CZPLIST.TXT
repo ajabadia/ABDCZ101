@@ -1,0 +1,143 @@
+Listing of Patches in czpats.txt
+
+Name: synth organ
+Name: drum hit
+Name: drum wash
+Name: Simmons SDS-7
+Name: Phil-in-a-box
+Name: Trevor Horns
+Name: organ brass
+Name: Herbie Scratch
+Name: Fuzzy bass
+Name: fat synth bass
+Name: 1-Octave bass
+Name: 2-Octave bass (Tony Levin)
+Name: ArtoNoise Trumpet (#3)
+Name: Lazy Trumpet (#4)
+Name: snap percussion
+Name: Star Trek noise
+Name: Woh-Wow-Yeh
+Name: Flutelight
+Name: background swell
+Name: Ministry horns
+Name: popcorn
+Name: Kick #1 (extender for TR505)
+Name: kick #2 (TR505 extender)
+Name: snare #1 (TR505 extender)
+Name: Snare #2
+Name: Rayz
+Name: Whistlin
+Name: Bowp/Industrial [Bass]
+Name: Pan Pipes / Danger Sound
+Name: Traffic Doppler (Barry Kirsch, modified by me)
+Name: Sampled Snap
+Name: Kalimba #3,452,156 
+Name: Helicopter (Glenn Bruns, modified)
+Name: Reverb Flute
+Name: Guitar with distortion
+Name: Mean Electric Guitar
+Name: YABS (Yet Another Bass Sound)
+Name: NOISE SWEEP
+Name: Bushy		
+Name: Spacious
+Name: Wild Kingdom
+Name: Rising resonance
+Name: Chunky Blocks
+Name: Electric bubbles
+Name: Woody metal.
+Name: Scratchy Trumpet
+Name: harpsichord #2 (originally by Mark Schmeider)
+Name: swept reed
+Name: minor vox chorus
+Name: Synth Bass II
+Name: swept mute ens.
+Name: Bright electric piano
+Name: Bird call #1
+Name: Bird call #2
+Name: MASSIVE BASS
+Name: THWACK DRUMS
+Name: BELL ORGAN
+Name: ????
+Name: Marimba
+Name: Space Shots
+Name: Glissando Filter Sweep
+Name: Diva Harmonic
+Name: Landing 747
+Name: Thompson Bass
+Name: Brass Strings
+Name: Ice Blue
+Name: Pseudosilk
+Name: Oracle
+Name: Choral oooh
+Name: Reverb Strings
+Name: Buzzing Fly
+Name: Drill
+Name: Dropped Bomb
+Name: OIL-DRUM / JARS / TOY PIANO
+Name: HAMBURGER LADY
+Name: newhorn
+Name: Drilling
+Name: Nightporter
+Name: ????
+Name: Real fat Oberheim-like moan
+Name: Snare double for drum machine
+Name: ROUGH EDGE
+Name: BOWR BASS
+Name: coolstring
+Name: Fat Pluck
+Name: Fuzzy
+Name: jangly
+Name: swerl
+Name: aaaho [just need uuullman now]
+Name: solostring
+Name: fen
+Name: swamp
+Name: Acoustic Piano
+Name: Electric Piano
+Name: Grand Ethereal
+Name: OIL-DRUM / JARS / TOY PIANO
+Name: HAMBURGER LADY
+Name: "Choral oooh"
+Name: Reverb Strings
+Name: Space Shots
+Name: Glissando Filter Sweep
+Name: Bushy		
+Name: Spacious
+Name: Wild Kingdom
+Name: Rising resonance
+Name: Chunky Blocks
+Name: Electric bubbles
+Name: synth organ
+Name: drum hit
+Name: drum wash
+Name: Simmons SDS-7
+Name: Phil-in-a-box
+Name: Trevor Horns
+Name: organ brass
+Name: Herbie Scratch
+Name: Fuzzy bass
+Name: fat synth bass
+Name: 1-Octave bass
+Name: 2-Octave bass (Tony Levin)
+Name: ArtoNoise Trumpet (#3)
+Name: Lazy Trumpet (#4)
+Name: snap percussion
+Name: Star Trek noise
+Name: Woh-Wow-Yeh 	FROM BARRY KIRSCH
+Name: Flutelight	ERIC PERSING, _KEYBOARD_ MAGAZINE
+Name: Drilling 		
+Name: synth organ
+Name: Brass Strings
+Name: Ice Blue
+Name: Pseudosilk
+Name: Oracle
+Name: Woody metal.
+Name: Reverb Flute (September 1986 Electronics & Music Maker)
+Name: Guitar with distortion
+Name: Mean Electric Guitar
+Name: Scratchy Trumpet
+Name: Space Shots
+Name: Glissando Filter Sweep
+Name: Diva Harmonic
+Name: Landing 747
+Name: Thompson Bass

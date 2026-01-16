@@ -1,0 +1,47 @@
+Name: Rayz
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line    mod     detune          vibrato         octave
+1+2     -       + 1 07 10       1 07 61 23      +1
+DCO1
+wave
+1 4
+rt lv
+00 00e
+DCO1
+key
+0
+rt lv
+88 99s
+47 25
+44 00e
+DCA1
+key
+0
+rt lv
+93 87s
+39 00e
+DCO2
+wave
+6 0
+rt lv
+00 00e
+DCW2
+key
+0
+rt lv
+99 99s
+47 25
+44 00e
+DCA2
+key
+0
+rt lv
+92 99
+85 97
+92 99
+99 98s
+32 00e
+
+Comments:  Sounds even cooler if you use the pitch wheel for glissandi.
+(Did I really use the word "glissandi"?)

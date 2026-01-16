@@ -1,0 +1,18 @@
+Name: aaaho [just need uuullman now]
+By: Miles Bader
+Vibr: -
+Oct: -1
+Line: 1+2'
+Mod: -
+DCO1: WF: 3,0  Env: 80/66, 75/0/e
+DCW1: KF: 3    Env: 85/99/s, 51/0/e
+DCA1: KF: 2    Env: 80/99/s, 33/0/e
+DCO2: WF: 4,0  Env: 0/e
+DCW2: KF: 3    Env: 85/85, 30/76/s, 30/0/e
+DCA2: KF: 2    Env: 80/99/s, 33/0/e
+Vel1: A: 3  W: 4  P: 0
+Vel2: A: 3  W: 0  P: 0
+Detune: +1,0,7
+Comments: Sounds more voice-like the harder you hit.  If you don't have
+        a cz1, you'll have to decrease the sustain level of dcw1 to a
+        point that sounds good.

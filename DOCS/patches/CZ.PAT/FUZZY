@@ -1,0 +1,16 @@
+Name: Fuzzy
+By: Miles Bader
+Vibr: None
+Oct: 0
+Line: 1+2'
+Mod: None
+DCO1: WF: 5,0  Env: 0/e
+DCW1: KF: 9    Env: 81/92/s, 20/0/e
+DCA1: KF: 1    Env: 70/50, 66/99, 49/91/s, 33/0/e
+DCO2: WF: 3,5  Env: 0/e
+DCW2: KF: 9    Env: 81/92/s, 20/0/e
+DCA2: KF: 1    Env: 70/50, 66/99, 49/91/s, 33/0/e
+Vel1: --
+Vel2: --
+Detune: +1,0,4
+Comments: Organ-y, string-y, neat-o

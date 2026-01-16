@@ -1,0 +1,26 @@
+Tone name: Steinway
+Line select: 1 + 2'
+Ring:OFF    Noise:OFF
+Detune - Octave:0    Note:0    Fine:-1
+Vibrato -  Wave:1    Delay:0   Rate:0    Depth:0
+Octave:0
+
+DCO1                            DCO2
+Wave Form - First:4  Second:0   Wave Form - First:3  Second:0
+
+Env: 00/00E00/00 00/00 00/00    Env: 00/00E00/00 00/00 00/00
+     00/00 00/00 00/00 00/00         00/00 00/00 00/00 00/00
+
+DCW1                            DCW2
+Key Follow:9                    Key Follow:9
+
+Env: 95/93 64/80 37/00E00/00    Env: 94/93 20/86 37/00E00/00
+     00/00 00/00 00/00 00/00         00/00 00/00 00/00 00/00
+
+DCA1                            DCA2
+Key Follow:0                    Key Follow:6
+
+Env: 99/99 30/80 16/02S50/00E   Env: 99/99 30/75 20/00S50/00E
+     00/00 00/00 00/00 00/00         00/00 00/00 00/00 00/00
+
+Comments:Piano patch --- sounds pretty good

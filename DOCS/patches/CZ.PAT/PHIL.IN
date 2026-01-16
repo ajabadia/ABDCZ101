@@ -1,0 +1,49 @@
+Name: Phil-in-a-box
+
+line    mod     detune          vibrato         octave
+1+1'    noise   + 0 10 00                       -1
+
+DCO 1
+wave 
+1 4
+rate    level
+99      70
+54      00s
+50      00e
+
+DCW 1
+key 
+0
+rate    level
+99      99
+99      00e
+
+DCA 1
+key 
+9
+rate    level
+99      99
+43      00e
+
+DCO 2
+wave 
+
+rate    level
+
+
+DCW 2
+key 
+
+rate    level
+
+
+DCA 2
+key 
+
+rate    level
+
+
+Comments: I was trying to emulate the big crashes on "In the Air
+Tonight" and "I Don't Care Anymore".  Having heard it on CD last
+week, there's no comparison.  However, SOMEONE on the net (I lost the
+message) claims to have improved it.  ???

@@ -1,0 +1,34 @@
+Name: ????
+>From: Tom Benson <benson@star.dec.com>
+
+Line Select  Modulation        Detune                 Vibrato          Octave
+                         +/- Octave Note Fine  Wave Delay Rate Depth  +/- Range
+1+1'                     +   1           8     1    38    60   4          0
+
+DCO 1
+Wave Form
+First Second
+2     3
+    
+Step   1   2
+Rate   99  68
+Level  33  0
+           END
+
+DCW 1
+Key Follow 9
+
+Step   1   2   3   4
+Rate   73  99  99  00
+Level  88  96  99  00
+               SUS END
+
+DCA 1
+Key Follow 0
+Step  1   2   3   4
+Rate  82  99  88  62
+Level 81  99  96  00
+              SUS END
+
+* Use it at the extreme low end for a fat slightly distorted deep organy
+  sound.  I don't know how else to explain it.

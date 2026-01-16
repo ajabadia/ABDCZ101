@@ -1,0 +1,237 @@
+Name: Dropped Bomb
+
+line    mod     detune          vibrato         octave
+1+2'    noise   - 0 05 07       1 24 54 00      -1
+
+DCO 1
+wave 
+5 0
+rate    level
+99      86
+38      00e
+
+DCW 1
+key 
+4
+rate    level
+99      40
+50      80s
+99      00e
+
+DCA 1
+key 
+0
+rate    level
+99      20
+36      40s
+99      00e
+
+DCO 2
+wave 
+3 3
+rate    level
+99      65
+40      66s
+00      00e
+
+DCW 2
+key 
+4
+rate    level
+99      99
+40      75
+40      77
+40      51
+44      00e
+
+DCA 2
+key 
+0
+rate    level
+99      20
+36      40s
+99      00e
+
+Comments: Press key to drop bomb, release to explode.  Best range seems
+to be in the octave above middle C.  I have yet to get a decent explosion
+sound out of the CZ -- this explosion is weak.
+
+-- 
+Glenn Bruns 
+MCC, Software Technology Program
+arpa: bruns@mcc.com    
+uucp: {seismo,harvard,gatech,pyramid}!ut-sally!im4u!milano!bruns
+
+
+Article 1781 of rec.music.synth:
+Path: tekecs!orca!tektronix!decvax!ucbvax!ucbcad!ames!hc!beta!cmcl2!brl-adm!umd5!uvaarpa!virginia!uvacs!edison!cpc
+>From: cpc@edison.GE.COM (Chris Cuthbert)
+Newsgroups: rec.music.synth
+Subject: CZ Patch
+Message-ID: <1215@edison.GE.COM>
+Date: 29 Oct 87 18:43:04 GMT
+Organization: General Electric Company, Charlottesville, VA
+Lines: 40
+Keywords: Yo
+
+Here's a good CZ bass patch that was spit out one day by my random patch
+generator:
+
+LINE   RING   NOISE   +/-  OCTV  NOTE  FINE    WAVE  DELAY  RATE  DPTH  OCTV
+ 1+2    OFF    OFF     +    0     00    07       1     00    00    00    -1
+
+             LINE 1                                   LINE  2
+
+           WAVEFORMS                                 WAVEFORMS
+             3   0                                     4   0
+
+         PITCH  ENVELOPE                           PITCH  ENVELOPE
+RATE  50 50                               RATE  50
+LEVL  00 00                               LEVL  00
+      S  E                                      E
+
+          DCW KEYFOLLOW                          DCW KEYFOLLOW
+               0                                        0
+
+          WAVE ENVELOPE                          WAVE ENVELOPE
+RATE  72 20                               RATE  87 56 33 89 72 57
+LEVL  41 00                               LEVL  98 76 58 61 30 00
+      S  E                                                     E
+
+          DCA KEYFOLLOW                          DCA KEYFOLLOW
+                0                                       0
+
+      AMPLITUDE ENVELOPE                        AMPLITUDE ENVLOPE
+RATE  99 50                               RATE  99 50
+LEVL  99 00                               LEVL  99 00
+      S  E                                         E
+
+
+Try it.  You know what they say, computers never lie!  Want more ? I have
+tons of patches.  Let me know.
+
+
+MOM SAYS: Ed Meese is a slime wevil
+
+Mar Tan
+
+
+Article 1940 of rec.music.synth:
+Path: tekecs!orca!tektronix!uunet!husc6!cmcl2!brl-adm!umd5!uvaarpa!virginia!uvacs!edison!mfs
+>From: mfs@edison.GE.COM (Martin Sant)
+Newsgroups: rec.music.synth
+Subject: CZ Synthesizer Patch - BOWR BASS
+Message-ID: <1229@edison.GE.COM>
+Date: 19 Nov 87 15:45:32 GMT
+Organization: General Electric Company, Charlottesville, VA
+Lines: 46
+Keywords: Get funked
+
+Another random patch that sounded good.  I thought I would share it with
+you net-heads.  It's more mello than the last bass patch I posted.
+
+
+
+                                BOWR BASS
+
+Line  Ring  Noise   +/-  Octv  Note  Fine   Wave  Delay  Rate  Depth   Octv
+1+1    OFF   OFF     +    0     00    07     1     11     51     18     0
+
+             Line 1                                 Line 2
+             ------                                 ------
+
+         DCO Waveforms                          DCO Waveforms
+            4     3                               1      0
+
+         Pitch Envelope                         Pitch Envelope
+Rate  00 00 00 00 00 00 00 00          Rate  00 00 00 00 00 00 00 00 
+Level 00 00 00 00 00 00 00 00          Level 00 00 00 00 00 00 00 00
+      E                                      E
+
+         DCW Keyfollow                          DCW Keyfollow
+               7                                      2
+ 
+Rate  74 47 00 00 00 00 00 00          Rate  99 40 00 00 00 00 00 00 
+Level 78 00 00 00 00 00 00 00          Level 99 00 00 00 00 00 00 00
+         E                                      E
+
+         DCA Keyfollow                          DCA Keyfollow
+               2                                      2
+
+Rate  72 38 00 00 00 00 00 00          Rate  72 38 00 00 00 00 00 00
+Level 92 00 00 00 00 00 00 00          Level 92 00 00 00 00 00 00 00 
+      S  E                                      E
+
+
+Anybody got any good FB01 or MT-32 patches ?  Post 'em!
+
+------
+
+
+
+-- 
+Mar Tan
+GE Fanuc
+Charlottesville, VA
+
+
+Article 1941 of rec.music.synth:
+Path: tekecs!orca!tektronix!uunet!husc6!cmcl2!brl-adm!umd5!uvaarpa!virginia!uvacs!edison!mfs
+>From: mfs@edison.GE.COM (Martin Sant)
+Newsgroups: rec.music.synth
+Subject: CZ patch - Another strangeoid from the random patch generator
+Message-ID: <1230@edison.GE.COM>
+Date: 19 Nov 87 16:16:13 GMT
+Organization: General Electric Company, Charlottesville, VA
+Lines: 47
+Keywords: Get Weird
+
+
+
+                               ROUGH EDGE
+
+Line  Ring  Noise   +/-  Octv  Note  Fine   Wave  Delay  Rate  Depth   Octv
+1+1    OFF   OFF     +    0     00    08     1      45    49     02     0
+
+             Line 1                                Line 2
+             ------                                ------
+
+         DCO Waveforms                          DCO Waveforms
+            4     3                               1      0
+
+         Pitch Envelope                         Pitch Envelope
+Rate  67 87 00 00 00 00 00 00          Rate  00 00 00 00 00 00 00 00 
+Level 33 00 00 00 00 00 00 00          Level 00 00 00 00 00 00 00 00
+         E                                   E
+
+         DCW Keyfollow                          DCW Keyfollow
+               1                                      2
+ 
+         Wave Envelope                          Wave Envelope
+Rate  99 34 40 04 00 00 00 00          Rate  99 50 50 50 50 50 50 50 
+Level 99 24 17 13 00 00 00 00          Level 99 00 00 00 00 00 00 00
+                  E                                               E
+
+         DCA Keyfollow                          DCA Keyfollow
+               3                                      2
+
+        Amplitude Envelope                     Amplitude Envelope
+Rate  97 52 14 39 00 00 00 00          Rate  72 38 00 00 00 00 00 00
+Level 99 98 65 00 00 00 00 00          Level 92 00 00 00 00 00 00 00 
+            S  E                                E
+
+
+
+
+
+
+
+
+
+
+-- 
+Mar Tan                : All opinions expressed :   When in doubt,
+GE Fanuc               : are not worth the bits :      buy a new
+Charlottesville, VA    : that  represent  them. :        synthesizer.
+
+

@@ -1,0 +1,18 @@
+Name: Landing 747
+The best sound comes from keys at the low end of the keyboard, I think.
+Hold down the key to let the effect complete its cycle.
+Holding several adjacent keys works well, too.
+ 
+Line 1+2'  Octave -1
+Detune -  OCT 1, NOTE 0 FINE 0
+Vibrato: Wave 1 Delay 31 Rate 36 Depth 0
+Modulation: Noise
+
+DCO 1 Wave 5 Env 99/95 9/43/SUS 8/0/END
+DCW 1 Key 0 Env 99/73/SUS 9/62 9/0/END
+DCA 1 Key 6 Env 56/88/SUS 10/28 37/0/END
+
+DCO 2 Wave 5 Env 99/80 24/43/SUS 8/0/END
+DCW 2 Key 0 Env 99/81/SUS 9/62 9/0/END
+DCA 2 Key 2 Env 53/81/SUS 10/37 30/0/END
+
