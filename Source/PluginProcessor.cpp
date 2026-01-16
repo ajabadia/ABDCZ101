@@ -36,8 +36,11 @@ CZ101AudioProcessor::CZ101AudioProcessor()
         presetFifo.finishedWrite(sz1 + sz2);
         
         // 2. Defer Parameter/Host notification to Message Thread
-        pendingSysExPreset = std::make_unique<CZ101::State::Preset>(p);
-        hasPendingSysEx = true;
+        {
+            const juce::ScopedLock sl(sysExLock);
+            pendingSysExPreset = std::make_unique<CZ101::State::Preset>(p);
+            hasPendingSysEx = true;
+        }
         triggerAsyncUpdate();
     };
     
@@ -708,10 +711,17 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new CZ101Audio
 // Audit Fix 4.2: Handle SysEx parameter updates on Message Thread
 void CZ101AudioProcessor::handleAsyncUpdate()
 {
-    if (hasPendingSysEx.exchange(false))
+    std::unique_ptr<CZ101::State::Preset> p;
+    
+    // Check flag first efficiently
+    if (hasPendingSysEx.load())
     {
-        std::unique_ptr<CZ101::State::Preset> p = std::move(pendingSysExPreset);
-        
+        {
+            const juce::ScopedLock sl(sysExLock);
+            p = std::move(pendingSysExPreset);
+            hasPendingSysEx = false;
+        }
+
         if (p)
         {
             // Update Parameters and notify host (Message Thread)

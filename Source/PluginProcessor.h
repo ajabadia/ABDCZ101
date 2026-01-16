@@ -147,6 +147,7 @@ private:
     // Audit Fix [D]: Mutex ELIMINATED. Using lock-free patterns.
     
     // Audit Fix 4.2: Pending update from SysEx
+    juce::CriticalSection sysExLock; // Protects the pendingSysExPreset unique_ptr
     std::unique_ptr<CZ101::State::Preset> pendingSysExPreset;
     std::atomic<bool> hasPendingSysEx { false };    
 
