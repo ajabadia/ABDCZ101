@@ -1,5 +1,6 @@
 #include <JuceHeader.h>
 #include "Voice.h"
+#include "HardwareConstants.h"
 #include <cmath>
 #include "../DSP/Envelopes/ADSRtoStage.h"
 
@@ -131,6 +132,7 @@ void Voice::setOsc2Waveforms(DSP::PhaseDistOscillator::CzWaveform f, DSP::PhaseD
 void Voice::setOsc2Level(float level) noexcept { osc2Level.setTargetValue(level); }
 void Voice::setOsc2Detune(float semitones) noexcept 
 { 
+    #include "HardwareConstants.h"
     // This is legacy, the processor now calls setModulationMatrix or specific setters
     osc2Detune.setTargetValue(semitones); 
     currentDetuneFactor.setTargetValue(std::exp2(semitones / 12.0f)); 
@@ -162,27 +164,27 @@ void Voice::setMasterVolume(float level) noexcept { masterVolume.setTargetValue(
 // ============================================================================
 
 // DCW
-void Voice::setDCWStage(int line, int i, float r, float l) noexcept { if(line==1) dcwEnvelope1.setStage(i, r, l); else dcwEnvelope2.setStage(i, r, l); }
-void Voice::setDCWSustainPoint(int line, int i) noexcept { if(line==1) dcwEnvelope1.setSustainPoint(i); else dcwEnvelope2.setSustainPoint(i); }
-void Voice::setDCWEndPoint(int line, int i) noexcept { if(line==1) dcwEnvelope1.setEndPoint(i); else dcwEnvelope2.setEndPoint(i); }
+void Voice::setDCWStage(int line, int i, float r, float l) noexcept { jassert(i >= 0 && i < 8); if(line==1) dcwEnvelope1.setStage(i, r, l); else dcwEnvelope2.setStage(i, r, l); }
+void Voice::setDCWSustainPoint(int line, int i) noexcept { jassert(i >= -1 && i < 8); if(line==1) dcwEnvelope1.setSustainPoint(i); else dcwEnvelope2.setSustainPoint(i); }
+void Voice::setDCWEndPoint(int line, int i) noexcept { jassert(i >= 0 && i < 8); if(line==1) dcwEnvelope1.setEndPoint(i); else dcwEnvelope2.setEndPoint(i); }
 
 void Voice::getDCWStage(int line, int i, float& r, float& l) const noexcept { if(line==1) { r = dcwEnvelope1.getStageRate(i); l = dcwEnvelope1.getStageLevel(i); } else { r = dcwEnvelope2.getStageRate(i); l = dcwEnvelope2.getStageLevel(i); } }
 int Voice::getDCWSustainPoint(int line) const noexcept { return line==1 ? dcwEnvelope1.getSustainPoint() : dcwEnvelope2.getSustainPoint(); }
 int Voice::getDCWEndPoint(int line) const noexcept { return line==1 ? dcwEnvelope1.getEndPoint() : dcwEnvelope2.getEndPoint(); }
 
 // DCA
-void Voice::setDCAStage(int line, int i, float r, float l) noexcept { if(line==1) dcaEnvelope1.setStage(i, r, l); else dcaEnvelope2.setStage(i, r, l); }
-void Voice::setDCASustainPoint(int line, int i) noexcept { if(line==1) dcaEnvelope1.setSustainPoint(i); else dcaEnvelope2.setSustainPoint(i); }
-void Voice::setDCAEndPoint(int line, int i) noexcept { if(line==1) dcaEnvelope1.setEndPoint(i); else dcaEnvelope2.setEndPoint(i); }
+void Voice::setDCAStage(int line, int i, float r, float l) noexcept { jassert(i >= 0 && i < 8); if(line==1) dcaEnvelope1.setStage(i, r, l); else dcaEnvelope2.setStage(i, r, l); }
+void Voice::setDCASustainPoint(int line, int i) noexcept { jassert(i >= -1 && i < 8); if(line==1) dcaEnvelope1.setSustainPoint(i); else dcaEnvelope2.setSustainPoint(i); }
+void Voice::setDCAEndPoint(int line, int i) noexcept { jassert(i >= 0 && i < 8); if(line==1) dcaEnvelope1.setEndPoint(i); else dcaEnvelope2.setEndPoint(i); }
 
 void Voice::getDCAStage(int line, int i, float& r, float& l) const noexcept { if(line==1) { r = dcaEnvelope1.getStageRate(i); l = dcaEnvelope1.getStageLevel(i); } else { r = dcaEnvelope2.getStageRate(i); l = dcaEnvelope2.getStageLevel(i); } }
 int Voice::getDCASustainPoint(int line) const noexcept { return line==1 ? dcaEnvelope1.getSustainPoint() : dcaEnvelope2.getSustainPoint(); }
 int Voice::getDCAEndPoint(int line) const noexcept { return line==1 ? dcaEnvelope1.getEndPoint() : dcaEnvelope2.getEndPoint(); }
 
 // Pitch
-void Voice::setPitchStage(int line, int i, float r, float l) noexcept { if(line==1) pitchEnvelope1.setStage(i, r, l); else pitchEnvelope2.setStage(i, r, l); }
-void Voice::setPitchSustainPoint(int line, int i) noexcept { if(line==1) pitchEnvelope1.setSustainPoint(i); else pitchEnvelope2.setSustainPoint(i); }
-void Voice::setPitchEndPoint(int line, int i) noexcept { if(line==1) pitchEnvelope1.setEndPoint(i); else pitchEnvelope2.setEndPoint(i); }
+void Voice::setPitchStage(int line, int i, float r, float l) noexcept { jassert(i >= 0 && i < 8); if(line==1) pitchEnvelope1.setStage(i, r, l); else pitchEnvelope2.setStage(i, r, l); }
+void Voice::setPitchSustainPoint(int line, int i) noexcept { jassert(i >= -1 && i < 8); if(line==1) pitchEnvelope1.setSustainPoint(i); else pitchEnvelope2.setSustainPoint(i); }
+void Voice::setPitchEndPoint(int line, int i) noexcept { jassert(i >= 0 && i < 8); if(line==1) pitchEnvelope1.setEndPoint(i); else pitchEnvelope2.setEndPoint(i); }
 
 void Voice::getPitchStage(int line, int i, float& r, float& l) const noexcept { if(line==1) { r = pitchEnvelope1.getStageRate(i); l = pitchEnvelope1.getStageLevel(i); } else { r = pitchEnvelope2.getStageRate(i); l = pitchEnvelope2.getStageLevel(i); } }
 int Voice::getPitchSustainPoint(int line) const noexcept { return line==1 ? pitchEnvelope1.getSustainPoint() : pitchEnvelope2.getSustainPoint(); }
@@ -279,7 +281,7 @@ float Voice::renderNextSample() noexcept
     if (!dcaEnvelope1.isActive() && !dcaEnvelope2.isActive()) return 0.0f;
     
     // === CONTROL RATE MODULATION (Every 8 samples) ===
-    if ((sampleCounter++ & 0x07) == 0)
+    if ((sampleCounter++ & HardwareConstants::CONTROL_RATE_MASK) == 0)
     {
         processControlRate();
     }
@@ -336,7 +338,7 @@ void Voice::calculateDCWModulation() noexcept
     {
         // Real hardware acceleratos DCW to sine on high notes
         // Scaling factor 0.015f is a heuristic based on handbook's "acceleration"
-        ktOffset = (currentNote - 60) * (ktDcw * 0.015f);
+        ktOffset = (currentNote - 60) * (ktDcw * HardwareConstants::KEYTRACK_DCW_FACTOR);
     }
     
     float veloDcw = smoothedMatrix.veloToDcw.getNextValue();
@@ -355,7 +357,7 @@ void Voice::calculateDCAModulation() noexcept
     if (matrix.kfDca != 0)
     {
         // Key Follow for DCA shortens decay on high notes (simulated as slight level reduction here)
-        float kfDcaOffset = (currentNote - 60) * -0.002f;
+        float kfDcaOffset = (currentNote - 60) * HardwareConstants::KEYTRACK_DCA_OFFSET;
         dcaVal1 = juce::jlimit(0.0f, 1.0f, dcaVal1 + kfDcaOffset);
         dcaVal2 = juce::jlimit(0.0f, 1.0f, dcaVal2 + kfDcaOffset);
     }
@@ -440,13 +442,13 @@ float Voice::renderOscillators() noexcept
 float Voice::applyPostProcessing(float rawMix) noexcept
 {
     // Optimization: Fast Tanh
-    float softClipped = fastTanh(rawMix * 0.68f);
+    float softClipped = fastTanh(rawMix * HardwareConstants::SOFT_CLIP_DRIVE);
     
     // Modern Filter Processing (Phase 7)
     float filtered = lpf.processSample(softClipped);
     filtered = hpf.processSample(filtered);
 
-    return filtered * currentVelocity * masterVolume.getNextValue() * 0.9f;
+    return filtered * currentVelocity * masterVolume.getNextValue() * HardwareConstants::MASTER_HEADROOM_GAIN;
 }
 
 float Voice::midiNoteToFrequency(int midiNote) const noexcept
