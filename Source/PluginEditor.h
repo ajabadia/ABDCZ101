@@ -195,17 +195,22 @@ private:
             listBox.setBounds(area);
         }
         
-        int getNumRows() override { return pm ? (int)pm->getPresets().size() : 0; }
+        int getNumRows() override { 
+            // Audit Fix: Thread safety against Host access
+            if (!pm) return 0;
+            const juce::ScopedLock sl(pm->getLock());
+            return (int)pm->getPresets().size(); 
+        }
         
         void paintListBoxItem(int row, juce::Graphics& g, int w, int h, bool selected) override {
-            if (pm && row < (int)pm->getPresets().size()) {
+            if (!pm) return;
+            // Audit Fix: Thread safety
+            const juce::ScopedLock sl(pm->getLock());
+            
+            if (row < (int)pm->getPresets().size()) {
                 if (selected) g.fillAll(juce::Colours::cyan.withAlpha(0.3f));
                 g.setColour(juce::Colours::white);
                 g.drawText(juce::String(row + 1) + ": " + pm->getPresets()[row].name, 5, 0, w - 80, h, juce::Justification::centredLeft);
-                
-                // Draw Up/Down/Delete icons/buttons?
-                // For now, simplicity: keyboard or right click? 
-                // Let's add simple buttons in row? No, ListBox with custom components is better for that.
             }
         }
         
@@ -220,7 +225,15 @@ private:
                 m.addSeparator();
                 m.addItem(3, "Delete");
                 
-                m.showMenuAsync(juce::PopupMenu::Options(), [this, row](int result) {
+                // Audit Fix 1.6: Use SafePointer to prevent crash if editor closed while menu open
+                juce::Component::SafePointer<BankManagerOverlay> safeThis(this);
+                
+                m.showMenuAsync(juce::PopupMenu::Options(), [safeThis, row](int result) {
+                    if (safeThis == nullptr || safeThis->pm == nullptr) return;
+                    
+                    auto* overlay = safeThis.getComponent();
+                    auto* pm = overlay->pm;
+                    
                     if (result == 1) pm->movePreset(row, row - 1);
                     else if (result == 2) pm->movePreset(row, row + 1);
                     else if (result == 4) {
@@ -228,36 +241,47 @@ private:
                         dw->addTextEditor("pos", juce::String(row + 1));
                         dw->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
                         dw->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
-                        dw->enterModalState(true, juce::ModalCallbackFunction::create([this, dw, row](int r) {
+                        
+                        dw->enterModalState(true, juce::ModalCallbackFunction::create([safeThis, dw, row](int r) {
+                            if (safeThis == nullptr || safeThis->pm == nullptr) return; // dw is managed by ModalCallback
+                            
                             if (r == 1) {
                                 int newPos = dw->getTextEditorContents("pos").getIntValue() - 1;
-                                int maxPos = (int)pm->getPresets().size() - 1;
+                                int maxPos = (int)safeThis->pm->getPresets().size() - 1;
                                 if (newPos >= 0 && newPos <= maxPos) {
-                                    pm->movePreset(row, newPos);
-                                    listBox.updateContent();
-                                    if (onUpdate) onUpdate();
+                                    safeThis->pm->movePreset(row, newPos);
+                                    safeThis->listBox.updateContent();
+                                    if (safeThis->onUpdate) safeThis->onUpdate();
                                 }
                             }
                         }));
                     }
                     else if (result == 5) {
                         auto* dw = new juce::AlertWindow("Rename Preset", "Enter new name:", juce::AlertWindow::QuestionIcon);
+                        const juce::ScopedLock sl(pm->getLock());
                         dw->addTextEditor("name", pm->getPresets()[row].name);
+                        
                         dw->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
                         dw->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
-                        dw->enterModalState(true, juce::ModalCallbackFunction::create([this, dw, row](int r) {
+                        dw->enterModalState(true, juce::ModalCallbackFunction::create([safeThis, dw, row](int r) {
+                            if (safeThis == nullptr || safeThis->pm == nullptr) return;
+                            
                             if (r == 1) {
-                                pm->renamePreset(row, dw->getTextEditorContents("name").toStdString());
-                                listBox.updateContent();
-                                if (onUpdate) onUpdate();
+                                safeThis->pm->renamePreset(row, dw->getTextEditorContents("name").toStdString());
+                                safeThis->listBox.updateContent();
+                                if (safeThis->onUpdate) safeThis->onUpdate();
                             }
                         }));
                     }
-                    else if (result == 3) pm->deletePreset(row);
+                    else if (result == 3) {
+                         pm->deletePreset(row);
+                         safeThis->listBox.updateContent();
+                         if (safeThis->onUpdate) safeThis->onUpdate();
+                    }
                     
-                    if (result > 0 && result != 4 && result != 5) {
-                        listBox.updateContent();
-                        if (onUpdate) onUpdate();
+                    if (result > 0 && result != 4 && result != 5 && result != 3) {
+                        safeThis->listBox.updateContent();
+                        if (safeThis->onUpdate) safeThis->onUpdate();
                     }
                 });
             }
