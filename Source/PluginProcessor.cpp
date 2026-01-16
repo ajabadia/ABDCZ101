@@ -135,9 +135,9 @@ void CZ101AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     reverb.setSampleRate(sampleRate);
     chorus.prepare(sampleRate);
     
-    // Audit Fix: Initialize Vis Buffer size
-    visBuffer.setSize(1, VIS_FIFO_SIZE);
-    visBuffer.clear();
+    // Audit Fix: Initialize Vis Buffer (Triple Buffer is std::array, no resize needed)
+    // visBuffer.setSize(1, VIS_FIFO_SIZE);
+    // visBuffer.clear();
     
     juce::File presetsDir = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory).getChildFile("CZ101Emulator");
     if (!presetsDir.exists()) presetsDir.createDirectory();
@@ -262,18 +262,21 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         chorus.process(channelDataL, channelDataR, buffer.getNumSamples());
     }
     
-    // Visualization logic
-    if (visFifo.getFreeSpace() >= buffer.getNumSamples())
-    {
-        int start1, size1, start2, size2;
-        visFifo.prepareToWrite(buffer.getNumSamples(), start1, size1, start2, size2);
-        auto* l = buffer.getReadPointer(0);
-        auto* r = (buffer.getNumChannels() > 1) ? buffer.getReadPointer(1) : l;
-        
-        if (size1 > 0) visBuffer.copyFrom(0, start1, buffer, 0, 0, size1);
-        if (size2 > 0) visBuffer.copyFrom(0, start2, buffer, 0, size1, size2);
-        visFifo.finishedWrite(size1 + size2);
-    }
+    // Visualization logic - Triple Buffer Producer
+    // 1. Write to Back Buffer (Owned by Audio Thread)
+    int back = visTripleBuffer.backIndex.load(std::memory_order_relaxed);
+    auto& backBuf = visTripleBuffer.buffers[back];
+    
+    // Copy current block (limit to buffer size)
+    int numSamples = std::min(buffer.getNumSamples(), (int)visTripleBuffer.SIZE);
+    juce::FloatVectorOperations::copy(backBuf.data(), buffer.getReadPointer(0), numSamples);
+    // Zero the rest if needed? (Optional, if WaveformDisplay uses numSamples known? No, it uses 256 internal)
+    // For now, simple copy.
+    
+    // 2. Publish: Swap Back with Mid
+    int mid = visTripleBuffer.midIndex.exchange(back, std::memory_order_acq_rel);
+    visTripleBuffer.backIndex.store(mid, std::memory_order_relaxed);
+    visTripleBuffer.hasNewData.store(true, std::memory_order_release);
     
     performanceMonitor.stopMeasurement();
 }

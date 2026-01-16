@@ -95,10 +95,17 @@ public:
 
     juce::UndoManager& getUndoManager() { return undoManager; }
     
-    // For Editor Visualization
-    juce::AudioBuffer<float>& getVisBuffer() { return visBuffer; }
-    juce::AbstractFifo& getVisFifo() { return visFifo; }
-    
+    // For Editor Visualization - Triple Buffering for Thread Safety
+    struct VisTripleBuffer {
+        static constexpr int SIZE = 4096;
+        std::array<std::array<float, SIZE>, 3> buffers;
+        std::atomic<int> backIndex { 0 }; // owned by Audio Thread
+        std::atomic<int> midIndex { 1 };  // shared
+        std::atomic<int> frontIndex { 2 }; // owned by UI Thread
+        std::atomic<bool> hasNewData { false };
+    };
+    VisTripleBuffer& getVisTripleBuffer() { return visTripleBuffer; }
+
     // CASIO CZ COMMAND QUEUE (Thread-Safe UI -> Audio)
     void scheduleEnvelopeUpdate(const EnvelopeUpdateCommand& cmd);
 
@@ -112,9 +119,7 @@ public:
 private:
     // ...
     // Visualisation
-    static constexpr int VIS_FIFO_SIZE = 4096; // Audit Fix 4.1
-    juce::AudioBuffer<float> visBuffer { 1, VIS_FIFO_SIZE }; 
-    juce::AbstractFifo visFifo { VIS_FIFO_SIZE };
+    VisTripleBuffer visTripleBuffer; // Audit Fix 1.3: Waveform Triple Buffer
     CZ101::Core::VoiceManager voiceManager;
     CZ101::MIDI::MIDIProcessor midiProcessor;
     juce::UndoManager undoManager; // Added UndoManager (Must be before Parameters)

@@ -300,16 +300,23 @@ void CZ101AudioProcessorEditor::resized()
 
 void CZ101AudioProcessorEditor::timerCallback()
 {
-    auto& buffer = audioProcessor.getVisBuffer();
-    auto& fifo = audioProcessor.getVisFifo();
-
-    if (fifo.getNumReady() > 0) {
-        int s1, sz1, s2, sz2;
-        fifo.prepareToRead(fifo.getNumReady(), s1, sz1, s2, sz2);
-        if (sz1 > 0) { juce::AudioBuffer<float> t(1, sz1); t.copyFrom(0, 0, buffer, 0, s1, sz1); waveformDisplay.pushBuffer(t); }
-        if (sz2 > 0) { juce::AudioBuffer<float> t(1, sz2); t.copyFrom(0, 0, buffer, 0, s2, sz2); waveformDisplay.pushBuffer(t); }
-        fifo.finishedRead(sz1 + sz2);
+    // Audit Fix 1.3: Triple Buffering Consumer
+    auto& tb = audioProcessor.getVisTripleBuffer();
+    
+    if (tb.hasNewData.exchange(false, std::memory_order_acquire))
+    {
+        int currentFront = tb.frontIndex.load(std::memory_order_relaxed);
+        // Atomic Swap: Give our old Front to Mid, take Mid as new Front
+        int newFront = tb.midIndex.exchange(currentFront, std::memory_order_acq_rel);
+        tb.frontIndex.store(newFront, std::memory_order_relaxed);
+        
+        // Pass data to WaveformDisplay
+        auto& src = tb.buffers[newFront];
+        float* channels[] = { src.data() };
+        juce::AudioBuffer<float> temp(channels, 1, (int)src.size());
+        waveformDisplay.pushBuffer(temp);
     }
+
     waveformDisplay.repaint();
     if (audioProcessor.getMidiProcessor().hasRecentActivity()) audioProcessor.getMidiProcessor().clearActivityFlag();
 }
