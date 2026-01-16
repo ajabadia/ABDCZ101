@@ -12,6 +12,11 @@ Voice::Voice()
     // Initialize Modern Filters
     lpf.setType(DSP::ResonantFilter::LOWPASS);
     hpf.setType(DSP::ResonantFilter::HIGHPASS);
+
+    // Audit Fix 1.5: Safe Initialization
+    // Initialize with a default valid sample rate to prevent div-by-zero 
+    // in envelope calculations if accessed before prepareToPlay.
+    setSampleRate(44100.0);
 }
 
 void Voice::setSampleRate(double sr) noexcept

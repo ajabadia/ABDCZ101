@@ -304,15 +304,12 @@ public:
         }
 
         // 3. Create Processor
-        // We manage the processor's lifetime via the MainWindow (or here?)
-        // Standard pattern: Owner passes ownership to Window, or keeps unique_ptr.
-        // MainWindow expects a raw pointer in constructor and takes ownership via unique_ptr member.
-        // Let's create it here.
-        auto* processor = new CZ101AudioProcessor();
+        // We manage the processor's lifetime via the MainWindow ownership
+        auto processor = std::make_unique<CZ101AudioProcessor>();
 
         // 4. Create Window
         // We pass reference to our deviceManager so Window can manage callbacks/selector
-        mainWindow.reset(new MainWindow(getApplicationName(), processor, *settings, deviceManager));
+        mainWindow.reset(new MainWindow(getApplicationName(), std::move(processor), *settings, deviceManager));
 
         // 5. Auto-Connect MIDI logic
         if (deviceManager.getCurrentAudioDevice() != nullptr)
@@ -375,12 +372,12 @@ public:
                        private juce::Timer
     {
     public:
-        MainWindow(const juce::String& name, juce::AudioProcessor* createdProcessor, 
+        MainWindow(const juce::String& name, std::unique_ptr<juce::AudioProcessor> createdProcessor, 
                    juce::PropertiesFile& settings, juce::AudioDeviceManager& dm)
             : DocumentWindow(name, juce::Desktop::getInstance().getDefaultLookAndFeel()
                                        .findColour(juce::ResizableWindow::backgroundColourId),
                              juce::DocumentWindow::allButtons),
-              m_processor(createdProcessor), // Take ownership
+              m_processor(std::move(createdProcessor)), // Take ownership
               deviceManager(dm)              // Store reference
         {
             setUsingNativeTitleBar(false);
