@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <vector>
 #include <algorithm>
 
 namespace CZ101 {
@@ -21,9 +22,8 @@ public:
     float processSample(float input) noexcept;
     
 private:
-    static constexpr int MAX_DELAY_SAMPLES = 88200;  // 2 seconds @ 44.1kHz
-    
-    std::array<float, MAX_DELAY_SAMPLES> buffer;
+    static constexpr float MAX_DELAY_SECONDS = 2.0f;
+    std::vector<float> buffer;
     double sampleRate = 44100.0;
     int delayInSamples = 22050;
     int writePos = 0;

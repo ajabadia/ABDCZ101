@@ -6,20 +6,27 @@ namespace Effects {
 
 Delay::Delay()
 {
-    buffer.fill(0.0f);
+    // Default start
+    setSampleRate(44100.0);
 }
 
 void Delay::setSampleRate(double sr) noexcept
 {
     sampleRate = sr;
+    // Audit Fix 1.4: Dynamic Buffer Sizing based on SR * MaxSeconds
+    size_t requiredSize = static_cast<size_t>(sr * MAX_DELAY_SECONDS) + 256; // +Headroom
+    if (buffer.size() != requiredSize)
+        buffer.resize(requiredSize);
+        
     reset();
 }
 
 void Delay::setDelayTime(float seconds) noexcept
 {
-    seconds = std::clamp(seconds, 0.001f, 2.0f);
+    seconds = std::clamp(seconds, 0.001f, MAX_DELAY_SECONDS);
     delayInSamples = static_cast<int>(seconds * sampleRate);
-    delayInSamples = std::min(delayInSamples, MAX_DELAY_SAMPLES - 1);
+    // Ensure we don't exceed buffer size
+    delayInSamples = std::min(delayInSamples, (int)buffer.size() - 1);
 }
 
 void Delay::setFeedback(float amount) noexcept
@@ -34,20 +41,27 @@ void Delay::setMix(float amount) noexcept
 
 void Delay::reset() noexcept
 {
-    buffer.fill(0.0f);
+    std::fill(buffer.begin(), buffer.end(), 0.0f);
     writePos = 0;
 }
 
 float Delay::processSample(float input) noexcept
 {
+    int size = (int)buffer.size();
+    if (size == 0) return input; // Safety
+
     int readPos = writePos - delayInSamples;
     if (readPos < 0)
-        readPos += MAX_DELAY_SAMPLES;
+        readPos += size;
     
+    // Safety clamp (just in case logic fails or delayInSamples > size)
+    while (readPos < 0) readPos += size;
+    readPos = readPos % size;
+
     float delayed = buffer[readPos];
     buffer[writePos] = input + delayed * feedback;
     
-    writePos = (writePos + 1) % MAX_DELAY_SAMPLES;
+    writePos = (writePos + 1) % size;
     
     return input * (1.0f - mix) + delayed * mix;
 }
