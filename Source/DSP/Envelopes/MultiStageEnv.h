@@ -27,6 +27,10 @@ public:
         float rate = 0.5f;       // Speed to reach level [0.0, 1.0] (1.0 = fast, 0.0 = slow)
     };
     
+    // Audit Fix [2.2]: Hardware Model Selection
+    enum class Model { CZ101, CZ5000 };
+    void setModel(Model newModel) noexcept;
+
     MultiStageEnvelope();
     
     void setSampleRate(double sampleRate) noexcept;
@@ -80,6 +84,8 @@ private:
     
     // Velocity Sensitivity [NEW]
     float rateScaler = 1.0f; 
+    
+    Model activeModel = Model::CZ101; // Audit Fix [2.2] 
     
     // Helper to map normalized smoother value if needed, but smoother returns float directly.
     // If smoother.getCurrentValue() is already correct, mapValue might be identity.

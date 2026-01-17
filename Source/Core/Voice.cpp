@@ -19,6 +19,17 @@ Voice::Voice()
     setSampleRate(44100.0);
 }
 
+// Audit Fix [2.2]
+void Voice::setModel(DSP::MultiStageEnvelope::Model newModel) noexcept
+{
+    dcwEnvelope1.setModel(newModel);
+    dcaEnvelope1.setModel(newModel);
+    pitchEnvelope1.setModel(newModel);
+    dcwEnvelope2.setModel(newModel);
+    dcaEnvelope2.setModel(newModel);
+    pitchEnvelope2.setModel(newModel);
+}
+
 void Voice::setSampleRate(double sr) noexcept
 {
     sampleRate = sr;

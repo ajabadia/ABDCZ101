@@ -193,9 +193,13 @@ float PhaseDistOscillator::renderNextSample(float dcwAmount, bool* outDidWrap) n
 
     // Advance Phase
     phase += phaseIncrement;
+    
+    // Audit Fix 2.1: Robust Phase Wrapping for Hard Sync / High Pitch
+    // Instead of if(phase >= 1.0f) phase -= 1.0f; we handle multiple wraps.
+    // Ideally use std::fmod, but for performance in tight loop with known positive increment:
     if (phase >= 1.0f)
     {
-        phase -= 1.0f;
+        phase -= std::floor(phase); // Robust wrapping
         if (outDidWrap) *outDidWrap = true;
     }
     else

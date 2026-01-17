@@ -7,8 +7,10 @@ namespace UI {
 OscillatorSection::OscillatorSection(CZ101AudioProcessor& p)
     : audioProcessor(p),
       osc1LevelKnob("Lvl 1"),
+
       osc2LevelKnob("Lvl 2"),
-      osc2DetuneKnob("Detune")
+      osc2DetuneKnob("Detune"),
+      lineMixKnob("Mix") // [NEW]
 {
     auto& params = audioProcessor.getParameters();
     auto& palette = SkinManager::getInstance().getCurrentPalette();
@@ -41,6 +43,13 @@ OscillatorSection::OscillatorSection(CZ101AudioProcessor& p)
     if (params.getOsc2Detune()) {
         osc2DetuneAttachment = std::make_unique<SliderAttachment>(*params.getOsc2Detune(), osc2DetuneKnob.getSlider());
         osc2DetuneKnob.getSlider().getProperties().set("paramId", params.getOsc2Detune()->paramID);
+    }
+
+    // [NEW] Line Mix
+    addAndMakeVisible(lineMixKnob);
+    if (params.getLineMix()) {
+        lineMixAttachment = std::make_unique<SliderAttachment>(*params.getLineMix(), lineMixKnob.getSlider());
+        lineMixKnob.getSlider().getProperties().set("paramId", params.getLineMix()->paramID);
     }
 
     // === Shared Controls ===
@@ -108,6 +117,8 @@ void OscillatorSection::resized()
     // --- Shared ---
     juce::FlexBox fs;
     fs.alignItems = juce::FlexBox::AlignItems::center;
+    // Add Mix Knob to shared area
+    fs.items.add(juce::FlexItem(lineMixKnob).withFlex(1)); 
     fs.items.add(juce::FlexItem(hardSyncButton).withFlex(1).withHeight(24 * scale).withMargin(2 * scale));
     fs.items.add(juce::FlexItem(ringModButton).withFlex(1).withHeight(24 * scale).withMargin(2 * scale));
     fs.performLayout(sharedArea);

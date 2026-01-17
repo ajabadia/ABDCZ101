@@ -49,11 +49,20 @@ void Chorus::setMix(float mix0to1)
 
 float Chorus::getInterpolatedSample(const std::vector<float>& buffer, float readIndex) const
 {
+    if (bufferSize <= 0 || buffer.empty()) return 0.0f;
+
     // Linear Interpolation
     int index1 = static_cast<int>(readIndex);
-    int index2 = (index1 + 1) % bufferSize;
-    float fraction = readIndex - index1;
+    if (index1 >= bufferSize) index1 = bufferSize - 1;
+    if (index1 < 0) index1 = 0;
     
+    int index2 = (index1 + 1) % bufferSize;
+    float fraction = readIndex - (float)index1;
+    
+    // Bounds check for safety
+    if (index1 < 0 || index1 >= (int)buffer.size() || index2 < 0 || index2 >= (int)buffer.size())
+        return 0.0f;
+
     float s1 = buffer[index1];
     float s2 = buffer[index2];
     
@@ -102,8 +111,11 @@ void Chorus::process(float* leftChannel, float* rightChannel, int numSamples)
         float wetR = getInterpolatedSample(delayBufferR, readPosR);
         
         // Write inputs to buffer with Denormal Protection
-        delayBufferL[writeIndex] = leftChannel[i] + 1.0e-18f;
-        delayBufferR[writeIndex] = rightChannel[i] + 1.0e-18f;
+        if (writeIndex >= 0 && writeIndex < bufferSize)
+        {
+            delayBufferL[writeIndex] = leftChannel[i] + 1.0e-18f;
+            delayBufferR[writeIndex] = rightChannel[i] + 1.0e-18f;
+        }
         
         // Mix
         leftChannel[i] = (leftChannel[i] * (1.0f - mix * 0.5f)) + (wetL * mix);
@@ -111,7 +123,7 @@ void Chorus::process(float* leftChannel, float* rightChannel, int numSamples)
         
         // Advance write pointer
         writeIndex++;
-        if (writeIndex >= bufferSize) writeIndex = 0;
+        if (writeIndex >= bufferSize || writeIndex < 0) writeIndex = 0;
     }
 }
 

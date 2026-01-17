@@ -26,6 +26,9 @@ public:
     Voice();
     
     void setSampleRate(double sampleRate) noexcept;
+
+    // Audit Fix [2.2]: Model Selection
+    void setModel(DSP::MultiStageEnvelope::Model newModel) noexcept;
     
     // Note control
     void noteOn(int midiNote, float velocity) noexcept;

@@ -10,6 +10,58 @@ VoiceManager::VoiceManager()
     // voices array is fixed size now
 }
 
+// Audit Fix [2.2]: Hardware Model Selection
+void VoiceManager::setSynthModel(DSP::MultiStageEnvelope::Model model) noexcept
+{
+    applyToAllVoices([model](Voice& v) { v.setModel(model); });
+    
+    // Audit Fix [2.3]: Dynamic Voice Count
+    // CZ-101: 4 Voices (8 DCOs)
+    // CZ-5000: 8 Voices (16 DCOs)
+    // Modern: MAX_VOICES (16)
+    // Note: The Model enum only tracks envelope behavior. We need to infer the voice limit
+    // based on the model or if we are in "Modern" mode which uses CZ5000 envelopes but higher poly.
+    // However, setSynthModel is called with CZ5000 for both CZ-5000 and Modern.
+    // We should rely on PluginProcessor to set this up correctly, OR infer it.
+    // Ideally, PluginProcessor should pass the max voices explicitely or we set it here mapping 
+    // CZ101 -> 4, CZ5000 -> 8. But Modern uses CZ5000 model but wants 16 voices.
+    // For now, let's strictly map the Hardware Models to their original polyphony.
+    
+    // NOTE: PluginProcessor calling logic:
+    // Classic 101 -> Model::CZ101
+    // Classic 5000 -> Model::CZ5000
+    // Modern -> Model::CZ5000
+    // This makes it ambiguous here.
+    
+    // REVISION: We need a separate setter for Voice Count or pass it in here.
+    // Current strategy: default to MAX. 
+    // Better strategy for Phase 2.3: Add setMaxVoices(int) or deduce.
+    // Let's deduce:
+    // If Model::CZ101 -> 4 voices
+    // If Model::CZ5000 -> 8 voices
+    // If Modern override -> 16 voices (handled by PluginProcessor calling setMaxVoices separately?)
+    // No, PluginProcessor isn't calling setMaxVoices.
+    
+    // Let's modify logic: 
+    // 101 -> 4 voices.
+    // 5000 -> 8 voices.
+    // Modern -> We need to know if it's Modern.
+    
+    // Given the previous step in PluginProcessor:
+    // "Classic 5000" and "Modern" both map to Model::CZ5000 envelope behavior.
+    // But they have different polyphony.
+    // We need to support `setVoiceLimit(int)` and call it from PluginProcessor.
+    
+    if (model == DSP::MultiStageEnvelope::Model::CZ101) maxActiveVoices = 4;
+    else maxActiveVoices = 8; // Default for CZ-5000 hardware
+}
+
+// [NEW] Helper for PluginProcessor to override limit (e.g. for Modern Mode)
+void VoiceManager::setVoiceLimit(int limit) noexcept
+{
+    maxActiveVoices = std::min(limit, (int)MAX_VOICES);
+}
+
 void VoiceManager::setSampleRate(double sampleRate) noexcept
 {
     applyToAllVoices([sampleRate](Voice& v) { v.setSampleRate(sampleRate); });
@@ -57,7 +109,6 @@ void VoiceManager::setDCADecay(float s) noexcept { applyToAllVoices([s](Voice& v
 void VoiceManager::setDCASustain(float l) noexcept { applyToAllVoices([l](Voice& v){ v.setDCASustain(l); }); }
 void VoiceManager::setDCARelease(float s) noexcept { applyToAllVoices([s](Voice& v){ v.setDCARelease(s); }); }
 
-// 8-Stage Control
 // 8-Stage Control
 void VoiceManager::setDCWStage(int line, int idx, float r, float l) noexcept { applyToAllVoices([=](Voice& v){ v.setDCWStage(line, idx, r, l); }); }
 void VoiceManager::setDCWSustainPoint(int line, int idx) noexcept { applyToAllVoices([=](Voice& v){ v.setDCWSustainPoint(line, idx); }); }
@@ -126,9 +177,10 @@ void VoiceManager::noteOn(int midiNote, float velocity) noexcept
 // Renamed internal helper
 void VoiceManager::stopInternalVoice(int midiNote) noexcept
 {
-    for (auto& voice : voices)
-        if (voice.isActive() && voice.getCurrentNote() == midiNote)
-            voice.noteOff();
+    // Fix: Only stop voices within the active range?
+    for (int i = 0; i < maxActiveVoices; ++i)
+        if (voices[i].isActive() && voices[i].getCurrentNote() == midiNote)
+            voices[i].noteOff();
 }
 
 void VoiceManager::noteOff(int midiNote) noexcept
@@ -161,9 +213,10 @@ void VoiceManager::renderNextBlock(float* outputL, float* outputR, int numSample
     for (int i = 0; i < numSamples; ++i)
     {
         float sample = 0.0f;
-        for (auto& voice : voices)
-            if (voice.isActive())
-                sample += voice.renderNextSample();
+        // Limit processing to maxActiveVoices
+        for (int v = 0; v < maxActiveVoices; ++v)
+            if (voices[v].isActive())
+                sample += voices[v].renderNextSample();
         
         outputL[i] = sample;
         outputR[i] = sample;
@@ -173,26 +226,31 @@ void VoiceManager::renderNextBlock(float* outputL, float* outputR, int numSample
 int VoiceManager::getActiveVoiceCount() const noexcept
 {
     int count = 0;
-    for (const auto& voice : voices) if (voice.isActive()) ++count;
+    for (int i = 0; i < maxActiveVoices; ++i) 
+        if (voices[i].isActive()) ++count;
     return count;
 }
 
 int VoiceManager::findFreeVoice() const noexcept
 {
-    for (size_t i = 0; i < voices.size(); ++i) if (!voices[i].isActive()) return static_cast<int>(i);
+    for (int i = 0; i < maxActiveVoices; ++i) 
+        if (!voices[i].isActive()) return i;
     return -1;
 }
 
 int VoiceManager::findVoiceToSteal() const noexcept
 {
-    for (size_t i = 0; i < voices.size(); ++i) if (voices[i].isReleasing()) return static_cast<int>(i);
-    for (size_t i = 0; i < voices.size(); ++i) if (voices[i].isActive()) return static_cast<int>(i);
+    for (int i = 0; i < maxActiveVoices; ++i) 
+        if (voices[i].isReleasing()) return i;
+    for (int i = 0; i < maxActiveVoices; ++i) 
+        if (voices[i].isActive()) return i;
     return 0;
 }
 
 int VoiceManager::findVoicePlayingNote(int midiNote) const noexcept
 {
-    for (size_t i = 0; i < voices.size(); ++i) if (voices[i].getCurrentNote() == midiNote) return static_cast<int>(i);
+    for (int i = 0; i < maxActiveVoices; ++i) 
+        if (voices[i].getCurrentNote() == midiNote) return i;
     return -1;
 }
 

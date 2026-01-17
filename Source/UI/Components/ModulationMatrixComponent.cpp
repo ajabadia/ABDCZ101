@@ -35,13 +35,13 @@ ModulationMatrixComponent::ModulationMatrixComponent(CZ101AudioProcessor& p)
     setupKnob(ktDcwKnob, "KEY_TRACK_DCW");
     setupKnob(ktPitchKnob, "KEY_TRACK_PITCH");
 
-    audioProcessor.getParameters().getAPVTS().addParameterListener("AUTHENTIC_MODE", this);
+    audioProcessor.getParameters().getAPVTS().addParameterListener("OPERATION_MODE", this);
     updateVisibility();
 }
 
 ModulationMatrixComponent::~ModulationMatrixComponent()
 {
-    audioProcessor.getParameters().getAPVTS().removeParameterListener("AUTHENTIC_MODE", this);
+    audioProcessor.getParameters().getAPVTS().removeParameterListener("OPERATION_MODE", this);
 }
 
 void ModulationMatrixComponent::parameterChanged(const juce::String&, float)
@@ -51,8 +51,16 @@ void ModulationMatrixComponent::parameterChanged(const juce::String&, float)
 
 void ModulationMatrixComponent::updateVisibility()
 {
-    bool isClassic = audioProcessor.getParameters().getAuthenticMode()->get();
-    bool visible = !isClassic;
+    // If in Classic mode (0 or 1), the matrix might be disabled or limited?
+    // The requirement was: "Modern extends features".
+    // If we want to hide it in classic modes:
+    bool isModern = false;
+    if (auto* p = audioProcessor.getParameters().getOperationMode())
+        isModern = (p->getIndex() == 2);
+        
+    setVisible(isModern); // Example: Matrix only visible in modern mode
+
+    bool visible = isModern; // Use isModern for individual knob visibility
 
     veloToDcwKnob.setVisible(visible);
     veloToDcaKnob.setVisible(visible);

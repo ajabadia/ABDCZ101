@@ -27,6 +27,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
         group->addChild(std::make_unique<juce::AudioParameterInt>("DETUNE_OCT", "Detune Octave", -3, 3, 0));
         group->addChild(std::make_unique<juce::AudioParameterInt>("DETUNE_COARSE", "Detune Coarse", -12, 12, 0));
         group->addChild(std::make_unique<juce::AudioParameterInt>("DETUNE_FINE", "Detune Fine", -50, 50, 0));
+        // Audit Fix [2.4]: Tone Mix (0.0=Line1, 0.5=Both, 1.0=Line2)
+        group->addChild(std::make_unique<juce::AudioParameterFloat>("LINE_MIX", "Line Mix", 0.0f, 1.0f, 0.5f));
         group->addChild(std::make_unique<juce::AudioParameterBool>("HARD_SYNC", "Hard Sync", false));
         group->addChild(std::make_unique<juce::AudioParameterBool>("RING_MOD", "Ring Mod", false));
         group->addChild(std::make_unique<juce::AudioParameterFloat>("GLIDE", "Portamento Time", 0.0f, 1.0f, 0.0f));
@@ -106,7 +108,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
         group->addChild(std::make_unique<juce::AudioParameterBool>("PROTECT_SWITCH", "Memory Protect", true));
         group->addChild(std::make_unique<juce::AudioParameterBool>("SYSTEM_PRG", "SysEx Data Interchange", false));
         group->addChild(std::make_unique<juce::AudioParameterBool>("BYPASS", "Bypass", false));
-        group->addChild(std::make_unique<juce::AudioParameterBool>("AUTHENTIC_MODE", "Authentic Mode", true));
+        group->addChild(std::make_unique<juce::AudioParameterBool>("BYPASS", "Bypass", false));
+        // Audit Fix [2.2a]: Unified Operation Mode
+        // 0: Classic 101, 1: Classic 5000, 2: Modern
+        group->addChild(std::make_unique<juce::AudioParameterChoice>("OPERATION_MODE", "Operation Mode", juce::StringArray{"Classic 101", "Classic 5000", "Modern"}, 0));
         group->addChild(std::make_unique<juce::AudioParameterFloat>("MASTER_VOLUME", "Master Volume", 0.0f, 1.0f, 1.0f));
         
         group->addChild(std::make_unique<juce::AudioParameterInt>("MIDI_CH", "MIDI Channel", 1, 16, 1));
@@ -157,6 +162,10 @@ Parameters::Parameters(juce::AudioProcessor& processor, juce::UndoManager* undoM
     osc2Waveform2= dynamic_cast<juce::AudioParameterChoice*>(apvts->getParameter("OSC2_WAVEFORM2"));
     osc2Level    = dynamic_cast<juce::AudioParameterFloat*>(apvts->getParameter("OSC2_LEVEL"));
     osc2Detune   = dynamic_cast<juce::AudioParameterFloat*>(apvts->getParameter("OSC2_DETUNE"));
+    
+    // Audit Fix [2.4]
+    lineMix      = dynamic_cast<juce::AudioParameterFloat*>(apvts->getParameter("LINE_MIX"));
+
     detuneOct    = dynamic_cast<juce::AudioParameterInt*>(apvts->getParameter("DETUNE_OCT"));
     detuneCoarse = dynamic_cast<juce::AudioParameterInt*>(apvts->getParameter("DETUNE_COARSE"));
     detuneFine   = dynamic_cast<juce::AudioParameterInt*>(apvts->getParameter("DETUNE_FINE"));
@@ -191,7 +200,8 @@ Parameters::Parameters(juce::AudioProcessor& processor, juce::UndoManager* undoM
     protectSwitch = dynamic_cast<juce::AudioParameterBool*>(apvts->getParameter("PROTECT_SWITCH"));
     systemPrg     = dynamic_cast<juce::AudioParameterBool*>(apvts->getParameter("SYSTEM_PRG"));
     masterVolume   = dynamic_cast<juce::AudioParameterFloat*>(apvts->getParameter("MASTER_VOLUME"));
-    authenticMode  = dynamic_cast<juce::AudioParameterBool*>(apvts->getParameter("AUTHENTIC_MODE"));
+    masterVolume   = dynamic_cast<juce::AudioParameterFloat*>(apvts->getParameter("MASTER_VOLUME"));
+    operationMode  = dynamic_cast<juce::AudioParameterChoice*>(apvts->getParameter("OPERATION_MODE"));
 
     modernLpfCutoff = dynamic_cast<juce::AudioParameterFloat*>(apvts->getParameter("MODERN_LPF_CUTOFF"));
     modernLpfReso   = dynamic_cast<juce::AudioParameterFloat*>(apvts->getParameter("MODERN_LPF_RESO"));

@@ -27,6 +27,7 @@ public:
     juce::AudioParameterChoice* getOsc2Waveform2() const { return osc2Waveform2; }
     juce::AudioParameterFloat* getOsc2Level() const { return osc2Level; }
     juce::AudioParameterFloat* getOsc2Detune() const { return osc2Detune; }
+    juce::AudioParameterFloat* getLineMix() const { return lineMix; } // Audit Fix [2.4]
     juce::AudioParameterInt*   getDetuneOctave() const { return detuneOct; }
     juce::AudioParameterInt*   getDetuneCoarse() const { return detuneCoarse; }
     juce::AudioParameterInt*   getDetuneFine() const { return detuneFine; }
@@ -35,15 +36,16 @@ public:
     juce::AudioParameterFloat* getGlideTime() const { return glideTime; }
 
     juce::AudioParameterFloat* getMasterVolume() const { return masterVolume; }
-    juce::AudioParameterBool*  getAuthenticMode() const { return authenticMode; }
-    juce::AudioParameterBool*  getProtectSwitch() const { return protectSwitch; }
     juce::AudioParameterBool*  getSystemPrg() const { return systemPrg; }
     juce::AudioParameterBool*  getBypass() const { return bypass; }
+    juce::AudioParameterChoice* getOperationMode() const { return operationMode; } // Audit Fix [2.2a]
     
     juce::AudioParameterInt*   getMidiChannel() const { return midiChannel; }
     juce::AudioParameterFloat* getMasterTune() const { return masterTune; }
     juce::AudioParameterInt*   getPitchBendRange() const { return pitchBendRange; }
     juce::AudioParameterInt*   getKeyTranspose() const { return keyTranspose; }
+    
+    juce::AudioParameterBool*  getProtectSwitch() const { return protectSwitch; } // Audit Fix [2.5]
 
     // Envelopes
     juce::AudioParameterFloat* getDcaAttack() const { return dcaAttack; }
@@ -103,6 +105,8 @@ private:
     juce::AudioParameterChoice* osc2Waveform2 = nullptr;
     juce::AudioParameterFloat* osc2Level = nullptr;
     juce::AudioParameterFloat* osc2Detune = nullptr;
+    // Audit Fix [2.4]: Tone Mix
+    juce::AudioParameterFloat* lineMix = nullptr;
     juce::AudioParameterInt*   detuneOct = nullptr;
     juce::AudioParameterInt*   detuneCoarse = nullptr;
     juce::AudioParameterInt*   detuneFine = nullptr;
@@ -138,7 +142,8 @@ private:
     juce::AudioParameterBool* systemPrg = nullptr;
     juce::AudioParameterFloat* masterVolume = nullptr;
     juce::AudioParameterBool* bypass = nullptr;
-    juce::AudioParameterBool* authenticMode = nullptr;
+
+    juce::AudioParameterChoice* operationMode = nullptr; // Audit Fix [2.2a]: Unified Mode
 
     juce::AudioParameterFloat* modernLpfCutoff = nullptr;
     juce::AudioParameterFloat* modernLpfReso = nullptr;

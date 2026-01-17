@@ -14,11 +14,14 @@
 #include "LCDStateManager.h"
 #include "ScaledComponent.h"
 
+#include <juce_audio_processors/juce_audio_processors.h>
+
 namespace CZ101 {
 namespace UI {
 
 class LCDDisplay : public ScaledComponent,
-                   public juce::ChangeListener
+                   public juce::ChangeListener,
+                   public juce::AudioProcessorValueTreeState::Listener
 {
 public:
     LCDDisplay();
@@ -35,8 +38,13 @@ public:
     void resized() override;
     
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
+    void parameterChanged(const juce::String& parameterID, float newValue) override;
+
+    // Audit Fix [2.2a]: Modern Mode Color
+    void setModernMode(bool isModern);
 
 private:
+    bool modernMode = false;
     LCDStateManager* stateManager = nullptr;
     juce::Label topLineLabel;
     juce::Label bottomLineLabel;

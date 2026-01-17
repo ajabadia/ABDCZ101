@@ -17,23 +17,25 @@ EffectsSection::EffectsSection(CZ101AudioProcessor& p)
     addAndMakeVisible(reverbPanel);
 
     updateVisibility();
-    audioProcessor.getParameters().getAPVTS().addParameterListener("AUTHENTIC_MODE", this);
+    audioProcessor.getParameters().getAPVTS().addParameterListener("OPERATION_MODE", this);
 }
 
 EffectsSection::~EffectsSection()
 {
-    audioProcessor.getParameters().getAPVTS().removeParameterListener("AUTHENTIC_MODE", this);
+    audioProcessor.getParameters().getAPVTS().removeParameterListener("OPERATION_MODE", this);
 }
 
 void EffectsSection::updateVisibility()
 {
     auto& params = audioProcessor.getParameters();
-    bool isAuth = params.getAuthenticMode() ? params.getAuthenticMode()->get() : true;
+    // Show effects only in Modern Mode (Index 2)
+    int opMode = params.getOperationMode() ? params.getOperationMode()->getIndex() : 0;
+    bool showEffects = (opMode == 2);
     
-    filterPanel.setVisible(!isAuth);
-    chorusPanel.setVisible(!isAuth);
-    delayPanel.setVisible(!isAuth);
-    reverbPanel.setVisible(!isAuth);
+    filterPanel.setVisible(showEffects);
+    chorusPanel.setVisible(showEffects);
+    delayPanel.setVisible(showEffects);
+    reverbPanel.setVisible(showEffects);
     
     resized();
     repaint();
@@ -41,7 +43,7 @@ void EffectsSection::updateVisibility()
 
 void EffectsSection::parameterChanged(const juce::String& parameterID, float newValue)
 {
-    if (parameterID == "AUTHENTIC_MODE")
+    if (parameterID == "OPERATION_MODE")
     {
         juce::MessageManager::callAsync([this]() { updateVisibility(); });
     }
@@ -57,9 +59,23 @@ void EffectsSection::paint(juce::Graphics& g)
     g.drawRoundedRectangle(bounds, 4.0f, 1.0f);
     
     auto& params = audioProcessor.getParameters();
-    bool isAuth = params.getAuthenticMode() ? params.getAuthenticMode()->get() : true;
-    juce::String title = isAuth ? "EFFECTS" : "EFFECTS & FILTERS";
+    int opMode = audioProcessor.getParameters().getOperationMode() ? audioProcessor.getParameters().getOperationMode()->getIndex() : 0;
+    bool isModern = (opMode == 2);
+    if (!isModern)
+    {
+        g.setColour(juce::Colours::black.withAlpha(0.5f));
+        g.fillAll();
+        g.setColour(juce::Colours::white);
+        g.drawText("Effects Disabled in Classic Mode", getLocalBounds(), juce::Justification::centred);
+    }
+    else
+    {
+    int opMode = audioProcessor.getParameters().getOperationMode() ? audioProcessor.getParameters().getOperationMode()->getIndex() : 0;
+    bool isModern = (opMode == 2);
+
+    juce::String title = isModern ? "EFFECTS & FILTERS" : "EFFECTS"; // Or "EFFECTS (OFF)"?
     g.drawText(title, bounds.removeFromTop(20), juce::Justification::centred, false);
+    }
 }
 
 void EffectsSection::resized()
@@ -74,9 +90,10 @@ void EffectsSection::resized()
     auto contentArea = area.reduced((int)(10 * scale));
 
     auto& params = audioProcessor.getParameters();
-    bool isAuth = params.getAuthenticMode() ? params.getAuthenticMode()->get() : true;
+    int opMode = params.getOperationMode() ? params.getOperationMode()->getIndex() : 0;
+    bool showEffects = (opMode == 2);
 
-    if (!isAuth)
+    if (showEffects)
     {
         juce::FlexBox fb;
         fb.flexDirection = juce::FlexBox::Direction::row;

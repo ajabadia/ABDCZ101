@@ -18,7 +18,8 @@ CZ101AudioProcessor::CZ101AudioProcessor()
     auto logFile = juce::File::getCurrentWorkingDirectory().getChildFile("cz5000_debug.log");
                    
     fileLogger = std::make_unique<juce::FileLogger>(logFile, "CZ-5000 Emulator Log");
-    juce::Logger::setCurrentLogger(fileLogger.get());
+    if (juce::Logger::getCurrentLogger() == nullptr)
+        juce::Logger::setCurrentLogger(fileLogger.get());
     juce::Logger::writeToLog("Logger initialized at: " + logFile.getFullPathName());
     
     // Bind SysEx Callback
@@ -170,7 +171,7 @@ void CZ101AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     modernHpf.setType(juce::dsp::StateVariableTPTFilterType::highpass);
 
     // Audit Fix 1.2: Reset Effects RNG/Phase
-    chorus.reset();
+    chorus.prepare(sampleRate);
     delayL.reset();
     delayR.reset();
     modernLpf.reset();
@@ -235,9 +236,14 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     // Audit Fix: Consolidated with start of block update
 
     // Effects Path (Gated by Authentic Mode)
-    bool isAuthentic = (parameters.getAuthenticMode() && parameters.getAuthenticMode()->get());
+    // Effects Path (Included in Modern Mode)
+    // 0=101, 1=5000, 2=Modern
+    int opMode = parameters.getOperationMode() ? parameters.getOperationMode()->getIndex() : 0;
+    bool isModern = (opMode == 2);
     
-    if (!isAuthentic)
+    // Note: Previously this checked Authentic Mode (so isAuthentic -> !isModern)
+    // Here we want to know if we should process effects. Effects are enabled in Modern Mode.
+    if (isModern)
     {
         // Modern Filters (Before effects)
         juce::dsp::AudioBlock<float> block(buffer);
@@ -302,6 +308,33 @@ void CZ101AudioProcessor::updateParameters()
     if (lineSel == 0) l2 = 0.0f; // Line 1 Only
     if (lineSel == 1) l1 = 0.0f; // Line 2 Only
 
+    // Audit Fix [2.4]: Tone Mix (Equal Power Crossfade approximation)
+    float mix = parameters.getLineMix() ? parameters.getLineMix()->get() : 0.5f;
+    // Mix 0.0 -> l1 * 1.0, l2 * 0.0
+    // Mix 0.5 -> l1 * 1.0, l2 * 1.0 (Additive, authentic-ish for CZ where 1+2 is both)
+    // Actually, let's do a simple linear balance if they are both on:
+    // If we simply scale, we might lose power.
+    // Let's implement this:
+    // Mix < 0.5: L1 = 1.0, L2 = 2 * Mix
+    // Mix > 0.5: L1 = 2 * (1 - Mix), L2 = 1.0
+    
+    // BUT, we must respect Line Select.
+    // If Line Select is 0 (L1 Only), Mix shouldn't bring in L2.
+    // If Line Select is 1 (L2 Only), Mix shouldn't bring in L1.
+    // So we apply Mix only if Line Select is 2 (1+1') or 3 (1+2).
+    if (lineSel >= 2) 
+    {
+        float mixObserved = mix;
+        // Apply Mix logic
+        if (mixObserved < 0.5f) {
+            // l1 stays full, l2 fades in
+            l2 *= (mixObserved * 2.0f);
+        } else {
+            // l2 stays full, l1 fades out
+            l1 *= ((1.0f - mixObserved) * 2.0f);
+        }
+    }
+
     // 2. Line Select 1+1' Logic (Copy Line 1 to Line 2)
     // Audit Fix [C]: Optimized with Cache to avoid constant copying
     bool lineChanged = (lineSel != paramCache.lineSelect);
@@ -352,6 +385,25 @@ void CZ101AudioProcessor::updateParameters()
     if (parameters.getRingMod()) voiceManager.setRingMod(parameters.getRingMod()->get());
     if (parameters.getGlideTime()) voiceManager.setGlideTime(parameters.getGlideTime()->get());
     if (parameters.getMasterVolume()) voiceManager.setMasterVolume(parameters.getMasterVolume()->get());
+
+    // Audit Fix [2.2a]: Unified Operation Mode
+    // 0: Classic 101, 1: Classic 5000, 2: Modern
+    if (auto* p = parameters.getOperationMode())
+    {
+        int mode = p->getIndex(); // 0=101, 1=5000, 2=Modern
+        
+        // Map UI Mode to Synth Model
+        // 0 -> CZ101  (Limit 4)
+        // 1 -> CZ5000 (Limit 8)
+        // 2 -> CZ5000 (Modern extends 5000 engine, Limit 16)
+        auto synthModel = (mode == 0) ? CZ101::DSP::MultiStageEnvelope::Model::CZ101 
+                                      : CZ101::DSP::MultiStageEnvelope::Model::CZ5000;
+                                      
+        voiceManager.setSynthModel(synthModel);
+        
+        // Audit Fix [2.3]: Explicit Modern Voice Override
+        if (mode == 2) voiceManager.setVoiceLimit(16);
+    }
 
     // --- MACRO PROCESSOR (Phase 7) ---
     float macroBrilliance = parameters.getMacroBrilliance() ? parameters.getMacroBrilliance()->get() : 0.5f;

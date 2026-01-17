@@ -24,19 +24,22 @@ GeneralSection::GeneralSection(CZ101AudioProcessor& p)
         masterVolumeAttachment = std::make_unique<SliderAttachment>(*params.getMasterVolume(), masterVolumeKnob.getSlider());
         masterVolumeKnob.getSlider().getProperties().set("paramId", params.getMasterVolume()->paramID);
     }
+    
 
+    
+    // Modern Panel visibility controlled by mode 3 (index 2)
     addAndMakeVisible(macroPanel);
 
     // Initial visibility
-    bool isAuthentic = params.getAuthenticMode() ? params.getAuthenticMode()->get() : true;
-    macroPanel.setVisible(!isAuthentic);
+    int currentMode = params.getOperationMode() ? params.getOperationMode()->getIndex() : 0;
+    macroPanel.setVisible(currentMode == 2);
 
-    apvts.addParameterListener("AUTHENTIC_MODE", this);
+    apvts.addParameterListener("OPERATION_MODE", this);
 }
 
 GeneralSection::~GeneralSection() 
 {
-    audioProcessor.getParameters().getAPVTS().removeParameterListener("AUTHENTIC_MODE", this);
+    audioProcessor.getParameters().getAPVTS().removeParameterListener("OPERATION_MODE", this);
 }
 
 void GeneralSection::paint(juce::Graphics& g) {
@@ -53,12 +56,26 @@ void GeneralSection::paint(juce::Graphics& g) {
 
 void GeneralSection::parameterChanged(const juce::String& parameterID, float newValue)
 {
-    if (parameterID == "AUTHENTIC_MODE")
+    if (parameterID == "OPERATION_MODE")
     {
-        bool isAuthentic = (newValue > 0.5f);
-        juce::MessageManager::callAsync([this, isAuthentic]() {
-            macroPanel.setVisible(!isAuthentic);
-            resized();
+        // 0: 101, 1: 5000, 2: Modern
+        // newValue from APVTS is normalized 0.0-1.0 for choices? 
+        // No, parameterChanged often gives the denormalized value for index if it's AudioParameterChoice? 
+        // Wait, APVTS listener usually gives normalized float.
+        // Let's rely on reading the parameter directly safely on message thread to avoid float rounding issues.
+        
+        juce::MessageManager::callAsync([this]() {
+            if (auto* p = audioProcessor.getParameters().getOperationMode())
+            {
+                int currentMode = p->getIndex();
+                bool isModern = (currentMode == 2);
+                
+                if (macroPanel.isVisible() != isModern)
+                {
+                    macroPanel.setVisible(isModern);
+                    resized();
+                }
+            }
         });
     }
 }
@@ -79,6 +96,11 @@ void GeneralSection::resized()
     juce::FlexBox mainFb;
     mainFb.flexDirection = juce::FlexBox::Direction::column;
     mainFb.justifyContent = juce::FlexBox::JustifyContent::center;
+
+    // Row 0: Model Selector (Removed)
+    // juce::FlexBox row0; 
+    // row0.items.add...
+
 
     // Row 1: Main Controls
     juce::FlexBox row1;

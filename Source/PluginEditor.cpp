@@ -186,10 +186,13 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
     };
 
     // Modern Mode Only Visibility
-    bool isAuthentic = audioProcessor.getParameters().getAuthenticMode() ? audioProcessor.getParameters().getAuthenticMode()->get() : true;
-    randomButton.setVisible(!isAuthentic);
+    // Modern Mode Only Visibility (Index 2 = Modern)
+    int opMode = audioProcessor.getParameters().getOperationMode() ? audioProcessor.getParameters().getOperationMode()->getIndex() : 0;
+    bool isModern = (opMode == 2);
+    randomButton.setVisible(isModern);
     
-    audioProcessor.getParameters().getAPVTS().addParameterListener("AUTHENTIC_MODE", this);
+    // Audit Fix [2.2a]: Unified Mode Listener
+    audioProcessor.getParameters().getAPVTS().addParameterListener("OPERATION_MODE", &lcdDisplay);
 
     setSize(800, 500); // Strict 8:5 ratio
     setResizeLimits(800, 500, 1600, 1000);
@@ -202,6 +205,7 @@ CZ101AudioProcessorEditor::~CZ101AudioProcessorEditor()
 {
     stopTimer();
     tooltipWindow.setVisible(false); // Audit Fix: Hide tooltip on destruction to prevent race
+    audioProcessor.getParameters().getAPVTS().removeParameterListener("OPERATION_MODE", &lcdDisplay);
     audioProcessor.getParameters().getAPVTS().removeParameterListener("AUTHENTIC_MODE", this);
     bankManagerOverlay.listBox.setModel(nullptr); // Audit Fix: Prevent use-after-free
     CZ101::UI::SkinManager::getInstance().removeChangeListener(this);
@@ -443,9 +447,10 @@ juce::PopupMenu CZ101AudioProcessorEditor::getMenuForIndex(int, const juce::Stri
              m.addItem(206, "Audio Settings...");
         }
     } else if (n == "Mode") {
-        bool isAuthentic = audioProcessor.getParameters().getAuthenticMode()->get();
-        m.addItem(400, "Authentic (Hardware Strict)", true, isAuthentic);
-        m.addItem(401, "Modern (Enhanced Features)", true, !isAuthentic);
+        int opMode = audioProcessor.getParameters().getOperationMode() ? audioProcessor.getParameters().getOperationMode()->getIndex() : 0;
+        m.addItem(400, "Classic 101 (Hardware Strict)", true, opMode == 0);
+        m.addItem(402, "Classic 5000 (Extended Polyphony)", true, opMode == 1);
+        m.addItem(401, "Modern (Enhanced Features)", true, opMode == 2);
     } else if (n == "View") {
         m.addItem(300, "Zoom 100%"); m.addItem(301, "Zoom 125%"); m.addItem(302, "Zoom 150%");
         m.addSeparator();
@@ -503,8 +508,9 @@ void CZ101AudioProcessorEditor::menuItemSelected(int id, int) {
         case 316: CZ101::UI::SkinManager::getInstance().setTheme(CZ101::UI::SkinManager::Theme::Steampunk); break;
         case 317: CZ101::UI::SkinManager::getInstance().setTheme(CZ101::UI::SkinManager::Theme::AppleSilicon); break;
         case 318: CZ101::UI::SkinManager::getInstance().setTheme(CZ101::UI::SkinManager::Theme::RetroTerminal); break;
-        case 400: audioProcessor.getParameters().getAuthenticMode()->setValueNotifyingHost(1.0f); break;
-        case 401: audioProcessor.getParameters().getAuthenticMode()->setValueNotifyingHost(0.0f); break;
+        case 400: if (auto* p = audioProcessor.getParameters().getOperationMode()) *p = 0; break; // Classic 101
+        case 402: if (auto* p = audioProcessor.getParameters().getOperationMode()) *p = 1; break; // Classic 5000
+        case 401: if (auto* p = audioProcessor.getParameters().getOperationMode()) *p = 2; break; // Modern
         case 901: aboutDialog.setVisible(true); aboutDialog.toFront(true); break;
     }
 }

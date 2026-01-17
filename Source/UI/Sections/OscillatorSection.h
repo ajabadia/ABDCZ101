@@ -34,6 +34,9 @@ private:
     Knob osc2DetuneKnob;
     juce::Label osc2DetuneLabel;
 
+    // Audit Fix [2.4]: Tone Mix
+    Knob lineMixKnob;
+
     // Controles compartidos
     juce::TextButton hardSyncButton;
     juce::TextButton ringModButton;
@@ -48,6 +51,7 @@ private:
     std::unique_ptr<ComboBoxAttachment> osc2WaveAttachment;
     std::unique_ptr<SliderAttachment> osc2LevelAttachment;
     std::unique_ptr<SliderAttachment> osc2DetuneAttachment;
+    std::unique_ptr<SliderAttachment> lineMixAttachment; // [NEW]
     std::unique_ptr<ButtonAttachment> hardSyncAttachment;
     std::unique_ptr<ButtonAttachment> ringModAttachment;
 };

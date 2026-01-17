@@ -30,6 +30,8 @@ private:
     std::unique_ptr<SliderAttachment> glideAttachment;
     std::unique_ptr<SliderAttachment> masterVolumeAttachment;
 
+
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GeneralSection)
 };
 

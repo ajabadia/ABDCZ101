@@ -374,6 +374,7 @@ void LCDStateManager::updateDisplay()
     if (!processor) return;
     
     auto& pm = processor->getPresetManager();
+    const juce::ScopedLock sl(pm.getLock()); // Ensure atomic access to preset data
 
     if (isComparing)
     {

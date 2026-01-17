@@ -26,6 +26,12 @@ public:
     
     VoiceManager();
     
+    // Audit Fix [2.2]
+    void setSynthModel(DSP::MultiStageEnvelope::Model model) noexcept;
+    
+    // Audit Fix [2.3]
+    void setVoiceLimit(int limit) noexcept;
+
     void setSampleRate(double sampleRate) noexcept;
     void setVoiceStealingMode(VoiceStealingMode mode) noexcept { stealingMode = mode; }
     
@@ -128,6 +134,10 @@ private:
     std::array<Voice, MAX_VOICES> voices; // Audit Fix 6.1: Fixed size array for memory stability
     Voice referenceVoice;      // Audit Fix 1.5: Reference voice for stable parameter reading
     DSP::Arpeggiator arpeggiator; // [NEW]
+    
+    // Audit Fix [2.3]: Dynamic Voice Count
+    int maxActiveVoices = MAX_VOICES; 
+    
     VoiceStealingMode stealingMode = RELEASE_PHASE;
     int lastMidiNote = -1;
     
