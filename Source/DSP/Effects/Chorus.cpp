@@ -52,15 +52,17 @@ float Chorus::getInterpolatedSample(const std::vector<float>& buffer, float read
     if (bufferSize <= 0 || buffer.empty()) return 0.0f;
 
     // Linear Interpolation
-    int index1 = static_cast<int>(readIndex);
+    size_t index1 = static_cast<size_t>(readIndex);
     if (index1 >= bufferSize) index1 = bufferSize - 1;
-    if (index1 < 0) index1 = 0;
     
-    int index2 = (index1 + 1) % bufferSize;
+    size_t index2 = (index1 + 1);
+    if (index2 >= bufferSize) index2 = 0; // Wrap
+
     float fraction = readIndex - (float)index1;
     
     // Bounds check for safety
-    if (index1 < 0 || index1 >= (int)buffer.size() || index2 < 0 || index2 >= (int)buffer.size())
+    // Bounds check for safety (size_t is unsigned, so only check upper bound)
+    if (index1 >= buffer.size() || index2 >= buffer.size())
         return 0.0f;
 
     float s1 = buffer[index1];
@@ -122,8 +124,9 @@ void Chorus::process(float* leftChannel, float* rightChannel, int numSamples)
         rightChannel[i] = (rightChannel[i] * (1.0f - mix * 0.5f)) + (wetR * mix);
         
         // Advance write pointer
+        // Advance write pointer
         writeIndex++;
-        if (writeIndex >= bufferSize || writeIndex < 0) writeIndex = 0;
+        if (writeIndex >= bufferSize) writeIndex = 0;
     }
 }
 

@@ -198,14 +198,14 @@ private:
         int getNumRows() override { 
             // Audit Fix: Thread safety against Host access
             if (!pm) return 0;
-            const juce::ScopedLock sl(pm->getLock());
+            const ScopedReadLock sl(pm->getLock());
             return (int)pm->getPresets().size(); 
         }
         
         void paintListBoxItem(int row, juce::Graphics& g, int w, int h, bool selected) override {
             if (!pm) return;
             // Audit Fix: Thread safety
-            const juce::ScopedLock sl(pm->getLock());
+            const ScopedReadLock sl(pm->getLock());
             
             if (row < (int)pm->getPresets().size()) {
                 if (selected) g.fillAll(juce::Colours::cyan.withAlpha(0.3f));
@@ -258,7 +258,7 @@ private:
                     }
                     else if (result == 5) {
                         auto* dw = new juce::AlertWindow("Rename Preset", "Enter new name:", juce::AlertWindow::QuestionIcon);
-                        const juce::ScopedLock sl(pm->getLock());
+                        const ScopedReadLock sl(pm->getLock());
                         dw->addTextEditor("name", pm->getPresets()[row].name);
                         
                         dw->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));

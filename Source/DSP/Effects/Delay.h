@@ -25,8 +25,8 @@ private:
     static constexpr float MAX_DELAY_SECONDS = 2.0f;
     std::vector<float> buffer;
     double sampleRate = 44100.0;
-    int delayInSamples = 22050;
-    int writePos = 0;
+    size_t delayInSamples = 22050;
+    size_t writePos = 0;
     float feedback = 0.5f;
     float mix = 0.3f;
 };

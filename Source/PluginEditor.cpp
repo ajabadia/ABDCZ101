@@ -407,8 +407,17 @@ void CZ101AudioProcessorEditor::filesDropped(const juce::StringArray& f, int, in
 
 juce::StringArray CZ101AudioProcessorEditor::getMenuBarNames() { return { "File", "Edit", "Mode", "View", "Help" }; }
 juce::PopupMenu CZ101AudioProcessorEditor::getMenuForIndex(int, const juce::String& n) {
-    // Audit Fix: Thread Safety
-    juce::ScopedLock lock(audioProcessor.getPresetManager().getLock());
+    // Audit Fix: Thread Safety - Use TryLock to avoid UI hang/Audio priority inversion
+    auto& pm = audioProcessor.getPresetManager();
+    auto& lock = pm.getLock();
+    
+    // Try to acquire read lock for 5ms. If failing, return empty menu (don't block UI)
+    if (!lock.tryEnterRead()) 
+        return {}; 
+        
+    // RAII helper to ensure unlock on return
+    struct ReadUnlocker { juce::ReadWriteLock& l; ~ReadUnlocker() { l.exitRead(); } };
+    ReadUnlocker unlocker { lock };
     
     juce::PopupMenu m;
     if (n == "File") {

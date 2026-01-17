@@ -41,10 +41,14 @@ public:
     void parameterChanged(const juce::String& parameterID, float newValue) override;
 
     // Audit Fix [2.2a]: Modern Mode Color
-    void setModernMode(bool isModern);
+    void setOperationMode(int modeIdx); // 0: 101, 1: 5000, 2: Modern
+    // Deprecated wrapper for compatibility if needed internally
+    void setModernMode(bool isModern) { setOperationMode(isModern ? 2 : 0); }
 
 private:
+    void updateSkin();
     bool modernMode = false;
+    int currentModeIndex = 0; // 0=101, 1=5000, 2=Modern
     LCDStateManager* stateManager = nullptr;
     juce::Label topLineLabel;
     juce::Label bottomLineLabel;

@@ -61,28 +61,36 @@ void LCDDisplay::updateSkin()
     bottomLineLabel.setColour(juce::Label::textColourId, palette.lcdText);
 }
 
-void LCDDisplay::parameterChanged(const juce::String& parameterID, float newValue)
-{
     if (parameterID == "OPERATION_MODE")
     {
         // 0: 101, 1: 5000, 2: Modern
-        // We need to retrieve the actual index carefully, but since listener gives normalized float usually for Choice,
-        // wait, AudioParameterChoice::getValue() returns normalized 0..1.
-        // But parameterChanged (APVTS Listener) returns the value that the parameter has.
-        // For Choice parameter, it's safer to just re-check the parameter safely on message thread
-        
         juce::MessageManager::callAsync([this, newValue]() {
-            // Find 101/5000/Modern
-            setModernMode(newValue > 0.6f);
+            int modeCheck = (int)std::round(newValue * 2.0f); // Map 0..1 to 0, 1, 2
+            // Or better, assume choice parameter logic if ranges differ. 
+            // Standard AudioParamChoice with 3 options: 0.0, 0.5, 1.0 depending on normalization?
+            // Wait, AudioParameterChoice returns 0..1 normalized.
+            // if 3 options: 0/2, 1/2, 2/2 -> 0.0, 0.5, 1.0.
+            
+            // Map:
+            // 0.0 -> Mode 0 (101)
+            // 0.5 -> Mode 1 (5000)
+            // 1.0 -> Mode 2 (Modern)
+            
+            int modeIdx = 0;
+            if (newValue > 0.75f) modeIdx = 2;
+            else if (newValue > 0.25f) modeIdx = 1;
+            else modeIdx = 0;
+
+            setOperationMode(modeIdx);
         });
     }
-}
 
-void LCDDisplay::setModernMode(bool isModern)
+void LCDDisplay::setOperationMode(int modeIdx)
 {
-    if (modernMode != isModern)
+    if (currentModeIndex != modeIdx)
     {
-        modernMode = isModern;
+        currentModeIndex = modeIdx;
+        modernMode = (modeIdx == 2);
         repaint();
     }
 }
@@ -135,12 +143,20 @@ void LCDDisplay::paint(juce::Graphics& g)
     g.drawRoundedRectangle(bounds, DesignTokens::Metrics::cornerRadiusSmall, 1.0f);
 
     // 5. Authentic Mode Indicator (Inverted logic: Show "MODERN" if Modern)
+    // 5. Mode Indicator (Classic 5000 and Modern)
     if (modernMode)
     {
         g.setColour(palette.lcdText.withAlpha(0.6f));
         float scale = getUiScale();
         g.setFont(juce::Font("Courier New", 12.0f * scale, juce::Font::bold));
         g.drawText("MODERN", getLocalBounds().reduced((int)(8 * scale), (int)(4 * scale)), juce::Justification::bottomRight);
+    }
+    else if (currentModeIndex == 1) // CZ-5000
+    {
+        g.setColour(palette.lcdText.withAlpha(0.6f));
+        float scale = getUiScale();
+        g.setFont(juce::Font("Courier New", 12.0f * scale, juce::Font::bold));
+        g.drawText("CZ-5000", getLocalBounds().reduced((int)(8 * scale), (int)(4 * scale)), juce::Justification::bottomRight);
     }
 }
 

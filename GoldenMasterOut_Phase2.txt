@@ -1,0 +1,67 @@
+Starting Golden Master Tests (Verbose mode)...
+Found 64 presets.
+Testing Preset [0/64]: Polyanalogue ... Rendering.... DONE: 4092f01836acbc446a0a78ff7b4a3fc9
+Testing Preset [1/64]: Foog-Like ... Rendering.... DONE: 81d01da7972caeed52bd2641246ca71b
+Testing Preset [2/64]: Sonic Bubbles ... Rendering.... DONE: bed45f08c61bc1b96d26d3a05444d6b7
+Testing Preset [3/64]: CZ Bass ... Rendering.... DONE: 703bd36e1704412a518c4e809e8f49b1
+Testing Preset [4/64]: Vintage Strings ... Rendering.... DONE: a1a9da3a66bb6df4a5cad01d6ee70542
+Testing Preset [5/64]: Synth Brass ... Rendering.... DONE: 4afca3f31a6ba530eb19f6ee1acb6cdf
+Testing Preset [6/64]: Solo Lead ... Rendering.... DONE: 64a71561b8cd61ac23787bd36f71e532
+Testing Preset [7/64]: Digital Bells ... Rendering.... DONE: 6f6896f8f7e76e66b501d4429898caf1
+Testing Preset [8/64]: Init User 5 ... Rendering.... DONE: 22b348553bcbbb315c086713a0f16cfd
+Testing Preset [9/64]: Init User 6 ... Rendering.... DONE: c37b7907ce5bd23dbe30104b434e5e72
+Testing Preset [10/64]: Init User 7 ... Rendering.... DONE: c2993e2021b02e776f50ff26ef4259d9
+Testing Preset [11/64]: Drunk Trumpet ... Rendering.... DONE: 5d9e44b54868d1c47bcc1108e5683478
+Testing Preset [12/64]: Hollow Crystal ... Rendering.... DONE: 8c665e2fce53eae3c38237fddd4903e0
+Testing Preset [13/64]: Init User 10 ... Rendering.... DONE: eb6861e19611a90a7201e4770cf17bd0
+Testing Preset [14/64]: Init User 11 ... Rendering.... DONE: 568be4b031b06fccf38c415265243a6c
+Testing Preset [15/64]: Init User 12 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [16/64]: Laser Puddles (UNSAVED) ... Rendering.... DONE: 6a85b45a2e0efe4345046da4f24ba340
+Testing Preset [17/64]: Init User 14 ... Rendering.... DONE: 8e80464e046df563a41049ad17247d94
+Testing Preset [18/64]: Init User 15 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [19/64]: Init User 16 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [20/64]: Init User 17 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [21/64]: Init User 18 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [22/64]: Init User 19 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [23/64]: Init User 20 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [24/64]: Init User 21 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [25/64]: Init User 22 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [26/64]: Init User 23 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [27/64]: Init User 24 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [28/64]: Init User 25 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [29/64]: Afterxylo (UNSAVED) ... Rendering.... DONE: 064c1a42cebcfaa9b17db3f1048598ed
+Testing Preset [30/64]: Robo Growl (UNSAVED) ... Rendering.... DONE: 8321a50af20ad40a4424a5ddec705a10
+Testing Preset [31/64]: Intense Feeling (UNSAVED) ... Rendering.... DONE: 2e02c6f7be229014daca8c715c5de2ba
+Testing Preset [32/64]: Init User 29 ... Rendering.... DONE: c42f9074c310b70ef4e33124044c43cf
+Testing Preset [33/64]: Init User 30 ... Rendering.... DONE: ef1e80c2fde2ec6cd5f38cf6a1a5d779
+Testing Preset [34/64]: Init User 31 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [35/64]: Init User 32 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [36/64]: Init User 33 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [37/64]: Init User 34 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [38/64]: Init User 35 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [39/64]: Init User 36 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [40/64]: Init User 37 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [41/64]: Init User 38 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [42/64]: Init User 39 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [43/64]: Init User 40 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [44/64]: Init User 41 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [45/64]: Init User 42 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [46/64]: Init User 43 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [47/64]: Init User 44 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [48/64]: Init User 45 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [49/64]: Init User 49 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [50/64]: Init User 46 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [51/64]: Init User 47 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [52/64]: Init User 48 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [53/64]: Init User 50 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [54/64]: Init User 51 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [55/64]: Init User 52 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [56/64]: Init User 53 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [57/64]: Init User 54 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [58/64]: Init User 55 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [59/64]: Init User 56 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [60/64]: Init User 57 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [61/64]: Init User 58 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [62/64]: Init User 59 ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Testing Preset [63/64]: Init User 60- ... Rendering.... DONE: c5b1249309e7a056a99c66ddf763dbae
+Golden Master Tests Finished Successfully.

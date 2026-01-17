@@ -7,10 +7,9 @@
 #include <vector>
 #include <map>
 #include <juce_core/juce_core.h> // Instead of JuceHeader.h
-#include <juce_data_structures/juce_data_structures.h> // For juce::var (if in data_structures) or core
-// juce::var is in core usually, let's verify. Yes, juce_core. 
-// But let's include both safely.
-// Actually juce module headers are guarded.
+// #include <JuceHeader.h> // Fallback if juce_core is not enough
+// Actually, let's include the full header to avoid 'not a member' weirdness
+#include <JuceHeader.h>
 
 namespace CZ101 {
 namespace State {
@@ -73,7 +72,7 @@ public:
     void copyStateFromProcessor(); // Capture current parameters/envelopes
     
     // Thread safety for preset operations
-    juce::CriticalSection& getLock() { return presetLock; }
+    juce::ReadWriteLock& getLock() { return presetLock; }
     
     // Management
     void renamePreset(int index, const std::string& newName);
@@ -109,7 +108,7 @@ private:
     int currentPresetIndex = 0; // Added for tracking
     Parameters* parameters = nullptr;
     Core::VoiceManager* voiceManager = nullptr;
-    juce::CriticalSection presetLock;
+    juce::ReadWriteLock presetLock;
     
     // Compare State
     bool comparing = false;

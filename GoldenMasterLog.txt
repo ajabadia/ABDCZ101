@@ -1,0 +1,42 @@
+
+**********************************************************
+GM Check
+Log started: 16 Jan 2026 12:41:33pm
+
+Starting Golden Master Tests...
+
+**********************************************************
+GM Check
+Log started: 16 Jan 2026 12:43:25pm
+
+Starting Golden Master Tests...
+Logger initialized at: D:\desarrollos\ABDZ101\cz5000_debug.log
+Binding SysEx Callback...
+Setting SysEx Manager...
+CZ101 Processor: Initializing LCD State Manager
+CZ101 Processor: Constructor End
+CZ101Processor: Loading Bank File: C:\Users\ajaba\OneDrive\Documentos\CZ101Emulator\user_bank.json
+Found 64 presets.
+Processing Preset 0...
+  Name: Polyanalogue
+
+**********************************************************
+GM Check
+Log started: 16 Jan 2026 12:44:43pm
+
+Starting Golden Master Tests...
+Logger initialized at: D:\desarrollos\ABDZ101\cz5000_debug.log
+Binding SysEx Callback...
+Setting SysEx Manager...
+CZ101 Processor: Initializing LCD State Manager
+CZ101 Processor: Constructor End
+CZ101Processor: Loading Bank File: C:\Users\ajaba\OneDrive\Documentos\CZ101Emulator\user_bank.json
+Found 64 presets.
+Processing Preset 0...
+  Name: Polyanalogue
+[00] 潐祬湡污杯敵               : 〳ㅦ昹捥㡢〳㍤㑦扢敥〷搱㈸〹㉥㌸촀췍췍췍췍﷍﷽ý
+Processing Preset 1...
+  Name: Foog-Like
+[01] 潆杯䰭歩e                : ㄷ㔹昹㠴㈷攸㉥挴㜵〹搲㔶㑣攳㤶㤷촀췍췍췍췍﷍﷽ý
+Processing Preset 2...
+  Name: Sonic Bubbles

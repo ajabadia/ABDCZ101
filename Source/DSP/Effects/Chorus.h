@@ -32,8 +32,8 @@ private:
     // Delay lines
     std::vector<float> delayBufferL;
     std::vector<float> delayBufferR;
-    int writeIndex = 0;
-    int bufferSize = 0;
+    size_t writeIndex = 0;
+    size_t bufferSize = 0;
     
     // LFO state
     float lfoPhase = 0.0f;

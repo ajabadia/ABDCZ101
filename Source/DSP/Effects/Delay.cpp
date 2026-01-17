@@ -24,9 +24,9 @@ void Delay::setSampleRate(double sr) noexcept
 void Delay::setDelayTime(float seconds) noexcept
 {
     seconds = std::clamp(seconds, 0.001f, MAX_DELAY_SECONDS);
-    delayInSamples = static_cast<int>(seconds * sampleRate);
+    delayInSamples = static_cast<size_t>(seconds * sampleRate);
     // Ensure we don't exceed buffer size
-    delayInSamples = std::min(delayInSamples, (int)buffer.size() - 1);
+    delayInSamples = std::min(delayInSamples, buffer.size() - 1);
 }
 
 void Delay::setFeedback(float amount) noexcept
@@ -47,16 +47,14 @@ void Delay::reset() noexcept
 
 float Delay::processSample(float input) noexcept
 {
-    int size = (int)buffer.size();
+    size_t size = buffer.size();
     if (size == 0) return input; // Safety
 
-    int readPos = writePos - delayInSamples;
-    if (readPos < 0)
-        readPos += size;
+    // Audit Fix 3.2: Safe Circular Read with size_t
+    size_t readPos = (writePos >= delayInSamples) ? (writePos - delayInSamples) : (writePos + size - delayInSamples);
     
-    // Safety clamp (just in case logic fails or delayInSamples > size)
-    while (readPos < 0) readPos += size;
-    readPos = readPos % size;
+    // Validate bounds (though logic above guarantees it if delayInSamples < size)
+    if (readPos >= size) readPos = 0; // Should not happen with above logic
 
     float delayed = buffer[readPos];
     buffer[writePos] = input + delayed * feedback;

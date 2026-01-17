@@ -21,7 +21,7 @@ PresetManager::~PresetManager() = default;
 
 void PresetManager::beginCompare()
 {
-    const juce::ScopedLock sl(presetLock);
+    const juce::ScopedWriteLock sl(presetLock);
     if (comparing) return;
     
     // Save current EDITED state to buffer
@@ -38,7 +38,7 @@ void PresetManager::beginCompare()
 
 void PresetManager::endCompare()
 {
-    const juce::ScopedLock sl(presetLock);
+    const juce::ScopedWriteLock sl(presetLock);
     if (!comparing) return;
     
     // Restore the edited state from buffer
@@ -48,7 +48,7 @@ void PresetManager::endCompare()
 
 void PresetManager::loadPreset(int index, bool updateVoice)
 {
-    const juce::ScopedLock sl(presetLock);
+    const juce::ScopedWriteLock sl(presetLock);
     if (index >= 0 && index < static_cast<int>(presets.size()))
     {
         currentPresetIndex = index; // Correctly track the current index
@@ -71,7 +71,7 @@ void PresetManager::loadPreset(int index, bool updateVoice)
 
 void PresetManager::loadPresetFromStruct(const Preset& p, bool updateVoice)
 {
-    const juce::ScopedLock sl(presetLock);
+    const juce::ScopedWriteLock sl(presetLock);
     // Load the structure directly as the current preset
     currentPreset = p;
 
@@ -623,7 +623,7 @@ void PresetManager::createBellsPreset()
 
 void PresetManager::renamePreset(int index, const std::string& newName)
 {
-    const juce::ScopedLock sl(presetLock);
+    const juce::ScopedWriteLock sl(presetLock);
     if (index >= 0 && index < static_cast<int>(presets.size()))
     {
         presets[index].name = newName;
@@ -992,7 +992,7 @@ void PresetManager::importEnvelopesFromXml(const juce::XmlElement& xml)
 
 int PresetManager::addPreset(const Preset& p)
 {
-    const juce::ScopedLock sl(presetLock);
+    const juce::ScopedWriteLock sl(presetLock);
     presets.push_back(p);
     autoSaveUserBank();
     return (int)presets.size() - 1;
@@ -1000,7 +1000,7 @@ int PresetManager::addPreset(const Preset& p)
 
 void PresetManager::deletePreset(int index)
 {
-    const juce::ScopedLock sl(presetLock);
+    const juce::ScopedWriteLock sl(presetLock);
     if (index >= 0 && index < (int)presets.size())
     {
         presets.erase(presets.begin() + index);
@@ -1021,7 +1021,7 @@ void PresetManager::deletePreset(int index)
 
 void PresetManager::movePreset(int fromIndex, int toIndex)
 {
-    const juce::ScopedLock sl(presetLock);
+    const juce::ScopedWriteLock sl(presetLock);
     int size = (int)presets.size();
     if (fromIndex >= 0 && fromIndex < size && toIndex >= 0 && toIndex < size)
     {

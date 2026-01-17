@@ -190,6 +190,23 @@ private:
     void processEnvelopeUpdates();
     
     void updateParameters();
+    
+    // Audit Fix 4.1: Refactored Update Helpers
+    struct MacroValues {
+        float toneSpeedMult = 1.0f;
+        float brillianceOffset = 0.0f;
+        float spaceMix = 0.0f;
+    };
+    MacroValues calculateMacros();
+    
+    void updateFilters(const MacroValues& macros);
+    void updateOscillators(const MacroValues& macros); // Macro might affect oscs later? Just in case.
+    void updateEnvelopes(const MacroValues& macros);
+    void updateLFO();
+    void updateModMatrix();
+    void updateEffects(const MacroValues& macros);
+    void updateArpeggiator();
+    void updateSystemGlobal(); // Hardware model, protection, etc.
 
     std::unique_ptr<juce::FileLogger> fileLogger;
 

@@ -290,311 +290,17 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 // --- UPDATE PARAMETERS (Centralized Logic) ---
 void CZ101AudioProcessor::updateParameters()
 {
-    // Update Modern Filters
-    if (parameters.getModernLpfCutoff()) modernLpf.setCutoffFrequencyHz(parameters.getModernLpfCutoff()->get());
-    if (parameters.getModernLpfReso()) modernLpf.setResonance(parameters.getModernLpfReso()->get());
-    if (parameters.getModernHpfCutoff()) modernHpf.setCutoffFrequency(parameters.getModernHpfCutoff()->get());
-
-    // Retrieve base values from APVTS
-    int lineSel = parameters.getLineSelect() ? parameters.getLineSelect()->getIndex() : 2; 
-    float l1 = parameters.getOsc1Level()->get();
-    float l2 = parameters.getOsc2Level()->get();
-    int w1_1 = parameters.getOsc1Waveform()->getIndex();
-    int w1_2 = parameters.getOsc1Waveform2() ? (parameters.getOsc1Waveform2()->getIndex() == 0 ? 8 : parameters.getOsc1Waveform2()->getIndex() - 1) : 8;
-    int w2_1 = parameters.getOsc2Waveform()->getIndex();
-    int w2_2 = parameters.getOsc2Waveform2() ? (parameters.getOsc2Waveform2()->getIndex() == 0 ? 8 : parameters.getOsc2Waveform2()->getIndex() - 1) : 8;
-
-    // 1. Line Select Muting Logic
-    if (lineSel == 0) l2 = 0.0f; // Line 1 Only
-    if (lineSel == 1) l1 = 0.0f; // Line 2 Only
-
-    // Audit Fix [2.4]: Tone Mix (Equal Power Crossfade approximation)
-    float mix = parameters.getLineMix() ? parameters.getLineMix()->get() : 0.5f;
-    // Mix 0.0 -> l1 * 1.0, l2 * 0.0
-    // Mix 0.5 -> l1 * 1.0, l2 * 1.0 (Additive, authentic-ish for CZ where 1+2 is both)
-    // Actually, let's do a simple linear balance if they are both on:
-    // If we simply scale, we might lose power.
-    // Let's implement this:
-    // Mix < 0.5: L1 = 1.0, L2 = 2 * Mix
-    // Mix > 0.5: L1 = 2 * (1 - Mix), L2 = 1.0
+    // Audit Fix 4.1: Refactored Monolithic Method into Helpers
+    auto macros = calculateMacros();
     
-    // BUT, we must respect Line Select.
-    // If Line Select is 0 (L1 Only), Mix shouldn't bring in L2.
-    // If Line Select is 1 (L2 Only), Mix shouldn't bring in L1.
-    // So we apply Mix only if Line Select is 2 (1+1') or 3 (1+2).
-    if (lineSel >= 2) 
-    {
-        float mixObserved = mix;
-        // Apply Mix logic
-        if (mixObserved < 0.5f) {
-            // l1 stays full, l2 fades in
-            l2 *= (mixObserved * 2.0f);
-        } else {
-            // l2 stays full, l1 fades out
-            l1 *= ((1.0f - mixObserved) * 2.0f);
-        }
-    }
-
-    // 2. Line Select 1+1' Logic (Copy Line 1 to Line 2)
-    // Audit Fix [C]: Optimized with Cache to avoid constant copying
-    bool lineChanged = (lineSel != paramCache.lineSelect);
-    bool levelsChanged = (l1 != paramCache.osc1Level || l2 != paramCache.osc2Level);
-    bool wavesChanged = (w1_1 != paramCache.w1_1 || w1_2 != paramCache.w1_2 || w2_1 != paramCache.w2_1 || w2_2 != paramCache.w2_2);
-    
-    if (lineSel == 2) { 
-        w2_1 = w1_1;
-        w2_2 = w1_2;
-        l2 = l1; 
-        
-        if (lineChanged || levelsChanged || wavesChanged) // Only copy if something relevant changed
-        {
-            for (int i=0; i<8; ++i) {
-                 float r, lv;
-                 voiceManager.getPitchStage(1, i, r, lv); voiceManager.setPitchStage(2, i, r, lv);
-                 voiceManager.getDCWStage(1, i, r, lv); voiceManager.setDCWStage(2, i, r, lv);
-                 voiceManager.getDCAStage(1, i, r, lv); voiceManager.setDCAStage(2, i, r, lv);
-            }
-            voiceManager.setPitchSustainPoint(2, voiceManager.getPitchSustainPoint(1));
-            voiceManager.setPitchEndPoint(2, voiceManager.getPitchEndPoint(1));
-            voiceManager.setDCWSustainPoint(2, voiceManager.getDCWSustainPoint(1));
-            voiceManager.setDCWEndPoint(2, voiceManager.getDCWEndPoint(1));
-            voiceManager.setDCASustainPoint(2, voiceManager.getDCASustainPoint(1));
-            voiceManager.setDCAEndPoint(2, voiceManager.getDCAEndPoint(1));
-        }
-    }
-
-    // Update Cache
-    paramCache.lineSelect = lineSel;
-    paramCache.osc1Level = l1; paramCache.osc2Level = l2;
-    paramCache.w1_1 = w1_1; paramCache.w1_2 = w1_2;
-    paramCache.w2_1 = w2_1; paramCache.w2_2 = w2_2;
-
-    // 3. Update VoiceManager engine
-    voiceManager.setOsc1Level(l1);
-    voiceManager.setOsc2Level(l2);
-    voiceManager.setOsc1Waveforms(w1_1, w1_2);
-    voiceManager.setOsc2Waveforms(w2_1, w2_2);
-    
-    voiceManager.setOsc2DetuneHardware(
-        parameters.getDetuneOctave() ? parameters.getDetuneOctave()->get() : 0,
-        parameters.getDetuneCoarse() ? parameters.getDetuneCoarse()->get() : 0,
-        parameters.getDetuneFine() ? parameters.getDetuneFine()->get() : 0
-    );
-    
-    if (parameters.getHardSync()) voiceManager.setHardSync(parameters.getHardSync()->get());
-    if (parameters.getRingMod()) voiceManager.setRingMod(parameters.getRingMod()->get());
-    if (parameters.getGlideTime()) voiceManager.setGlideTime(parameters.getGlideTime()->get());
-    if (parameters.getMasterVolume()) voiceManager.setMasterVolume(parameters.getMasterVolume()->get());
-
-    // Audit Fix [2.2a]: Unified Operation Mode
-    // 0: Classic 101, 1: Classic 5000, 2: Modern
-    if (auto* p = parameters.getOperationMode())
-    {
-        int mode = p->getIndex(); // 0=101, 1=5000, 2=Modern
-        
-        // Map UI Mode to Synth Model
-        // 0 -> CZ101  (Limit 4)
-        // 1 -> CZ5000 (Limit 8)
-        // 2 -> CZ5000 (Modern extends 5000 engine, Limit 16)
-        auto synthModel = (mode == 0) ? CZ101::DSP::MultiStageEnvelope::Model::CZ101 
-                                      : CZ101::DSP::MultiStageEnvelope::Model::CZ5000;
-                                      
-        voiceManager.setSynthModel(synthModel);
-        
-        // Audit Fix [2.3]: Explicit Modern Voice Override
-        if (mode == 2) voiceManager.setVoiceLimit(16);
-    }
-
-    // --- MACRO PROCESSOR (Phase 7) ---
-    float macroBrilliance = parameters.getMacroBrilliance() ? parameters.getMacroBrilliance()->get() : 0.5f;
-    float macroTone = parameters.getMacroTone() ? parameters.getMacroTone()->get() : 0.5f;
-    float macroSpace = parameters.getMacroSpace() ? parameters.getMacroSpace()->get() : 0.0f;
-
-    // Tone Modifiers (0.5 = No change)
-    // < 0.5 = Slower (Pad), > 0.5 = Faster (Pluck)
-    float toneSpeedMult = std::pow(2.0f, (macroTone - 0.5f) * 2.0f); 
-    
-    // Brilliance Modifiers
-    // > 0.5 = Brighter (Higher Cutoff/DCW), < 0.5 = Darker
-    float brillianceOffset = (macroBrilliance - 0.5f) * 2000.0f;
-
-    // Space Modifiers (Additive Mix)
-    float spaceMix = macroSpace * 0.5f;
-
-    // 2. Update Modern Filter (with Brilliance)
-    if (parameters.getModernLpfCutoff()) {
-        float baseCutoff = parameters.getModernLpfCutoff()->get();
-        float finalCutoff = juce::jlimit(20.0f, 20000.0f, baseCutoff + brillianceOffset);
-        voiceManager.setFilterCutoff(finalCutoff);
-    }
-    if (parameters.getModernLpfReso()) voiceManager.setFilterResonance(parameters.getModernLpfReso()->get());
-    if (parameters.getModernHpfCutoff()) voiceManager.setHPF(parameters.getModernHpfCutoff()->get());
-
-    // 3. Update Envelopes (with Tone)
-    auto applyTone = [&](float val) { return juce::jlimit(0.0f, 10.0f, val / toneSpeedMult); };
-
-    // Envelope Parameters (These are secondary controls, primary is via applyPreset)
-    if (parameters.getDcwAttack()) voiceManager.setDCWAttack(applyTone(parameters.getDcwAttack()->get()));
-    if (parameters.getDcwDecay()) voiceManager.setDCWDecay(applyTone(parameters.getDcwDecay()->get()));
-    if (parameters.getDcwSustain()) voiceManager.setDCWSustain(parameters.getDcwSustain()->get());
-    if (parameters.getDcwRelease()) voiceManager.setDCARelease(applyTone(parameters.getDcwRelease()->get()));
-
-    if (parameters.getDcaAttack()) voiceManager.setDCAAttack(applyTone(parameters.getDcaAttack()->get()));
-    if (parameters.getDcaDecay()) voiceManager.setDCADecay(applyTone(parameters.getDcaDecay()->get()));
-    if (parameters.getDcaSustain()) voiceManager.setDCASustain(parameters.getDcaSustain()->get());
-    if (parameters.getDcaRelease()) voiceManager.setDCARelease(applyTone(parameters.getDcaRelease()->get()));
-
-    // LFO / Vibrato (Cached)
-    float lRate = parameters.getLfoRate() ? parameters.getLfoRate()->get() : 1.0f;
-    int lWave = parameters.getLfoWaveform() ? parameters.getLfoWaveform()->getIndex() : 0;
-    float lDepth = parameters.getLfoDepth() ? parameters.getLfoDepth()->get() : 0.0f;
-    float lDelay = parameters.getLfoDelay() ? parameters.getLfoDelay()->get() : 0.0f;
-    
-    if (lRate != paramCache.lfoRate) { voiceManager.setLFOFrequency(lRate); paramCache.lfoRate = lRate; }
-    if (lWave != paramCache.lfoWave) { voiceManager.setLFOWaveform(static_cast<CZ101::DSP::LFO::Waveform>(lWave)); paramCache.lfoWave = lWave; }
-    if (lDepth != paramCache.lfoDepth) { voiceManager.setVibratoDepth(lDepth); paramCache.lfoDepth = lDepth; }
-    if (lDelay != paramCache.lfoDelay) { voiceManager.setLFODelay(lDelay); paramCache.lfoDelay = lDelay; }
-
-    // 4. Update Modulation Matrix
-    // 4. Update Modulation Matrix (Cached)
-    float vDcw = parameters.getModVeloToDcw()->get();
-    float vDca = parameters.getModVeloToDca()->get();
-    float wDcw = parameters.getModWheelToDcw()->get();
-    float wLfo = parameters.getModWheelToLfoRate()->get();
-    float wVib = parameters.getModWheelToVibrato()->get();
-    float atDcw = parameters.getModAtToDcw()->get();
-    float atVib = parameters.getModAtToVibrato()->get();
-    float ktDcw = parameters.getKeyTrackDcw()->get();
-    float ktPitch = parameters.getKeyTrackPitch()->get();
-    int kfDcoVal = parameters.getKeyFollowDco()->getIndex();
-    int kfDcwVal = parameters.getKeyFollowDcw()->getIndex();
-    int kfDcaVal = parameters.getKeyFollowDca()->getIndex();
-
-    bool matrixChanged = (vDcw != paramCache.veloToDcw || vDca != paramCache.veloToDca ||
-                          wDcw != paramCache.wheelToDcw || wLfo != paramCache.wheelToLfo || wVib != paramCache.wheelToVib ||
-                          atDcw != paramCache.atToDcw || atVib != paramCache.atToVib ||
-                          ktDcw != paramCache.ktDcw || ktPitch != paramCache.ktPitch ||
-                          kfDcoVal != paramCache.kfDco || kfDcwVal != paramCache.kfDcw || kfDcaVal != paramCache.kfDca);
-                          
-    if (matrixChanged)
-    {
-        CZ101::Core::Voice::ModulationMatrix matrix;
-        matrix.veloToDcw = vDcw;
-        matrix.veloToDca = vDca;
-        matrix.wheelToDcw = wDcw;
-        matrix.wheelToLfoRate = wLfo;
-        matrix.wheelToVibrato = wVib;
-        matrix.atToDcw = atDcw;
-        matrix.atToVibrato = atVib;
-        matrix.keyTrackDcw = ktDcw;
-        matrix.keyTrackPitch = ktPitch;
-        matrix.kfDco = kfDcoVal;
-        matrix.kfDcw = kfDcwVal;
-        matrix.kfDca = kfDcaVal;
-        
-        voiceManager.setModulationMatrix(matrix);
-        
-        // Update Cache
-        paramCache.veloToDcw = vDcw; paramCache.veloToDca = vDca;
-        paramCache.wheelToDcw = wDcw; paramCache.wheelToLfo = wLfo; paramCache.wheelToVib = wVib;
-        paramCache.atToDcw = atDcw; paramCache.atToVib = atVib;
-        paramCache.ktDcw = ktDcw; paramCache.ktPitch = ktPitch;
-        paramCache.kfDco = kfDcoVal; paramCache.kfDcw = kfDcwVal; paramCache.kfDca = kfDcaVal;
-    }
-
-    // 5. Update Effects
-    // 5. Update Effects (Cached) with Macro Space
-    float cRate = parameters.getChorusRate() ? parameters.getChorusRate()->get() : 0.5f;
-    float cDepth = parameters.getChorusDepth() ? parameters.getChorusDepth()->get() : 0.0f;
-    float cMix = parameters.getChorusMix() ? (parameters.getChorusMix()->get() + spaceMix) : spaceMix;
-    cMix = juce::jlimit(0.0f, 1.0f, cMix);
-    
-    if (cRate != paramCache.chorusRate) { chorus.setRate(cRate); paramCache.chorusRate = cRate; }
-    if (cDepth != paramCache.chorusDepth) { chorus.setDepth(cDepth); paramCache.chorusDepth = cDepth; }
-    if (cMix != paramCache.chorusMix) { chorus.setMix(cMix); paramCache.chorusMix = cMix; }
-    
-    float rSize = parameters.getReverbSize() ? parameters.getReverbSize()->get() : 0.5f;
-    float rMix = parameters.getReverbMix() ? (parameters.getReverbMix()->get() + spaceMix) : spaceMix;
-    rMix = juce::jlimit(0.0f, 1.0f, rMix);
-    
-    if (rSize != paramCache.revSize || rMix != paramCache.revMix)
-    {
-        reverbParams.roomSize = rSize;
-        reverbParams.damping = 0.5f;
-        reverbParams.wetLevel = rMix;
-        reverbParams.dryLevel = 1.0f - (rMix * 0.5f);
-        reverbParams.width = 1.0f;
-        reverb.setParameters(reverbParams);
-        
-        paramCache.revSize = rSize;
-        paramCache.revMix = rMix;
-    }
-
-    // 5. Update SysEx Protection State
-    bool isProtected = parameters.getProtectSwitch() ? parameters.getProtectSwitch()->get() : true;
-    bool isPrgEnabled = parameters.getSystemPrg() ? parameters.getSystemPrg()->get() : false;
-    sysExManager.setProtectionState(isProtected, isPrgEnabled);
-    
-    // 6. Arpeggiator
-    auto& arp = voiceManager.getArpeggiator();
-    if (auto* p = parameters.getArpEnabled()) arp.setEnabled(p->get());
-    if (auto* p = parameters.getArpLatch()) arp.setLatch(p->get());
-    if (auto* p = parameters.getArpRate()) arp.setRate(static_cast<CZ101::DSP::Arpeggiator::Rate>(p->getIndex()));
-    if (auto* p = parameters.getArpPattern()) arp.setPattern(static_cast<CZ101::DSP::Arpeggiator::Pattern>(p->getIndex()));
-    if (auto* p = parameters.getArpOctave()) arp.setOctaveRange(p->get());
-    if (auto* p = parameters.getArpGate()) arp.setGateTime(p->get());
-    if (auto* p = parameters.getArpSwing()) arp.setSwing(p->get());
-
-    // Tempo Sync Logic
-    double currentBpm = 120.0;
-    if (auto* ph = getPlayHead())
-    {
-        if (auto pos = ph->getPosition()) {
-             if (pos->getBpm()) currentBpm = *pos->getBpm();
-        }
-    }
-    // Fallback or Manual Override if Host not playing? 
-    // Usually plugins sync to host if available. If 0 or invalid, use internal.
-    // For standalone, getPlayHead might return null or default.
-    if (currentBpm <= 0.0) currentBpm = 120.0;
-    
-    // If we have an internal BPM parameter, we can use it if we are standalone or if user prefers.
-    // For now, let's use internal parameter if host doesn't provide valid BPM or if we want to support manual override.
-    // Ideally: If host is playing, use host. If not, use internal.
-    // Or: Always use internal if Standalone?
-    // Let's use internal `ARP_BPM` parameter as the default, and override with Host BPM if meaningful.
-    
-    float internalBpm = parameters.getArpBpm() ? parameters.getArpBpm()->get() : 120.0f;
-    
-    // Simple logic: If in a DAW (Host BPM != 0 and maybe "playing"), use Host. 
-    // Just using Host BPM if > 0 is standard.
-    // However, for Standalone, Host BPM might be fixed or 0.
-    
-    // Better Logic for Standalone App usage vs Plugin:
-    if (juce::JUCEApplication::isStandaloneApp()) {
-        currentBpm = internalBpm;
-    } else {
-        if (currentBpm <= 0.01) currentBpm = internalBpm;
-    }
-    
-    arp.setTempo(currentBpm);
-    
-    // Audit Fix: Update Delay Params
-    if (parameters.getDelayTime()) { 
-        float dt = parameters.getDelayTime()->get();
-        delayL.setDelayTime(dt); delayR.setDelayTime(dt); 
-    }
-    if (parameters.getDelayFeedback()) { float fb = parameters.getDelayFeedback()->get(); delayL.setFeedback(fb); delayR.setFeedback(fb); }
-    if (parameters.getDelayMix()) { float mix = parameters.getDelayMix()->get(); delayL.setMix(mix); delayR.setMix(mix); }
-
-    // Audit Fix 3.1: Latency Reporting
-    // Max latency is determined by Chorus (modulation) or Delay (if mix=1, but standard delay is echo).
-    // User requested explicit summing: setLatencySamples(chorus + delay).
-    int chorusDelaySamples = (parameters.getChorusMix() && parameters.getChorusMix()->get() > 0.0f) ? (int)(0.025 * getSampleRate()) : 0;
-    int delaySamples = (parameters.getDelayMix() && parameters.getDelayMix()->get() > 0.0f) ? (int)(parameters.getDelayTime()->get() * getSampleRate()) : 0;
-    
-    int latency = chorusDelaySamples + (delaySamples > 0 ? 1 : 0); // Minimal reported if active
-    if (getLatencySamples() != latency) setLatencySamples(latency);
+    updateFilters(macros);
+    updateOscillators(macros);
+    updateEnvelopes(macros);
+    updateLFO();
+    updateModMatrix();
+    updateEffects(macros);
+    updateSystemGlobal();
+    updateArpeggiator();
 }
 
 // Audit Fix 2.1: Implement setNonRealtime to recalculate smoothing
@@ -784,4 +490,273 @@ void CZ101AudioProcessor::handleAsyncUpdate()
             presetManager.loadPresetFromStruct(*p, false);
         }
     }
+}
+
+// --- REFACTORED UPDATERS (Audit Fix 4.1) ---
+CZ101AudioProcessor::MacroValues CZ101AudioProcessor::calculateMacros()
+{
+    MacroValues m;
+    float macroBrilliance = parameters.getMacroBrilliance() ? parameters.getMacroBrilliance()->get() : 0.5f;
+    float macroTone = parameters.getMacroTone() ? parameters.getMacroTone()->get() : 0.5f;
+    float macroSpace = parameters.getMacroSpace() ? parameters.getMacroSpace()->get() : 0.0f;
+
+    // Tone Modifiers (0.5 = No change, < 0.5 = Slower, > 0.5 = Faster)
+    m.toneSpeedMult = std::pow(2.0f, (macroTone - 0.5f) * 2.0f); 
+    // Brilliance Modifiers (> 0.5 = Brighter, < 0.5 = Darker)
+    m.brillianceOffset = (macroBrilliance - 0.5f) * 2000.0f;
+    // Space Modifiers (Additive Mix)
+    m.spaceMix = macroSpace * 0.5f;
+    
+    return m;
+}
+
+void CZ101AudioProcessor::updateFilters(const MacroValues& m)
+{
+    if (parameters.getModernLpfCutoff()) {
+        float baseCutoff = parameters.getModernLpfCutoff()->get();
+        // Modern LPF (Output) uses base value
+        modernLpf.setCutoffFrequencyHz(baseCutoff); 
+        
+        // Voice Filters use Macro Brilliance
+        float finalCutoff = juce::jlimit(20.0f, 20000.0f, baseCutoff + m.brillianceOffset);
+        voiceManager.setFilterCutoff(finalCutoff);
+    }
+    if (parameters.getModernLpfReso()) {
+        float res = parameters.getModernLpfReso()->get();
+        voiceManager.setFilterResonance(res);
+        modernLpf.setResonance(res);
+    }
+    if (parameters.getModernHpfCutoff()) {
+        float hpf = parameters.getModernHpfCutoff()->get();
+        voiceManager.setHPF(hpf);
+        modernHpf.setCutoffFrequency(hpf);
+    }
+}
+
+void CZ101AudioProcessor::updateOscillators(const MacroValues& m)
+{
+    int lineSel = parameters.getLineSelect() ? parameters.getLineSelect()->getIndex() : 2; 
+    float l1 = parameters.getOsc1Level()->get();
+    float l2 = parameters.getOsc2Level()->get();
+    int w1_1 = parameters.getOsc1Waveform()->getIndex();
+    int w1_2 = parameters.getOsc1Waveform2() ? (parameters.getOsc1Waveform2()->getIndex() == 0 ? 8 : parameters.getOsc1Waveform2()->getIndex() - 1) : 8;
+    int w2_1 = parameters.getOsc2Waveform()->getIndex();
+    int w2_2 = parameters.getOsc2Waveform2() ? (parameters.getOsc2Waveform2()->getIndex() == 0 ? 8 : parameters.getOsc2Waveform2()->getIndex() - 1) : 8;
+
+    // 1. Line Select Muting Logic
+    if (lineSel == 0) l2 = 0.0f; // Line 1 Only
+    if (lineSel == 1) l1 = 0.0f; // Line 2 Only
+
+    // Tone Mix Logic
+    float mix = parameters.getLineMix() ? parameters.getLineMix()->get() : 0.5f;
+    if (lineSel >= 2) 
+    {
+        if (mix < 0.5f) {
+            l2 *= (mix * 2.0f);
+        } else {
+            l1 *= ((1.0f - mix) * 2.0f);
+        }
+    }
+
+    // 2. Line Select 1+1' Logic (Copy Line 1 to Line 2)
+    bool lineChanged = (lineSel != paramCache.lineSelect);
+    bool levelsChanged = (l1 != paramCache.osc1Level || l2 != paramCache.osc2Level);
+    bool wavesChanged = (w1_1 != paramCache.w1_1 || w1_2 != paramCache.w1_2 || w2_1 != paramCache.w2_1 || w2_2 != paramCache.w2_2);
+    
+    if (lineSel == 2 && (lineChanged || levelsChanged || wavesChanged)) 
+    { 
+        w2_1 = w1_1; w2_2 = w1_2; l2 = l1; 
+        for (int i=0; i<8; ++i) {
+                float r, lv;
+                voiceManager.getPitchStage(1, i, r, lv); voiceManager.setPitchStage(2, i, r, lv);
+                voiceManager.getDCWStage(1, i, r, lv); voiceManager.setDCWStage(2, i, r, lv);
+                voiceManager.getDCAStage(1, i, r, lv); voiceManager.setDCAStage(2, i, r, lv);
+        }
+        voiceManager.setPitchSustainPoint(2, voiceManager.getPitchSustainPoint(1));
+        voiceManager.setPitchEndPoint(2, voiceManager.getPitchEndPoint(1));
+        voiceManager.setDCWSustainPoint(2, voiceManager.getDCWSustainPoint(1));
+        voiceManager.setDCWEndPoint(2, voiceManager.getDCWEndPoint(1));
+        voiceManager.setDCASustainPoint(2, voiceManager.getDCASustainPoint(1));
+        voiceManager.setDCAEndPoint(2, voiceManager.getDCAEndPoint(1));
+    }
+
+    // Update Cache
+    paramCache.lineSelect = lineSel;
+    paramCache.osc1Level = l1; paramCache.osc2Level = l2;
+    paramCache.w1_1 = w1_1; paramCache.w1_2 = w1_2;
+    paramCache.w2_1 = w2_1; paramCache.w2_2 = w2_2;
+
+    // 3. Update VoiceManager engine
+    voiceManager.setOsc1Level(l1);
+    voiceManager.setOsc2Level(l2);
+    voiceManager.setOsc1Waveforms(w1_1, w1_2);
+    voiceManager.setOsc2Waveforms(w2_1, w2_2);
+    
+    voiceManager.setOsc2DetuneHardware(
+        parameters.getDetuneOctave() ? parameters.getDetuneOctave()->get() : 0,
+        parameters.getDetuneCoarse() ? parameters.getDetuneCoarse()->get() : 0,
+        parameters.getDetuneFine() ? parameters.getDetuneFine()->get() : 0
+    );
+    
+    if (parameters.getHardSync()) voiceManager.setHardSync(parameters.getHardSync()->get());
+    if (parameters.getRingMod()) voiceManager.setRingMod(parameters.getRingMod()->get());
+    if (parameters.getGlideTime()) voiceManager.setGlideTime(parameters.getGlideTime()->get());
+    if (parameters.getMasterVolume()) voiceManager.setMasterVolume(parameters.getMasterVolume()->get());
+}
+
+void CZ101AudioProcessor::updateEnvelopes(const MacroValues& m)
+{
+    auto applyTone = [&](float val) { return juce::jlimit(0.0f, 10.0f, val / m.toneSpeedMult); };
+
+    if (parameters.getDcwAttack()) voiceManager.setDCWAttack(applyTone(parameters.getDcwAttack()->get()));
+    if (parameters.getDcwDecay()) voiceManager.setDCWDecay(applyTone(parameters.getDcwDecay()->get()));
+    if (parameters.getDcwSustain()) voiceManager.setDCWSustain(parameters.getDcwSustain()->get());
+    if (parameters.getDcwRelease()) voiceManager.setDCARelease(applyTone(parameters.getDcwRelease()->get()));
+
+    if (parameters.getDcaAttack()) voiceManager.setDCAAttack(applyTone(parameters.getDcaAttack()->get()));
+    if (parameters.getDcaDecay()) voiceManager.setDCADecay(applyTone(parameters.getDcaDecay()->get()));
+    if (parameters.getDcaSustain()) voiceManager.setDCASustain(parameters.getDcaSustain()->get());
+    if (parameters.getDcaRelease()) voiceManager.setDCARelease(applyTone(parameters.getDcaRelease()->get()));
+}
+
+void CZ101AudioProcessor::updateLFO()
+{
+    float lRate = parameters.getLfoRate() ? parameters.getLfoRate()->get() : 1.0f;
+    int lWave = parameters.getLfoWaveform() ? parameters.getLfoWaveform()->getIndex() : 0;
+    float lDepth = parameters.getLfoDepth() ? parameters.getLfoDepth()->get() : 0.0f;
+    float lDelay = parameters.getLfoDelay() ? parameters.getLfoDelay()->get() : 0.0f;
+    
+    if (lRate != paramCache.lfoRate) { voiceManager.setLFOFrequency(lRate); paramCache.lfoRate = lRate; }
+    if (lWave != paramCache.lfoWave) { voiceManager.setLFOWaveform(static_cast<CZ101::DSP::LFO::Waveform>(lWave)); paramCache.lfoWave = lWave; }
+    if (lDepth != paramCache.lfoDepth) { voiceManager.setVibratoDepth(lDepth); paramCache.lfoDepth = lDepth; }
+    if (lDelay != paramCache.lfoDelay) { voiceManager.setLFODelay(lDelay); paramCache.lfoDelay = lDelay; }
+}
+
+void CZ101AudioProcessor::updateModMatrix()
+{
+    float vDcw = parameters.getModVeloToDcw()->get();
+    float vDca = parameters.getModVeloToDca()->get();
+    float wDcw = parameters.getModWheelToDcw()->get();
+    float wLfo = parameters.getModWheelToLfoRate()->get();
+    float wVib = parameters.getModWheelToVibrato()->get();
+    float atDcw = parameters.getModAtToDcw()->get();
+    float atVib = parameters.getModAtToVibrato()->get();
+    float ktDcw = parameters.getKeyTrackDcw()->get();
+    float ktPitch = parameters.getKeyTrackPitch()->get();
+    int kfDcoVal = parameters.getKeyFollowDco()->getIndex();
+    int kfDcwVal = parameters.getKeyFollowDcw()->getIndex();
+    int kfDcaVal = parameters.getKeyFollowDca()->getIndex();
+
+    bool matrixChanged = (vDcw != paramCache.veloToDcw || vDca != paramCache.veloToDca ||
+                          wDcw != paramCache.wheelToDcw || wLfo != paramCache.wheelToLfo || wVib != paramCache.wheelToVib ||
+                          atDcw != paramCache.atToDcw || atVib != paramCache.atToVib ||
+                          ktDcw != paramCache.ktDcw || ktPitch != paramCache.ktPitch ||
+                          kfDcoVal != paramCache.kfDco || kfDcwVal != paramCache.kfDcw || kfDcaVal != paramCache.kfDca);
+                          
+    if (matrixChanged)
+    {
+        CZ101::Core::Voice::ModulationMatrix matrix;
+        matrix.veloToDcw = vDcw; matrix.veloToDca = vDca;
+        matrix.wheelToDcw = wDcw; matrix.wheelToLfoRate = wLfo; matrix.wheelToVibrato = wVib;
+        matrix.atToDcw = atDcw; matrix.atToVibrato = atVib;
+        matrix.keyTrackDcw = ktDcw; matrix.keyTrackPitch = ktPitch;
+        matrix.kfDco = kfDcoVal; matrix.kfDcw = kfDcwVal; matrix.kfDca = kfDcaVal;
+        
+        voiceManager.setModulationMatrix(matrix);
+        
+        paramCache.veloToDcw = vDcw; paramCache.veloToDca = vDca;
+        paramCache.wheelToDcw = wDcw; paramCache.wheelToLfo = wLfo; paramCache.wheelToVib = wVib;
+        paramCache.atToDcw = atDcw; paramCache.atToVib = atVib;
+        paramCache.ktDcw = ktDcw; paramCache.ktPitch = ktPitch;
+        paramCache.kfDco = kfDcoVal; paramCache.kfDcw = kfDcwVal; paramCache.kfDca = kfDcaVal;
+    }
+}
+
+void CZ101AudioProcessor::updateEffects(const MacroValues& m)
+{
+    float cRate = parameters.getChorusRate() ? parameters.getChorusRate()->get() : 0.5f;
+    float cDepth = parameters.getChorusDepth() ? parameters.getChorusDepth()->get() : 0.0f;
+    float cMix = parameters.getChorusMix() ? (parameters.getChorusMix()->get() + m.spaceMix) : m.spaceMix;
+    cMix = juce::jlimit(0.0f, 1.0f, cMix);
+    
+    if (cRate != paramCache.chorusRate) { chorus.setRate(cRate); paramCache.chorusRate = cRate; }
+    if (cDepth != paramCache.chorusDepth) { chorus.setDepth(cDepth); paramCache.chorusDepth = cDepth; }
+    if (cMix != paramCache.chorusMix) { chorus.setMix(cMix); paramCache.chorusMix = cMix; }
+    
+    float rSize = parameters.getReverbSize() ? parameters.getReverbSize()->get() : 0.5f;
+    float rMix = parameters.getReverbMix() ? (parameters.getReverbMix()->get() + m.spaceMix) : m.spaceMix;
+    rMix = juce::jlimit(0.0f, 1.0f, rMix);
+    
+    if (rSize != paramCache.revSize || rMix != paramCache.revMix)
+    {
+        reverbParams.roomSize = rSize;
+        reverbParams.damping = 0.5f;
+        reverbParams.wetLevel = rMix;
+        reverbParams.dryLevel = 1.0f - (rMix * 0.5f);
+        reverbParams.width = 1.0f;
+        reverb.setParameters(reverbParams);
+        
+        paramCache.revSize = rSize; paramCache.revMix = rMix;
+    }
+
+    if (parameters.getDelayTime()) { 
+        float dt = parameters.getDelayTime()->get();
+        delayL.setDelayTime(dt); delayR.setDelayTime(dt); 
+    }
+    if (parameters.getDelayFeedback()) { float fb = parameters.getDelayFeedback()->get(); delayL.setFeedback(fb); delayR.setFeedback(fb); }
+    if (parameters.getDelayMix()) { float mix = parameters.getDelayMix()->get(); delayL.setMix(mix); delayR.setMix(mix); }
+    
+    int chorusDelaySamples = (cMix > 0.0f) ? (int)(0.025 * getSampleRate()) : 0;
+    int delaySamples = (parameters.getDelayMix() && parameters.getDelayMix()->get() > 0.0f) ? (int)(parameters.getDelayTime()->get() * getSampleRate()) : 0;
+    int latency = chorusDelaySamples + (delaySamples > 0 ? 1 : 0);
+    if (getLatencySamples() != latency) setLatencySamples(latency);
+}
+
+void CZ101AudioProcessor::updateSystemGlobal()
+{
+    // SysEx
+    bool isProtected = parameters.getProtectSwitch() ? parameters.getProtectSwitch()->get() : true;
+    bool isPrgEnabled = parameters.getSystemPrg() ? parameters.getSystemPrg()->get() : false;
+    sysExManager.setProtectionState(isProtected, isPrgEnabled);
+    
+    // Operation Mode & Voice Limit
+    if (auto* p = parameters.getOperationMode())
+    {
+        int mode = p->getIndex(); 
+        auto synthModel = (mode == 0) ? CZ101::DSP::MultiStageEnvelope::Model::CZ101 
+                                      : CZ101::DSP::MultiStageEnvelope::Model::CZ5000;
+        voiceManager.setSynthModel(synthModel);
+        
+        // Audit Fix: Explicit Voice Limit Logic
+        if (mode == 2) voiceManager.setVoiceLimit(16);
+        else voiceManager.setVoiceLimit(mode==0 ? 4 : 8); 
+    }
+}
+
+void CZ101AudioProcessor::updateArpeggiator()
+{
+    auto& arp = voiceManager.getArpeggiator();
+    if (auto* p = parameters.getArpEnabled()) arp.setEnabled(p->get());
+    if (auto* p = parameters.getArpLatch()) arp.setLatch(p->get());
+    if (auto* p = parameters.getArpRate()) arp.setRate(static_cast<CZ101::DSP::Arpeggiator::Rate>(p->getIndex()));
+    if (auto* p = parameters.getArpPattern()) arp.setPattern(static_cast<CZ101::DSP::Arpeggiator::Pattern>(p->getIndex()));
+    if (auto* p = parameters.getArpOctave()) arp.setOctaveRange(p->get());
+    
+    // Phase 5 Preparation: Gate/Swing
+    if (auto* p = parameters.getArpGate()) arp.setGateTime(p->get());
+    if (auto* p = parameters.getArpSwing()) arp.setSwing(p->get());
+
+    // Tempo Sync Logic
+    double currentBpm = 120.0;
+    if (auto* ph = getPlayHead()) {
+        if (auto pos = ph->getPosition()) 
+             if (pos->getBpm()) currentBpm = *pos->getBpm();
+    }
+    
+    float internalBpm = parameters.getArpBpm() ? parameters.getArpBpm()->get() : 120.0f;
+    if (juce::JUCEApplication::isStandaloneApp() || currentBpm <= 0.01) {
+        currentBpm = internalBpm;
+    }
+    arp.setTempo(currentBpm);
+    arp.setTempo(currentBpm);
 }
