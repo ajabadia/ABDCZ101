@@ -181,6 +181,7 @@ private:
     juce::AudioParameterFloat*  arpBpm = nullptr;
     juce::AudioParameterFloat*  arpGate = nullptr;
     juce::AudioParameterFloat*  arpSwing = nullptr;
+    juce::AudioParameterChoice* arpSwingMode = nullptr;
     juce::AudioParameterChoice* arpPattern = nullptr;
     juce::AudioParameterInt*   arpOctave = nullptr;
 
@@ -197,6 +198,7 @@ public:
     juce::AudioParameterFloat* getArpBpm() const { return arpBpm; }
     juce::AudioParameterFloat* getArpGate() const { return arpGate; }
     juce::AudioParameterFloat* getArpSwing() const { return arpSwing; }
+    juce::AudioParameterChoice* getArpSwingMode() const { return arpSwingMode; }
     juce::AudioParameterChoice* getArpPattern() const { return arpPattern; }
     juce::AudioParameterInt*   getArpOctave() const { return arpOctave; }
 

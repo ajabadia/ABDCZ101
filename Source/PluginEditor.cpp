@@ -189,11 +189,8 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
         presetBrowser.updatePresetList();
     };
 
-    // Modern Mode Only Visibility
-    // Modern Mode Only Visibility (Index 2 = Modern)
-    int opMode = audioProcessor.getParameters().getOperationMode() ? audioProcessor.getParameters().getOperationMode()->getIndex() : 0;
-    bool isModern = (opMode == 2);
-    randomButton.setVisible(isModern);
+    // Random button is always helpful
+    randomButton.setVisible(true);
     
     // Audit Fix [2.2a]: Unified Mode Listener
     audioProcessor.getParameters().getAPVTS().addParameterListener("OPERATION_MODE", &lcdDisplay);
@@ -210,7 +207,7 @@ CZ101AudioProcessorEditor::~CZ101AudioProcessorEditor()
     stopTimer();
     tooltipWindow.setVisible(false); // Audit Fix: Hide tooltip on destruction to prevent race
     audioProcessor.getParameters().getAPVTS().removeParameterListener("OPERATION_MODE", &lcdDisplay);
-    audioProcessor.getParameters().getAPVTS().removeParameterListener("AUTHENTIC_MODE", this);
+    audioProcessor.getParameters().getAPVTS().removeParameterListener("OPERATION_MODE", this);
     bankManagerOverlay.listBox.setModel(nullptr); // Audit Fix: Prevent use-after-free
     CZ101::UI::SkinManager::getInstance().removeChangeListener(this);
     keyboardState.removeListener(this);
@@ -230,12 +227,11 @@ void CZ101AudioProcessorEditor::paint(juce::Graphics& g)
 
 void CZ101AudioProcessorEditor::parameterChanged(const juce::String& parameterID, float newValue)
 {
-    if (parameterID == "AUTHENTIC_MODE")
+    if (parameterID == "OPERATION_MODE")
     {
-        bool isAuthentic = (newValue > 0.5f);
-        juce::MessageManager::callAsync([this, isAuthentic]() {
-            randomButton.setVisible(true); // Always visible
-            panicButton.setVisible(true); // Always visible
+        // Operation mode changed, we might want to update some visibility in the future
+        // but for now we keep RANDOM/PANIC always visible as requested.
+        juce::MessageManager::callAsync([this]() {
             resized();
         });
     }
@@ -452,11 +448,28 @@ juce::PopupMenu CZ101AudioProcessorEditor::getMenuForIndex(int, const juce::Stri
              m.addSeparator();
              m.addItem(206, "Audio Settings...");
         }
+
+        m.addSeparator();
+        juce::PopupMenu midiMenu;
+        int currentCh = 1;
+        if (auto* p = audioProcessor.getParameters().getMidiChannel()) currentCh = p->get();
+        for (int i = 1; i <= 16; ++i)
+            midiMenu.addItem(210 + i, juce::String(i), true, i == currentCh);
+        m.addSubMenu("MIDI Channel", midiMenu);
     } else if (n == "Mode") {
         int opMode = audioProcessor.getParameters().getOperationMode() ? audioProcessor.getParameters().getOperationMode()->getIndex() : 0;
         m.addItem(400, "Classic 101 (Hardware Strict)", true, opMode == 0);
         m.addItem(402, "Classic 5000 (Extended Polyphony)", true, opMode == 1);
         m.addItem(401, "Modern (Enhanced Features)", true, opMode == 2);
+        
+        m.addSeparator();
+        juce::PopupMenu oversamplingMenu;
+        int currentQ = 0;
+        if (auto* p = audioProcessor.getParameters().getOversamplingQuality()) currentQ = p->getIndex();
+        oversamplingMenu.addItem(410, "1x (Eco)", true, currentQ == 0);
+        oversamplingMenu.addItem(411, "2x (High)", true, currentQ == 1);
+        oversamplingMenu.addItem(412, "4x (Ultra)", true, currentQ == 2);
+        oversamplingMenu.addSubMenu("Oversampling", oversamplingMenu);
     } else if (n == "View") {
         m.addItem(300, "Zoom 100%"); m.addItem(301, "Zoom 125%"); m.addItem(302, "Zoom 150%");
         m.addSeparator();
@@ -517,7 +530,18 @@ void CZ101AudioProcessorEditor::menuItemSelected(int id, int) {
         case 400: if (auto* p = audioProcessor.getParameters().getOperationMode()) *p = 0; break; // Classic 101
         case 402: if (auto* p = audioProcessor.getParameters().getOperationMode()) *p = 1; break; // Classic 5000
         case 401: if (auto* p = audioProcessor.getParameters().getOperationMode()) *p = 2; break; // Modern
+        
+        case 410: if (auto* p = audioProcessor.getParameters().getOversamplingQuality()) *p = 0; break;
+        case 411: if (auto* p = audioProcessor.getParameters().getOversamplingQuality()) *p = 1; break;
+        case 412: if (auto* p = audioProcessor.getParameters().getOversamplingQuality()) *p = 2; break;
+
         case 901: aboutDialog.setVisible(true); aboutDialog.toFront(true); break;
+        default:
+            if (id > 210 && id <= 226) {
+                if (auto* p = audioProcessor.getParameters().getMidiChannel())
+                    *p = id - 210;
+            }
+            break;
     }
 }
 

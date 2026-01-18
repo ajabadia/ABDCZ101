@@ -9,12 +9,28 @@ ArpeggiatorPanel::ArpeggiatorPanel(CZ101AudioProcessor& p)
       arpRateKnob("Arp Rate"),
       arpBpmKnob("Tempo"),
       arpGateKnob("Gate"),
-      arpSwingKnob("Swing"),
-      arpPatternKnob("Arp Pattern"),
+      arpSwingKnob("Amount"),
+      arpPatternKnob("Pattern"),
+      arpOctaveKnob("Octaves"),
       arpLatchButton("LATCH"),
       arpEnableButton("ARP ON")
 {
     auto& params = audioProcessor.getParameters();
+
+    auto setupLabel = [this](juce::Label& l, const juce::String& text) {
+        addAndMakeVisible(l);
+        l.setText(text, juce::dontSendNotification);
+        l.setJustificationType(juce::Justification::centred);
+        l.setFont(getScaledFont(11.0f).boldened());
+    };
+
+    setupLabel(rateLabel, "RATE");
+    setupLabel(tempoLabel, "TEMPO");
+    setupLabel(patternLabel, "PATTERN");
+    setupLabel(octLabel, "OCTAVES");
+    setupLabel(gateLabel, "GATE");
+    setupLabel(swingLabel, "SWING");
+    setupLabel(typeLabel, "MODE");
 
     addAndMakeVisible(arpEnableButton);
     arpEnableButton.setClickingTogglesState(true);
@@ -46,16 +62,27 @@ ArpeggiatorPanel::ArpeggiatorPanel(CZ101AudioProcessor& p)
         arpGateKnob.getSlider().getProperties().set("paramId", params.getArpGate()->paramID);
     }
 
-    addAndMakeVisible(arpSwingKnob);
     if (params.getArpSwing()) {
         arpSwingAttachment = std::make_unique<SliderAttachment>(*params.getArpSwing(), arpSwingKnob.getSlider());
         arpSwingKnob.getSlider().getProperties().set("paramId", params.getArpSwing()->paramID);
+    }
+
+    addAndMakeVisible(arpSwingModeCombo);
+    arpSwingModeCombo.addItemList(params.getArpSwingMode()->choices, 1);
+    if (params.getArpSwingMode()) {
+        arpSwingModeAttachment = std::make_unique<ComboAttachment>(*params.getArpSwingMode(), arpSwingModeCombo);
     }
 
     addAndMakeVisible(arpPatternKnob);
     if (params.getArpPattern()) {
         arpPatternAttachment = std::make_unique<SliderAttachment>(*params.getArpPattern(), arpPatternKnob.getSlider());
         arpPatternKnob.getSlider().getProperties().set("paramId", params.getArpPattern()->paramID);
+    }
+
+    addAndMakeVisible(arpOctaveKnob);
+    if (params.getArpOctave()) {
+        arpOctaveAttachment = std::make_unique<SliderAttachment>(*params.getArpOctave(), arpOctaveKnob.getSlider());
+        arpOctaveKnob.getSlider().getProperties().set("paramId", params.getArpOctave()->paramID);
     }
 }
 
@@ -66,29 +93,72 @@ void ArpeggiatorPanel::paint(juce::Graphics& g)
 
 void ArpeggiatorPanel::resized()
 {
-    auto area = getLocalBounds();
+    auto area = getLocalBounds().reduced(10);
     float scale = getUiScale();
     
-    juce::FlexBox fb;
-    fb.flexDirection = juce::FlexBox::Direction::row;
-    fb.justifyContent = juce::FlexBox::JustifyContent::center;
-    fb.alignItems = juce::FlexBox::AlignItems::center;
-
-    const float kw = 85.0f * scale;
-    const float kh = 100.0f * scale;
+    const float kw = 80.0f * scale;
+    const float kh = 90.0f * scale;
     const float bW = 60.0f * scale;
-    const float bH = 30.0f * scale;
-    const float margin = 5.0f * scale;
+    const float bH = 26.0f * scale;
+    const float margin = 4.0f * scale;
 
-    fb.items.add(juce::FlexItem(arpEnableButton).withWidth(bW).withHeight(bH).withMargin(margin));
-    fb.items.add(juce::FlexItem(arpLatchButton).withWidth(bW).withHeight(bH).withMargin(margin));
-    fb.items.add(juce::FlexItem(arpRateKnob).withFlex(1).withMinWidth(kw * 0.8f).withMinHeight(kh * 0.8f).withMargin(margin));
-    fb.items.add(juce::FlexItem(arpBpmKnob).withFlex(1).withMinWidth(kw * 0.8f).withMinHeight(kh * 0.8f).withMargin(margin));
-    fb.items.add(juce::FlexItem(arpGateKnob).withFlex(1).withMinWidth(kw * 0.8f).withMinHeight(kh * 0.8f).withMargin(margin));
-    fb.items.add(juce::FlexItem(arpSwingKnob).withFlex(1).withMinWidth(kw * 0.8f).withMinHeight(kh * 0.8f).withMargin(margin));
-    fb.items.add(juce::FlexItem(arpPatternKnob).withFlex(1).withMinWidth(kw * 0.8f).withMinHeight(kh * 0.8f).withMargin(margin));
+    auto createKnobGroup = [&](Knob& k, juce::Label& l) {
+        juce::FlexBox group;
+        group.flexDirection = juce::FlexBox::Direction::column;
+        group.justifyContent = juce::FlexBox::JustifyContent::center;
+        group.alignItems = juce::FlexBox::AlignItems::center;
+        
+        group.items.add(juce::FlexItem(l).withHeight(15 * scale).withWidth(kw));
+        group.items.add(juce::FlexItem(k).withWidth(kw).withHeight(kh - 15 * scale));
+        return group;
+    };
 
-    fb.performLayout(area);
+    // Row 1: Timing & Sequence
+    juce::FlexBox row1;
+    row1.flexDirection = juce::FlexBox::Direction::row;
+    row1.justifyContent = juce::FlexBox::JustifyContent::spaceAround;
+    row1.alignItems = juce::FlexBox::AlignItems::center;
+
+    // Sub-group for buttons
+    juce::FlexBox btnFb;
+    btnFb.flexDirection = juce::FlexBox::Direction::column;
+    btnFb.justifyContent = juce::FlexBox::JustifyContent::center;
+    btnFb.items.add(juce::FlexItem(arpEnableButton).withWidth(bW).withHeight(bH).withMargin(margin));
+    btnFb.items.add(juce::FlexItem(arpLatchButton).withWidth(bW).withHeight(bH).withMargin(margin));
+    
+    row1.items.add(juce::FlexItem(btnFb).withWidth(bW + margin*2));
+    row1.items.add(juce::FlexItem(createKnobGroup(arpRateKnob, rateLabel)).withFlex(1));
+    row1.items.add(juce::FlexItem(createKnobGroup(arpBpmKnob, tempoLabel)).withFlex(1));
+    row1.items.add(juce::FlexItem(createKnobGroup(arpPatternKnob, patternLabel)).withFlex(1));
+
+    // Row 2: Range & Feel
+    juce::FlexBox row2;
+    row2.flexDirection = juce::FlexBox::Direction::row;
+    row2.justifyContent = juce::FlexBox::JustifyContent::spaceAround;
+    row2.alignItems = juce::FlexBox::AlignItems::center;
+
+    row2.items.add(juce::FlexItem(createKnobGroup(arpOctaveKnob, octLabel)).withFlex(1));
+    row2.items.add(juce::FlexItem(createKnobGroup(arpGateKnob, gateLabel)).withFlex(1));
+    
+    // Swing Combo Special Group
+    juce::FlexBox swingFb;
+    swingFb.flexDirection = juce::FlexBox::Direction::column;
+    swingFb.justifyContent = juce::FlexBox::JustifyContent::center;
+    swingFb.alignItems = juce::FlexBox::AlignItems::center;
+    swingFb.items.add(juce::FlexItem(swingLabel).withHeight(14 * scale).withWidth(kw));
+    swingFb.items.add(juce::FlexItem(arpSwingKnob).withWidth(kw).withHeight(kh - 36 * scale));
+    swingFb.items.add(juce::FlexItem(typeLabel).withHeight(10 * scale).withWidth(kw));
+    swingFb.items.add(juce::FlexItem(arpSwingModeCombo).withWidth(kw - 10*scale).withHeight(18 * scale));
+    
+    row2.items.add(juce::FlexItem(swingFb).withFlex(1.2f));
+
+    // Main Layout
+    juce::FlexBox mainFb;
+    mainFb.flexDirection = juce::FlexBox::Direction::column;
+    mainFb.items.add(juce::FlexItem(row1).withFlex(1));
+    mainFb.items.add(juce::FlexItem(row2).withFlex(1));
+
+    mainFb.performLayout(area);
 }
 
 } // namespace UI

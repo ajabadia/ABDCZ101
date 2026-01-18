@@ -20,6 +20,7 @@ public:
     void processMidiBuffer(const juce::MidiBuffer& midiBuffer) noexcept;
     
     void setPitchBendRange(int semitones) noexcept { pitchBendRange = semitones; }
+    void setMidiChannel(int channel) noexcept { listenChannel = channel; }
     
     // Activity Tracking
     bool hasRecentActivity() const noexcept { return activityFlag; }
@@ -31,6 +32,7 @@ private:
     
     SysExManager* sysExManager = nullptr;
     int pitchBendRange = 2;  // ±2 semitones
+    int listenChannel = 0;   // 0 = OMNI, 1-16 = Single Channel
     float currentPitchBend = 0.0f;
     bool activityFlag = false;
     

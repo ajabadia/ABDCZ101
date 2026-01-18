@@ -24,15 +24,30 @@ private:
     Knob arpGateKnob;
     Knob arpSwingKnob;
     Knob arpPatternKnob;
+    Knob arpOctaveKnob;
+    juce::ComboBox arpSwingModeCombo { "Swing Mode" };
     juce::TextButton arpLatchButton { "LATCH" };
     juce::TextButton arpEnableButton { "ARP ON" };
+    
+    juce::Label rateLabel { {}, "RATE" };
+    juce::Label tempoLabel { {}, "TEMPO" };
+    juce::Label patternLabel { {}, "PATTERN" };
+    juce::Label octLabel { {}, "OCTAVES" };
+    juce::Label gateLabel { {}, "GATE" };
+    juce::Label swingLabel { {}, "SWING" };
+    juce::Label typeLabel { {}, "MODE" };
 
     using SliderAttachment = juce::SliderParameterAttachment;
     std::unique_ptr<SliderAttachment> arpRateAttachment;
     std::unique_ptr<SliderAttachment> arpBpmAttachment;
     std::unique_ptr<SliderAttachment> arpGateAttachment;
     std::unique_ptr<SliderAttachment> arpSwingAttachment;
+    
+    using ComboAttachment = juce::ComboBoxParameterAttachment;
+    std::unique_ptr<ComboAttachment> arpSwingModeAttachment;
+    
     std::unique_ptr<SliderAttachment> arpPatternAttachment;
+    std::unique_ptr<SliderAttachment> arpOctaveAttachment;
     
     using ButtonAttachment = juce::ButtonParameterAttachment;
     std::unique_ptr<ButtonAttachment> arpEnableAttachment;

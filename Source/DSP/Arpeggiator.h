@@ -14,6 +14,7 @@ class Arpeggiator
 public:
     enum class Pattern { Up, Down, UpDown, Random, AsPlayed };
     enum class Rate { _1_4, _1_8, _1_16, _1_32 };
+    enum class SwingMode { Off, _1_8, _1_16 };
 
     Arpeggiator() {}
 
@@ -28,6 +29,7 @@ public:
     void setLatch(bool shouldLatch) noexcept { latch = shouldLatch; }
     void setGateTime(float g) noexcept { gateTime = std::clamp(g, 0.05f, 1.0f); }
     void setSwing(float s) noexcept { swingAmount = std::clamp(s, 0.0f, 1.0f); }
+    void setSwingMode(SwingMode m) noexcept { currentSwingMode = m; }
 
     // Incoming Event Processing (Audio Thread)
     void noteOn(int note, float velocity)
@@ -72,17 +74,66 @@ public:
         float samplesPerBeat = (60.0f / currentBpm) * sampleRate;
         float samplesPerStep = samplesPerBeat * getRateMultiplier();
         
-        // Swing Logic
-        // If swing > 0, odd steps (0, 2...) are longer, even steps shorter? 
-        // Or usually Step 0 (On beat) is long, Step 1 (Off beat) is delayed.
-        // Let's standard shuffle: Even steps (downbeats) are lengthened by swing%
-        // Odd steps are shortened. Standard 16th swing:
-        // Even 1/16th: duration = step * (1 + swing)
-        // Odd 1/16th: duration = step * (1 - swing)
-        // Swing 0.33 = Triplet feel
-        
-        bool isEvenStep = (currentStep % 2 == 0);
-        float swingFactor = isEvenStep ? (1.0f + swingAmount * 0.5f) : (1.0f - swingAmount * 0.5f);
+        // Professional Swing Logic
+        float swingFactor = 1.0f;
+        if (currentSwingMode != SwingMode::Off)
+        {
+            // Determine if this is an "off-beat" step for the selected swing mode
+            bool isSwingStep = false;
+            
+            // For 1/8 swing: steps are relative to quarter notes.
+            // For 1/16 swing: steps are relative to quarter notes.
+            // Rate determines the step size.
+            // Professional swing usually delays the even subdivisions.
+            
+            // We need to know where we are in the beat.
+            // currentStep is the index in the activeNotes buffer, not necessarily the timing position.
+            // Let's use a timing counter. 
+            
+            // SIMPLIFIED PROFESSIONAL SWING:
+            // If currentSwingMode is 1/16, we delay every even 1/16th note.
+            // If currentSwingMode is 1/8, we delay every even 1/8th note.
+            
+            // We calculate the position in PPQ (4.0 = one whole note).
+            // But we use sample counting here. Let's track absolute step count.
+            
+            int timingStep = absoluteStepCount;
+            
+            if (currentSwingMode == SwingMode::_1_8)
+            {
+                // In 1/8 swing, we care about 1/8th notes (2 per beat).
+                // If our Rate is 1/16th, one timingStep is 1/16th.
+                // Step 0: Downbeat (Straight)
+                // Step 1: Off-beat 1/16th
+                // Step 2: 1/8th note off-beat (SWING)
+                // Step 3: 1/16th note off-beat
+                
+                // Better: Map timingStep to the grid defined by currentRate.
+                float multiplier = getRateMultiplier(); // 1/4=1, 1/8=0.5, 1/16=0.25
+                double stepInQuarters = timingStep * multiplier;
+                
+                // A step is "swingable" if it's an even 1/8th (0.5, 1.5, 2.5...)
+                // or an even 1/16th (0.25, 0.75, 1.25...)
+                
+                if (currentSwingMode == SwingMode::_1_8) {
+                    // Swing on 0.5, 1.5, 2.5...
+                    double remainder = fmod(stepInQuarters, 1.0);
+                    if (std::abs(remainder - 0.5) < 0.01) isSwingStep = true;
+                } else if (currentSwingMode == SwingMode::_1_16) {
+                    // Swing on 0.25, 0.75, 1.25, 1.75...
+                    double remainder = fmod(stepInQuarters, 0.5);
+                    if (std::abs(remainder - 0.25) < 0.01) isSwingStep = true;
+                }
+            }
+            
+            if (isSwingStep) swingFactor = 1.0f + (swingAmount * 0.66f); // Max 66% delay (triplet feel)
+            else {
+                 // If the PREVIOUS step was swung, this one must be shorter to compensate
+                 // but in sample counting 'trigger' mode, we just check if it's time to trigger.
+                 // Correct way: Even steps are DELAYED.
+            }
+        }
+
         float currentStepDuration = samplesPerStep * swingFactor;
 
         // Gate Logic (Note Off)
@@ -136,10 +187,12 @@ private:
     float phase = 0.0f; // Sample counter for timing
     float gateTime = 0.5f; // 0..1
     float swingAmount = 0.0f; // 0..1 (0.5 = normal swing)
+    SwingMode currentSwingMode = SwingMode::Off;
     
     std::set<int> heldNotes; // Raw physical keys held
     std::vector<int> activeNotes; // Expanded buffer (sorted/rng + octaves)
     int currentStep = 0;
+    int absoluteStepCount = 0;
     int currentPlayingNote = -1; // Currently sounding note (to send noteOff)
     int stepsSinceNoteOn = 0;
     
@@ -164,13 +217,17 @@ private:
         heldNotes.clear();
         activeNotes.clear();
         currentPlayingNote = -1;
+        absoluteStepCount = 0;
     }
 
     void rebuildActiveBuffer()
     {
         // Don't clear immediately if using "Add" mode, but for simple ARP:
         activeNotes.clear();
-        if (heldNotes.empty()) return;
+        if (heldNotes.empty()) {
+            absoluteStepCount = 0;
+            return;
+        }
 
         std::vector<int> baseNotes(heldNotes.begin(), heldNotes.end()); // Already sorted (set)
         
@@ -253,6 +310,7 @@ private:
             noteIndex = currentStep;
         }
 
+        absoluteStepCount++;
         int note = activeNotes[noteIndex];
         // Find original velocity (modulo octave)
         int originalNote = note % 12 + (note / 12 - (note/12)) * 12; // Crude...

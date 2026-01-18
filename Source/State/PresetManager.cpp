@@ -51,66 +51,69 @@ void PresetManager::endCompare()
 
 void PresetManager::loadPreset(int index, bool updateVoice)
 {
-    // Capture index for notification outside lock
     int notifyIndex = -1;
-    
+    Preset pToLoad;
     {
         const juce::ScopedWriteLock sl(presetLock);
         if (index >= 0 && index < static_cast<int>(presets.size()))
         {
             currentPresetIndex = index;
             currentPreset = presets[index];
-            applyPresetToProcessor();
-            
-            if (updateVoice && voiceManager)
-            {
-                applyEnvelopeToVoice(currentPreset.pitchEnv, 0, 1);
-                applyEnvelopeToVoice(currentPreset.dcwEnv, 1, 1);
-                applyEnvelopeToVoice(currentPreset.dcaEnv, 2, 1);
-                
-                applyEnvelopeToVoice(currentPreset.pitchEnv2, 0, 2);
-                applyEnvelopeToVoice(currentPreset.dcwEnv2, 1, 2);
-                applyEnvelopeToVoice(currentPreset.dcaEnv2, 2, 2);
-            }
-            
+            pToLoad = currentPreset;
             notifyIndex = index;
         }
-    } // Lock released here
-    
-    // Notify listeners OUTSIDE the lock to prevent deadlock
+    } 
+
     if (notifyIndex >= 0)
     {
+        applyPresetToProcessor(pToLoad);
+        
+        if (updateVoice && voiceManager)
+        {
+            applyEnvelopeToVoice(pToLoad.pitchEnv, 0, 1);
+            applyEnvelopeToVoice(pToLoad.dcwEnv, 1, 1);
+            applyEnvelopeToVoice(pToLoad.dcaEnv, 2, 1);
+            
+            applyEnvelopeToVoice(pToLoad.pitchEnv2, 0, 2);
+            applyEnvelopeToVoice(pToLoad.dcwEnv2, 1, 2);
+            applyEnvelopeToVoice(pToLoad.dcaEnv2, 2, 2);
+        }
+
+        // Notify listeners OUTSIDE the lock
         listeners.call([notifyIndex](Listener& l) { l.presetLoaded(notifyIndex); });
     }
-}
+} 
 
 void PresetManager::loadPresetFromStruct(const Preset& p, bool updateVoice)
 {
-    const juce::ScopedWriteLock sl(presetLock);
-    // Load the structure directly as the current preset
-    currentPreset = p;
-
-    // Apply to parameters and voice manager immediately
-    applyPresetToProcessor();
+    {
+        const juce::ScopedWriteLock sl(presetLock);
+        currentPreset = p;
+    }
+    
+    applyPresetToProcessor(p);
     
     if (updateVoice && voiceManager)
     {
-        applyEnvelopeToVoice(currentPreset.pitchEnv, 0, 1);
-        applyEnvelopeToVoice(currentPreset.dcwEnv, 1, 1);
-        applyEnvelopeToVoice(currentPreset.dcaEnv, 2, 1);
+        applyEnvelopeToVoice(p.pitchEnv, 0, 1);
+        applyEnvelopeToVoice(p.dcwEnv, 1, 1);
+        applyEnvelopeToVoice(p.dcaEnv, 2, 1);
         
-        applyEnvelopeToVoice(currentPreset.pitchEnv2, 0, 2);
-        applyEnvelopeToVoice(currentPreset.dcwEnv2, 1, 2);
-        applyEnvelopeToVoice(currentPreset.dcaEnv2, 2, 2);
+        applyEnvelopeToVoice(p.pitchEnv2, 0, 2);
+        applyEnvelopeToVoice(p.dcwEnv2, 1, 2);
+        applyEnvelopeToVoice(p.dcaEnv2, 2, 2);
     }
 }
 
-void PresetManager::applyPresetToProcessor()
+void PresetManager::applyPresetToProcessor(const Preset& p)
 {
     if (parameters)
     {
-        for (const auto& [paramId, value] : currentPreset.parameters)
+        for (const auto& pair : p.parameters)
         {
+            const auto& paramId = pair.first;
+            const auto& value = pair.second;
+            
             if (auto* param = parameters->getParameter(paramId))
             {
                 float normalized = param->convertTo0to1(value);
@@ -219,17 +222,17 @@ void PresetManager::copyStateFromProcessor()
 
 void PresetManager::savePreset(int index, const std::string& name)
 {
-    if (index >= 0 && index < static_cast<int>(presets.size()))
     {
-        // 1. Update the internal vector with the current state (which should have been captured before calling this found needs)
-        // Actually, let's ensure we capture it here to be safe, OR assume caller did copyStateFromProcessor.
-        // Better: caller (Editor) calls copyStateFromProcessor first.
-        
-        presets[index] = currentPreset;
-        presets[index].name = name;
-        
-        autoSaveUserBank();
+        const juce::ScopedWriteLock sl(presetLock);
+        if (index >= 0 && index < static_cast<int>(presets.size()))
+        {
+            presets[index] = currentPreset;
+            presets[index].name = name;
+        }
     }
+    
+    autoSaveUserBank();
+    listeners.call(&Listener::bankUpdated);
 }
 
 // Helper to init default envelopes
@@ -669,6 +672,7 @@ void PresetManager::autoSaveUserBank()
 
 void PresetManager::saveBank(const juce::File& file)
 {
+    const juce::ScopedReadLock sl(presetLock);
     juce::Array<juce::var> bankArray;
     
     for (const auto& preset : presets) {
@@ -928,7 +932,7 @@ void PresetManager::resetToFactory()
     {
         currentPresetIndex = 0;
         currentPreset = presets[0];
-        applyPresetToProcessor();
+        applyPresetToProcessor(currentPreset);
     }
 }
 
@@ -1003,7 +1007,7 @@ void PresetManager::importEnvelopesFromXml(const juce::XmlElement& xml)
     }
     
     // Apply immediately
-    applyPresetToProcessor(); // APVTS
+    applyPresetToProcessor(currentPreset); // APVTS
     loadPresetFromStruct(currentPreset); // Full refresh
 }
 
@@ -1014,11 +1018,10 @@ int PresetManager::addPreset(const Preset& p)
     {
         const juce::ScopedWriteLock sl(presetLock);
         presets.push_back(p);
-        autoSaveUserBank();
         newIndex = (int)presets.size() - 1;
-    } // Lock released
+    } 
     
-    // Notify outside lock
+    autoSaveUserBank();
     listeners.call(&Listener::bankUpdated);
     return newIndex;
 }
@@ -1042,36 +1045,47 @@ void PresetManager::deletePreset(int index)
             if (currentPresetIndex >= (int)presets.size())
                 currentPresetIndex = (int)presets.size() - 1;
                 
-            autoSaveUserBank();
             shouldNotify = true;
         }
-    } // Lock released
+    } 
     
-    // Notify outside lock
     if (shouldNotify)
+    {
+        autoSaveUserBank();
         listeners.call(&Listener::bankUpdated);
+    }
 }
 
 void PresetManager::movePreset(int fromIndex, int toIndex)
 {
-    const juce::ScopedWriteLock sl(presetLock);
-    int size = (int)presets.size();
-    if (fromIndex >= 0 && fromIndex < size && toIndex >= 0 && toIndex < size)
+    bool changed = false;
     {
-        if (fromIndex == toIndex) return;
-        
-        auto p = presets[fromIndex];
-        presets.erase(presets.begin() + fromIndex);
-        presets.insert(presets.begin() + toIndex, p);
-        
-        if (currentPresetIndex == fromIndex)
-            currentPresetIndex = toIndex;
-        else if (fromIndex < currentPresetIndex && toIndex >= currentPresetIndex)
-            currentPresetIndex--;
-        else if (fromIndex > currentPresetIndex && toIndex <= currentPresetIndex)
-            currentPresetIndex++;
-            
+        const juce::ScopedWriteLock sl(presetLock);
+        int size = (int)presets.size();
+        if (fromIndex >= 0 && fromIndex < size && toIndex >= 0 && toIndex < size)
+        {
+            if (fromIndex != toIndex)
+            {
+                auto p = presets[fromIndex];
+                presets.erase(presets.begin() + fromIndex);
+                presets.insert(presets.begin() + toIndex, p);
+                
+                if (currentPresetIndex == fromIndex)
+                    currentPresetIndex = toIndex;
+                else if (fromIndex < currentPresetIndex && toIndex >= currentPresetIndex)
+                    currentPresetIndex--;
+                else if (fromIndex > currentPresetIndex && toIndex <= currentPresetIndex)
+                    currentPresetIndex++;
+                    
+                changed = true;
+            }
+        }
+    }
+
+    if (changed)
+    {
         autoSaveUserBank();
+        listeners.call(&Listener::bankUpdated);
     }
 }
 

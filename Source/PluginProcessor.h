@@ -185,6 +185,12 @@ private:
         float delayTime = -1.0f, delayFb = -1.0f, delayMix = -1.0f;
         float revSize = -1.0f, revMix = -1.0f;
         
+        // System
+        int oversamplingFactor = -1;
+        int opMode = -1;
+        int voiceLimit = -1;
+        int midiChannel = -1;
+        
     } paramCache;
 
     void processEnvelopeUpdates();

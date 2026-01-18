@@ -35,6 +35,9 @@ int MIDIProcessor::getCCForParam(const std::string& paramId) const
 
 void MIDIProcessor::processMidiMessage(const juce::MidiMessage& message) noexcept
 {
+    if (listenChannel > 0 && message.getChannel() != listenChannel)
+        return;
+    
     activityFlag = true;
     
     if (message.isNoteOn())

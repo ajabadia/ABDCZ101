@@ -133,7 +133,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
         group->addChild(std::make_unique<juce::AudioParameterChoice>("ARP_RATE", "Rate", juce::StringArray{"1/4", "1/8", "1/16", "1/32"}, 2)); 
         group->addChild(std::make_unique<juce::AudioParameterFloat>("ARP_BPM", "Internal Tempo", 40.0f, 240.0f, 120.0f));
         group->addChild(std::make_unique<juce::AudioParameterFloat>("ARP_GATE", "Gate Time", 0.0f, 1.0f, 0.5f)); // 0 = Staccato, 1 = Legato
-        group->addChild(std::make_unique<juce::AudioParameterFloat>("ARP_SWING", "Swing", 0.0f, 1.0f, 0.0f)); // 0 = Straight, 1.0 = Heavy Swing
+        group->addChild(std::make_unique<juce::AudioParameterFloat>("ARP_SWING", "Swing Amount", 0.0f, 1.0f, 0.0f)); 
+        group->addChild(std::make_unique<juce::AudioParameterChoice>("ARP_SWING_MODE", "Swing Mode", juce::StringArray{"Off", "1/8", "1/16"}, 2));
         group->addChild(std::make_unique<juce::AudioParameterChoice>("ARP_PATTERN", "Pattern", juce::StringArray{"Up", "Down", "Up/Down", "Random", "As Played"}, 0));
         group->addChild(std::make_unique<juce::AudioParameterInt>("ARP_OCTAVE", "Octave Range", 1, 4, 1));
         layout.add(std::move(group));
@@ -240,6 +241,7 @@ Parameters::Parameters(juce::AudioProcessor& processor, juce::UndoManager* undoM
     arpBpm     = dynamic_cast<juce::AudioParameterFloat*>(apvts->getParameter("ARP_BPM"));
     arpGate    = dynamic_cast<juce::AudioParameterFloat*>(apvts->getParameter("ARP_GATE"));
     arpSwing   = dynamic_cast<juce::AudioParameterFloat*>(apvts->getParameter("ARP_SWING"));
+    arpSwingMode = dynamic_cast<juce::AudioParameterChoice*>(apvts->getParameter("ARP_SWING_MODE"));
     arpPattern = dynamic_cast<juce::AudioParameterChoice*>(apvts->getParameter("ARP_PATTERN"));
     arpOctave  = dynamic_cast<juce::AudioParameterInt*>(apvts->getParameter("ARP_OCTAVE"));
 

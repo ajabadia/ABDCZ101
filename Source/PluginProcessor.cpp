@@ -592,11 +592,13 @@ void CZ101AudioProcessor::updateOscillators(const MacroValues& m)
     voiceManager.setOsc1Waveforms(w1_1, w1_2);
     voiceManager.setOsc2Waveforms(w2_1, w2_2);
     
-    voiceManager.setOsc2DetuneHardware(
-        parameters.getDetuneOctave() ? parameters.getDetuneOctave()->get() : 0,
-        parameters.getDetuneCoarse() ? parameters.getDetuneCoarse()->get() : 0,
-        parameters.getDetuneFine() ? parameters.getDetuneFine()->get() : 0
-    );
+    int detO = parameters.getDetuneOctave() ? parameters.getDetuneOctave()->get() : 0;
+    int detC = parameters.getDetuneCoarse() ? parameters.getDetuneCoarse()->get() : 0;
+    int detF = parameters.getDetuneFine() ? parameters.getDetuneFine()->get() : 0;
+    
+    // We reuse unused cache slots or add new ones? 
+    // Wait, let's just use the logic directly. Detune is only 3 ints.
+    voiceManager.setOsc2DetuneHardware(detO, detC, detF);
     
     if (parameters.getHardSync()) voiceManager.setHardSync(parameters.getHardSync()->get());
     if (parameters.getRingMod()) voiceManager.setRingMod(parameters.getRingMod()->get());
@@ -723,13 +725,20 @@ void CZ101AudioProcessor::updateSystemGlobal()
     if (auto* p = parameters.getOperationMode())
     {
         int mode = p->getIndex(); 
-        auto synthModel = (mode == 0) ? CZ101::DSP::MultiStageEnvelope::Model::CZ101 
-                                      : CZ101::DSP::MultiStageEnvelope::Model::CZ5000;
-        voiceManager.setSynthModel(synthModel);
+        if (mode != paramCache.opMode)
+        {
+            auto synthModel = (mode == 0) ? CZ101::DSP::MultiStageEnvelope::Model::CZ101 
+                                          : CZ101::DSP::MultiStageEnvelope::Model::CZ5000;
+            voiceManager.setSynthModel(synthModel);
+            paramCache.opMode = mode;
+        }
         
-        // Audit Fix: Explicit Voice Limit Logic
-        if (mode == 2) voiceManager.setVoiceLimit(16);
-        else voiceManager.setVoiceLimit(mode==0 ? 4 : 8); 
+        int limit = (mode == 2) ? 16 : (mode == 0 ? 4 : 8);
+        if (limit != paramCache.voiceLimit)
+        {
+            voiceManager.setVoiceLimit(limit);
+            paramCache.voiceLimit = limit;
+        }
     }
     
     // Phase 5.1: Oversampling Quality
@@ -737,7 +746,22 @@ void CZ101AudioProcessor::updateSystemGlobal()
     {
         int qualityIndex = p->getIndex(); // 0=1x, 1=2x, 2=4x
         int factor = (qualityIndex == 0) ? 1 : (qualityIndex == 1) ? 2 : 4;
-        voiceManager.setOversamplingFactor(factor);
+        if (factor != paramCache.oversamplingFactor)
+        {
+            voiceManager.setOversamplingFactor(factor);
+            paramCache.oversamplingFactor = factor;
+        }
+    }
+
+    // MIDI Channel
+    if (auto* p = parameters.getMidiChannel())
+    {
+        int ch = p->get();
+        if (ch != paramCache.midiChannel)
+        {
+            midiProcessor.setMidiChannel(ch);
+            paramCache.midiChannel = ch;
+        }
     }
 }
 
@@ -753,6 +777,7 @@ void CZ101AudioProcessor::updateArpeggiator()
     // Phase 5 Preparation: Gate/Swing
     if (auto* p = parameters.getArpGate()) arp.setGateTime(p->get());
     if (auto* p = parameters.getArpSwing()) arp.setSwing(p->get());
+    if (auto* p = parameters.getArpSwingMode()) arp.setSwingMode(static_cast<CZ101::DSP::Arpeggiator::SwingMode>(p->getIndex()));
 
     // Tempo Sync Logic
     double currentBpm = 120.0;
