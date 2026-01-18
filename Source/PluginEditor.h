@@ -27,7 +27,8 @@ class CZ101AudioProcessorEditor : public juce::AudioProcessorEditor,
                                    public juce::FileDragAndDropTarget,
                                    public juce::MenuBarModel,
                                    public juce::ChangeListener,
-                                   public juce::AudioProcessorValueTreeState::Listener
+                                   public juce::AudioProcessorValueTreeState::Listener,
+                                   public CZ101::State::PresetManager::Listener
 {
 public:
     CZ101AudioProcessorEditor(CZ101AudioProcessor&);
@@ -52,6 +53,11 @@ public:
 
     // APVTS Listener Override
     void parameterChanged(const juce::String& parameterID, float newValue) override;
+
+    // Preset Listener Override
+    void presetLoaded(int index) override;
+    void bankUpdated() override;
+    void presetRenamed(int index, const std::string& newName) override;
 
 private:
     // --- Métodos de Lógica y Eventos ---

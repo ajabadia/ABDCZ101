@@ -61,6 +61,8 @@ void LCDDisplay::updateSkin()
     bottomLineLabel.setColour(juce::Label::textColourId, palette.lcdText);
 }
 
+void LCDDisplay::parameterChanged(const juce::String& parameterID, float newValue)
+{
     if (parameterID == "OPERATION_MODE")
     {
         // 0: 101, 1: 5000, 2: Modern
@@ -84,6 +86,7 @@ void LCDDisplay::updateSkin()
             setOperationMode(modeIdx);
         });
     }
+}
 
 void LCDDisplay::setOperationMode(int modeIdx)
 {

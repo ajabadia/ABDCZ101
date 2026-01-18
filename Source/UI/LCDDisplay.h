@@ -46,7 +46,6 @@ public:
     void setModernMode(bool isModern) { setOperationMode(isModern ? 2 : 0); }
 
 private:
-    void updateSkin();
     bool modernMode = false;
     int currentModeIndex = 0; // 0=101, 1=5000, 2=Modern
     LCDStateManager* stateManager = nullptr;

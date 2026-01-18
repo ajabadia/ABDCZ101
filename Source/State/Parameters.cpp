@@ -119,6 +119,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
         group->addChild(std::make_unique<juce::AudioParameterInt>("PITCH_BEND_RANGE", "Pitch Bend Range", 0, 12, 2));
         group->addChild(std::make_unique<juce::AudioParameterInt>("KEY_TRANSPOSE", "Key Transpose", -12, 12, 0));
         
+        // Phase 5.1: Oversampling Quality
+        group->addChild(std::make_unique<juce::AudioParameterChoice>("OVERSAMPLING_QUALITY", "Oversampling", juce::StringArray{"1x (Eco)", "2x (High)", "4x (Ultra)"}, 0));
+        
         layout.add(std::move(group));
     }
 
@@ -226,6 +229,9 @@ Parameters::Parameters(juce::AudioProcessor& processor, juce::UndoManager* undoM
     pitchBendRange   = dynamic_cast<juce::AudioParameterInt*>(apvts->getParameter("PITCH_BEND_RANGE"));
     pitchBendRange   = dynamic_cast<juce::AudioParameterInt*>(apvts->getParameter("PITCH_BEND_RANGE"));
     keyTranspose     = dynamic_cast<juce::AudioParameterInt*>(apvts->getParameter("KEY_TRANSPOSE"));
+    
+    // Phase 5.1: Oversampling
+    oversamplingQuality = dynamic_cast<juce::AudioParameterChoice*>(apvts->getParameter("OVERSAMPLING_QUALITY"));
 
     // Arpeggiator
     arpEnabled = dynamic_cast<juce::AudioParameterBool*>(apvts->getParameter("ARP_ENABLED"));

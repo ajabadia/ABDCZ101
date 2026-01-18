@@ -102,6 +102,9 @@ public:
         int kfDca = 0;
     };
     void setModulationMatrix(const ModulationMatrix& m) noexcept;
+    
+    // Phase 5.1: Oversampling
+    void setOversamplingFactor(int factor) noexcept { oversamplingFactor = juce::jlimit(1, 4, factor); }
 
     // --- Pitch Envelope Controls ---
     
@@ -151,6 +154,7 @@ public:
     bool isActive() const noexcept { return dcaEnvelope1.isActive() || dcaEnvelope2.isActive(); }
     bool isReleasing() const noexcept { return dcaEnvelope1.isReleased() || dcaEnvelope2.isReleased(); }
     int getCurrentNote() const noexcept { return currentNote; }
+    int64_t getLastNoteOnTime() const noexcept { return lastNoteOnTime; }
     
 private:
     // Oscillators
@@ -213,6 +217,8 @@ private:
     ModulationMatrix matrix;
 
     void setMasterBend(float semitones) noexcept { pitchBendFactor = std::exp2(semitones / 12.0f); }
+
+    int64_t lastNoteOnTime = 0; // [NEW] For Voice Stealing
     
     // Rendering Helpers (Refactoring Phase 8)
     void processControlRate() noexcept;
@@ -230,6 +236,9 @@ private:
 
 private:
     juce::LinearSmoothedValue<float> masterVolume { 1.0f };
+    
+    // Phase 5.1: Oversampling
+    int oversamplingFactor = 1; // 1x, 2x, or 4x
 
 private:
     // ===== ADSR STATE (NEW) =====

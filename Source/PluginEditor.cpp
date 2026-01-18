@@ -67,8 +67,12 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
     // 1. Core Modules
     menuBar = std::make_unique<juce::MenuBarComponent>(this);
     addAndMakeVisible(menuBar.get());
+    addAndMakeVisible(menuBar.get());
     juce::Logger::writeToLog("CZ101 Editor: Connecting SkinManager");
     CZ101::UI::SkinManager::getInstance().addChangeListener(this);
+    
+    // Register as Preset Listener
+    audioProcessor.getPresetManager().addListener(this);
 
     // 2. Containers & Tabs
     pitchEditorL1.setLine(1); pitchEditorL2.setLine(2);
@@ -343,10 +347,7 @@ void CZ101AudioProcessorEditor::loadSysExFile()
                 lcd.setParameterFeedbackSuppressed(true);
 
                 audioProcessor.getSysExManager().handleSysEx(data.getData(), (int)data.getSize(), file.getFileNameWithoutExtension());
-                presetBrowser.updatePresetList();
-                pitchEditorL1.updateData(); pitchEditorL2.updateData();
-                dcwEditorL1.updateData();   dcwEditorL2.updateData();
-                dcaEditorL1.updateData();   dcaEditorL2.updateData();
+                // Listener handles UI refresh (presetLoaded/bankUpdated)
 
                 lcd.setParameterFeedbackSuppressed(false);
                 lcd.showProgramMode();
@@ -380,18 +381,14 @@ void CZ101AudioProcessorEditor::randomizePatch()
     lcd.setParameterFeedbackSuppressed(true);
 
     // Load it via PresetManager which handles distribution to VoiceManager (Envelopes) and APVTS (Params)
+    // Listener will trigger UI refresh
     audioProcessor.getPresetManager().loadPresetFromStruct(newPreset);
     
-    // 4. Force UI Refresh
-    pitchEditorL1.updateData(); pitchEditorL2.updateData();
-    dcwEditorL1.updateData();   dcwEditorL2.updateData();
-    dcaEditorL1.updateData();   dcaEditorL2.updateData();
-
     lcd.setParameterFeedbackSuppressed(false);
     lcd.showProgramMode();
-    waveformDisplay.repaint();
-    lcdDisplay.repaint();
-    repaint();
+    // waveformDisplay.repaint(); // Timer handles this
+    // lcdDisplay.repaint();      // Listener handles this
+    // repaint();
 }
 
 bool CZ101AudioProcessorEditor::isInterestedInFileDrag(const juce::StringArray& f) { for (auto& s : f) if (s.endsWithIgnoreCase(".syx") || s.endsWithIgnoreCase(".json")) return true; return false; }
@@ -402,7 +399,7 @@ void CZ101AudioProcessorEditor::filesDropped(const juce::StringArray& f, int, in
     } else if (f[0].endsWithIgnoreCase(".json")) {
         audioProcessor.getPresetManager().loadBank(juce::File(f[0]));
     }
-    presetBrowser.updatePresetList();
+    // Listener handles updatePresetList()
 }
 
 juce::StringArray CZ101AudioProcessorEditor::getMenuBarNames() { return { "File", "Edit", "Mode", "View", "Help" }; }
@@ -659,3 +656,38 @@ bool CZ101AudioProcessorEditor::keyPressed(const juce::KeyPress& k) {
 
 float CZ101AudioProcessorEditor::getScaleFactor() const { return getWidth() / 800.0f; }
 
+// PresetListener Implementation
+void CZ101AudioProcessorEditor::presetLoaded(int index)
+{
+    juce::MessageManager::callAsync([this, index]() {
+        // Refresh all envelope editors
+        pitchEditorL1.updateData(); pitchEditorL2.updateData();
+        dcwEditorL1.updateData();   dcwEditorL2.updateData();
+        dcaEditorL1.updateData();   dcaEditorL2.updateData();
+        
+        // Refresh Browser
+        presetBrowser.setSelectedItemIndex(index);
+        
+        // Refresh LCD
+        audioProcessor.getLCDStateManager().showProgramMode();
+        
+        repaint();
+    });
+}
+
+void CZ101AudioProcessorEditor::bankUpdated()
+{
+    juce::MessageManager::callAsync([this]() {
+        presetBrowser.updatePresetList();
+    });
+}
+
+void CZ101AudioProcessorEditor::presetRenamed(int index, const std::string& newName)
+{
+    juce::MessageManager::callAsync([this, index]() {
+        presetBrowser.updatePresetList();
+        // optionally update LCD if current preset
+        if (index == audioProcessor.getPresetManager().getCurrentPresetIndex())
+             audioProcessor.getLCDStateManager().showProgramMode();
+    });
+}

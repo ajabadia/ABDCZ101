@@ -76,6 +76,9 @@ void Voice::noteOn(int midiNote, float velocity) noexcept
     currentNote = midiNote;
     // Quantize velocity to 0-7 range (3 bits) as per hardware spec
     currentVelocity = std::floor(velocity * 7.0f + 0.5f) / 7.0f;
+    
+    // [NEW] Record timestamp for Voice Stealing
+    lastNoteOnTime = juce::Time::getMillisecondCounter();
 
     // Velocity Sensitivity Calculation [NEW]
     float normVel = velocity; 
@@ -438,21 +441,61 @@ void Voice::calculatePitchModulation() noexcept
 
 float Voice::renderOscillators() noexcept
 {
-    osc1.setFrequency(cachedFreq1);
-    osc2.setFrequency(cachedFreq2);
+    // Phase 5.1: Oversampling Implementation
+    // If oversamplingFactor > 1, we render multiple sub-samples and average them
+    // This reduces aliasing at the cost of CPU
     
-    // Osc Render
-    bool osc1Wrapped = false;
-    float osc1Sample = osc1.renderNextSample(dcwVal1, &osc1Wrapped);
-    if (isHardSyncEnabled && osc1Wrapped) osc2.reset();
-    float osc2Sample = osc2.renderNextSample(dcwVal2);
-    if (isRingModEnabled) osc2Sample = osc1Sample * osc2Sample;
-    
-    // Mixing
-    float out1 = osc1Sample * osc1Level.getNextValue() * dcaVal1 * velModAmp;
-    float out2 = osc2Sample * osc2Level.getNextValue() * dcaVal2 * velModAmp;
-    
-    return out1 + out2;
+    if (oversamplingFactor <= 1)
+    {
+        // Standard path (1x - no oversampling)
+        osc1.setFrequency(cachedFreq1);
+        osc2.setFrequency(cachedFreq2);
+        
+        bool osc1Wrapped = false;
+        float osc1Sample = osc1.renderNextSample(dcwVal1, &osc1Wrapped);
+        if (isHardSyncEnabled && osc1Wrapped) osc2.reset();
+        float osc2Sample = osc2.renderNextSample(dcwVal2);
+        if (isRingModEnabled) osc2Sample = osc1Sample * osc2Sample;
+        
+        float out1 = osc1Sample * osc1Level.getNextValue() * dcaVal1 * velModAmp;
+        float out2 = osc2Sample * osc2Level.getNextValue() * dcaVal2 * velModAmp;
+        
+        return out1 + out2;
+    }
+    else
+    {
+        // Oversampled path (2x or 4x)
+        osc1.setFrequency(cachedFreq1);
+        osc2.setFrequency(cachedFreq2);
+        
+        float accumulator = 0.0f;
+        
+        // Render N sub-samples
+        for (int i = 0; i < oversamplingFactor; ++i)
+        {
+            bool osc1Wrapped = false;
+            float osc1Sample = osc1.renderNextSample(dcwVal1, &osc1Wrapped);
+            if (isHardSyncEnabled && osc1Wrapped) osc2.reset();
+            float osc2Sample = osc2.renderNextSample(dcwVal2);
+            if (isRingModEnabled) osc2Sample = osc1Sample * osc2Sample;
+            
+            // Note: We use the same envelope/level values for all sub-samples
+            // This is a simplification but works well for anti-aliasing
+            float out1 = osc1Sample * osc1Level.getCurrentValue() * dcaVal1 * velModAmp;
+            float out2 = osc2Sample * osc2Level.getCurrentValue() * dcaVal2 * velModAmp;
+            
+            accumulator += out1 + out2;
+        }
+        
+        // Average (boxcar filter / decimation)
+        float result = accumulator / (float)oversamplingFactor;
+        
+        // Advance smoothed values once per output sample
+        osc1Level.getNextValue();
+        osc2Level.getNextValue();
+        
+        return result;
+    }
 }
 
 float Voice::applyPostProcessing(float rawMix) noexcept

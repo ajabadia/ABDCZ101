@@ -87,6 +87,9 @@ public:
     juce::AudioParameterChoice* getKeyFollowDco() const { return keyFollowDco; }
     juce::AudioParameterChoice* getKeyFollowDcw() const { return keyFollowDcw; }
     juce::AudioParameterChoice* getKeyFollowDca() const { return keyFollowDca; }
+    
+    // Phase 5.1: Oversampling Quality
+    juce::AudioParameterChoice* getOversamplingQuality() const { return oversamplingQuality; }
 
     juce::RangedAudioParameter* getParameter(const juce::String& paramId) const;
     const std::map<juce::String, juce::RangedAudioParameter*>& getParameterMap() const { return parameterMap; }
@@ -162,6 +165,9 @@ private:
     juce::AudioParameterChoice* keyFollowDco = nullptr;
     juce::AudioParameterChoice* keyFollowDcw = nullptr;
     juce::AudioParameterChoice* keyFollowDca = nullptr;
+    
+    // Phase 5.1: Oversampling
+    juce::AudioParameterChoice* oversamplingQuality = nullptr;
 
     juce::AudioParameterInt*   midiChannel = nullptr;
     juce::AudioParameterFloat* masterTune = nullptr;

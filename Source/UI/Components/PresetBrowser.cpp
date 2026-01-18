@@ -115,5 +115,15 @@ void PresetBrowser::selectPreset(int index)
     if (onPresetSelected) onPresetSelected(index);
 }
 
+int PresetBrowser::getSelectedItemIndex() const
+{
+    return presetCombo.getSelectedItemIndex();
+}
+
+void PresetBrowser::setSelectedItemIndex(int index)
+{
+    presetCombo.setSelectedItemIndex(index, juce::dontSendNotification);
+}
+
 } // namespace UI
 } // namespace CZ101

@@ -8,6 +8,15 @@ namespace Core {
 VoiceManager::VoiceManager()
 {
     // voices array is fixed size now
+    // Default Strategy
+    updateStrategy();
+}
+
+void VoiceManager::updateStrategy()
+{
+    // [NEW] Phase 4.3: Initialize Strategy
+    // For now we only support Oldest, but structure allows expansion
+    strategy = std::make_unique<OldestVoiceStrategy>();
 }
 
 // Audit Fix [2.2]: Hardware Model Selection
@@ -155,6 +164,9 @@ void VoiceManager::setLFOFrequency(float hz) noexcept { applyToAllVoices([hz](Vo
 void VoiceManager::setLFOWaveform(DSP::LFO::Waveform w) noexcept { applyToAllVoices([w](Voice& v){ v.setLFOWaveform(w); }); }
 void VoiceManager::setLFODelay(float s) noexcept { applyToAllVoices([s](Voice& v){ v.setLFODelay(s); }); }
 
+// Phase 5.1: Oversampling
+void VoiceManager::setOversamplingFactor(int factor) noexcept { applyToAllVoices([factor](Voice& v){ v.setOversamplingFactor(factor); }); }
+
 // Renamed internal helper
 void VoiceManager::startInternalVoice(int midiNote, float velocity) noexcept
 {
@@ -240,10 +252,20 @@ int VoiceManager::findFreeVoice() const noexcept
 
 int VoiceManager::findVoiceToSteal() const noexcept
 {
+    // 1. First Pass: Try to find a releasing voice
     for (int i = 0; i < maxActiveVoices; ++i) 
         if (voices[i].isReleasing()) return i;
+
+    // 2. Second Pass: Use Strategy (e.g. Oldest)
+    if (strategy)
+    {
+        return strategy->findVoiceToSteal(voices.data(), (int)voices.size(), maxActiveVoices);
+    }
+    
+    // Fallback if no strategy (should not happen if initialized)
     for (int i = 0; i < maxActiveVoices; ++i) 
         if (voices[i].isActive()) return i;
+        
     return 0;
 }
 

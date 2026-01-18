@@ -63,6 +63,19 @@ public:
     static constexpr int MAX_PRESETS = 64;
     static constexpr const char* USER_BANK_FILENAME = "user_bank.json";
     
+    // Observer Interface
+    class Listener
+    {
+    public:
+        virtual ~Listener() = default;
+        virtual void presetLoaded(int index) {}
+        virtual void bankUpdated() {}
+        virtual void presetRenamed(int index, const std::string& newName) {}
+    };
+    
+    void addListener(Listener* l);
+    void removeListener(Listener* l);
+    
     PresetManager(Parameters* parameters, Core::VoiceManager* vm);
     ~PresetManager();
     
@@ -99,7 +112,7 @@ public:
     // Compare Support
     void beginCompare();
     void endCompare();
-    bool isComparisonActive() const { return comparing; }
+    bool isComparisonActive() const { return isComparing; }
     
     
 private:
@@ -111,7 +124,9 @@ private:
     juce::ReadWriteLock presetLock;
     
     // Compare State
-    bool comparing = false;
+    bool isComparing = false;
+    
+    juce::ListenerList<Listener> listeners;
     Preset compareBuffer;
     
     // void createFactoryPresets(); // Moved to public

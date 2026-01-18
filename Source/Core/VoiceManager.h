@@ -3,7 +3,9 @@
 #include "Voice.h"
 #include "Voice.h"
 #include "../DSP/Arpeggiator.h"
+#include "VoiceAssignmentStrategy.h"
 #include <vector>
+#include <memory>
 
 namespace CZ101 {
 
@@ -113,6 +115,9 @@ public:
     void setLFOFrequency(float hz) noexcept;
     void setLFOWaveform(DSP::LFO::Waveform waveform) noexcept;
     void setLFODelay(float seconds) noexcept;
+    
+    // Phase 5.1: Oversampling
+    void setOversamplingFactor(int factor) noexcept;
 
     void noteOn(int midiNote, float velocity) noexcept;
     void noteOff(int midiNote) noexcept;
@@ -152,6 +157,10 @@ private:
         for (auto& v : voices) func(v);
         func(referenceVoice);
     }
+    
+    // Phase 4.3: Voice Stealing Strategy
+    std::unique_ptr<VoiceAssignmentStrategy> strategy;
+    void updateStrategy();
 };
 
 } // namespace Core

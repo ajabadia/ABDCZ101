@@ -731,6 +731,14 @@ void CZ101AudioProcessor::updateSystemGlobal()
         if (mode == 2) voiceManager.setVoiceLimit(16);
         else voiceManager.setVoiceLimit(mode==0 ? 4 : 8); 
     }
+    
+    // Phase 5.1: Oversampling Quality
+    if (auto* p = parameters.getOversamplingQuality())
+    {
+        int qualityIndex = p->getIndex(); // 0=1x, 1=2x, 2=4x
+        int factor = (qualityIndex == 0) ? 1 : (qualityIndex == 1) ? 2 : 4;
+        voiceManager.setOversamplingFactor(factor);
+    }
 }
 
 void CZ101AudioProcessor::updateArpeggiator()

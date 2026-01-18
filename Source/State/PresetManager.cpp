@@ -19,15 +19,18 @@ PresetManager::PresetManager(Parameters* parameters, Core::VoiceManager* vm)
 
 PresetManager::~PresetManager() = default;
 
+void PresetManager::addListener(Listener* l) { listeners.add(l); }
+void PresetManager::removeListener(Listener* l) { listeners.remove(l); }
+
 void PresetManager::beginCompare()
 {
     const juce::ScopedWriteLock sl(presetLock);
-    if (comparing) return;
+    if (isComparing) return;
     
     // Save current EDITED state to buffer
     copyStateFromProcessor();
     compareBuffer = currentPreset;
-    comparing = true;
+    isComparing = true;
     
     // Reload original state from bank
     if (currentPresetIndex >= 0 && currentPresetIndex < (int)presets.size())
@@ -39,11 +42,11 @@ void PresetManager::beginCompare()
 void PresetManager::endCompare()
 {
     const juce::ScopedWriteLock sl(presetLock);
-    if (!comparing) return;
+    if (!isComparing) return;
     
     // Restore the edited state from buffer
     loadPresetFromStruct(compareBuffer, true);
-    comparing = false;
+    isComparing = false;
 }
 
 void PresetManager::loadPreset(int index, bool updateVoice)
@@ -67,6 +70,8 @@ void PresetManager::loadPreset(int index, bool updateVoice)
             applyEnvelopeToVoice(currentPreset.dcaEnv2, 2, 2);
         }
     }
+    
+    listeners.call(&Listener::bankUpdated);
 }
 
 void PresetManager::loadPresetFromStruct(const Preset& p, bool updateVoice)
@@ -197,6 +202,9 @@ void PresetManager::copyStateFromProcessor()
         currentPreset.pitchEnv2.sustainPoint = voiceManager->getPitchSustainPoint(2);
         currentPreset.pitchEnv2.endPoint = voiceManager->getPitchEndPoint(2);
     }
+    
+    // Notify Listeners
+    listeners.call([this](Listener& l) { l.presetLoaded(currentPresetIndex); });
 }
 
 void PresetManager::savePreset(int index, const std::string& name)
@@ -995,6 +1003,7 @@ int PresetManager::addPreset(const Preset& p)
     const juce::ScopedWriteLock sl(presetLock);
     presets.push_back(p);
     autoSaveUserBank();
+    listeners.call(&Listener::bankUpdated);
     return (int)presets.size() - 1;
 }
 
@@ -1016,6 +1025,7 @@ void PresetManager::deletePreset(int index)
             currentPresetIndex = (int)presets.size() - 1;
             
         autoSaveUserBank();
+        listeners.call(&Listener::bankUpdated);
     }
 }
 
