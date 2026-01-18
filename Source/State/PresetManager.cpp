@@ -51,27 +51,37 @@ void PresetManager::endCompare()
 
 void PresetManager::loadPreset(int index, bool updateVoice)
 {
-    const juce::ScopedWriteLock sl(presetLock);
-    if (index >= 0 && index < static_cast<int>(presets.size()))
-    {
-        currentPresetIndex = index; // Correctly track the current index
-        currentPreset = presets[index];
-        applyPresetToProcessor(); // Updates UI Knobs (ADSR) via Parameters
-        
-        // Update Voice Manager directly with full 8-stage data
-        if (updateVoice && voiceManager)
-        {
-            applyEnvelopeToVoice(currentPreset.pitchEnv, 0, 1);
-            applyEnvelopeToVoice(currentPreset.dcwEnv, 1, 1);
-            applyEnvelopeToVoice(currentPreset.dcaEnv, 2, 1);
-            
-            applyEnvelopeToVoice(currentPreset.pitchEnv2, 0, 2);
-            applyEnvelopeToVoice(currentPreset.dcwEnv2, 1, 2);
-            applyEnvelopeToVoice(currentPreset.dcaEnv2, 2, 2);
-        }
-    }
+    // Capture index for notification outside lock
+    int notifyIndex = -1;
     
-    listeners.call(&Listener::bankUpdated);
+    {
+        const juce::ScopedWriteLock sl(presetLock);
+        if (index >= 0 && index < static_cast<int>(presets.size()))
+        {
+            currentPresetIndex = index;
+            currentPreset = presets[index];
+            applyPresetToProcessor();
+            
+            if (updateVoice && voiceManager)
+            {
+                applyEnvelopeToVoice(currentPreset.pitchEnv, 0, 1);
+                applyEnvelopeToVoice(currentPreset.dcwEnv, 1, 1);
+                applyEnvelopeToVoice(currentPreset.dcaEnv, 2, 1);
+                
+                applyEnvelopeToVoice(currentPreset.pitchEnv2, 0, 2);
+                applyEnvelopeToVoice(currentPreset.dcwEnv2, 1, 2);
+                applyEnvelopeToVoice(currentPreset.dcaEnv2, 2, 2);
+            }
+            
+            notifyIndex = index;
+        }
+    } // Lock released here
+    
+    // Notify listeners OUTSIDE the lock to prevent deadlock
+    if (notifyIndex >= 0)
+    {
+        listeners.call([notifyIndex](Listener& l) { l.presetLoaded(notifyIndex); });
+    }
 }
 
 void PresetManager::loadPresetFromStruct(const Preset& p, bool updateVoice)
@@ -203,7 +213,7 @@ void PresetManager::copyStateFromProcessor()
         currentPreset.pitchEnv2.endPoint = voiceManager->getPitchEndPoint(2);
     }
     
-    // Notify Listeners
+    // Notify Listeners OUTSIDE the lock (copyStateFromProcessor doesn't hold lock)
     listeners.call([this](Listener& l) { l.presetLoaded(currentPresetIndex); });
 }
 
@@ -1000,33 +1010,46 @@ void PresetManager::importEnvelopesFromXml(const juce::XmlElement& xml)
 
 int PresetManager::addPreset(const Preset& p)
 {
-    const juce::ScopedWriteLock sl(presetLock);
-    presets.push_back(p);
-    autoSaveUserBank();
+    int newIndex = -1;
+    {
+        const juce::ScopedWriteLock sl(presetLock);
+        presets.push_back(p);
+        autoSaveUserBank();
+        newIndex = (int)presets.size() - 1;
+    } // Lock released
+    
+    // Notify outside lock
     listeners.call(&Listener::bankUpdated);
-    return (int)presets.size() - 1;
+    return newIndex;
 }
 
 void PresetManager::deletePreset(int index)
 {
-    const juce::ScopedWriteLock sl(presetLock);
-    if (index >= 0 && index < (int)presets.size())
+    bool shouldNotify = false;
     {
-        presets.erase(presets.begin() + index);
-        
-        if (presets.empty())
+        const juce::ScopedWriteLock sl(presetLock);
+        if (index >= 0 && index < (int)presets.size())
         {
-            Preset init;
-            init.name = "Init";
-            presets.push_back(init);
-        }
-        
-        if (currentPresetIndex >= (int)presets.size())
-            currentPresetIndex = (int)presets.size() - 1;
+            presets.erase(presets.begin() + index);
             
-        autoSaveUserBank();
+            if (presets.empty())
+            {
+                Preset init;
+                init.name = "Init";
+                presets.push_back(init);
+            }
+            
+            if (currentPresetIndex >= (int)presets.size())
+                currentPresetIndex = (int)presets.size() - 1;
+                
+            autoSaveUserBank();
+            shouldNotify = true;
+        }
+    } // Lock released
+    
+    // Notify outside lock
+    if (shouldNotify)
         listeners.call(&Listener::bankUpdated);
-    }
 }
 
 void PresetManager::movePreset(int fromIndex, int toIndex)
