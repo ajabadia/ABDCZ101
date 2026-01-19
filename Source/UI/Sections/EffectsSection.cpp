@@ -49,6 +49,22 @@ void EffectsSection::parameterChanged(const juce::String& parameterID, float new
     }
 }
 
+void EffectsSection::updateSliderValues()
+{
+    // Propagate to sub-panels (which don't have explicit refresh, so we assume they are attached)
+    // Actually, sub-panels might not have update methods.
+    // However, if we forced params via APVTS value tree, Attachments SHOULD have updated.
+    // The only reason we do this is because user complained about "not seen".
+    // Since Sub-Panels (FilterPanel, etc) are just buckets of knobs with attachments, 
+    // simply updating visibility (which forces layout) is usually enough.
+    // BUT, if we want to be sure, we can manually check parameters if we had access.
+    // Since we don't have access to sub-panel knobs directly from here, we will rely on
+    // updateVisibility() to ensure structure is correct.
+    // But wait, the user explicitely called effectsSection.updateSliderValues().
+    
+    updateVisibility();
+}
+
 void EffectsSection::paint(juce::Graphics& g) 
 {
     auto& palette = SkinManager::getInstance().getCurrentPalette();

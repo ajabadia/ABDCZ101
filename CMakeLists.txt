@@ -19,6 +19,13 @@ juce_add_plugin(CZ101Emulator
     IS_SYNTH TRUE
 )
 
+# --- Auto-Versioning System ---
+add_custom_command(TARGET CZ101Emulator PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -DPROJECT_ROOT=${CMAKE_CURRENT_SOURCE_DIR} -P "${CMAKE_CURRENT_SOURCE_DIR}/Scripts/UpdateVersion.cmake"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMENT "Auto-incrementing build version..."
+)
+
 juce_generate_juce_header(CZ101Emulator)
 
 # --- Source Files ---
@@ -40,8 +47,10 @@ list(APPEND SOURCES
     "Source/UI/Components/ReverbPanel.cpp"
     "Source/UI/Components/MacroPanel.h"
     "Source/UI/Components/MacroPanel.cpp"
-    "Source/UI/Components/ArpeggiatorPanel.h"
-    "Source/UI/Components/ArpeggiatorPanel.cpp"
+    "Source/UI/Sections/ArpeggiatorSection.h"
+    "Source/UI/Sections/ArpeggiatorSection.cpp"
+    "Source/UI/Sections/ModulationMatrixSection.h"
+    "Source/UI/Sections/ModulationMatrixSection.cpp"
 )
 target_sources(CZ101Emulator PRIVATE ${SOURCES})
 

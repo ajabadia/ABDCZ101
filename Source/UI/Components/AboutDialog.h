@@ -11,6 +11,7 @@
 #pragma once
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include "../../Core/BuildVersion.h"
 
 namespace CZ101 {
 namespace UI {
@@ -48,7 +49,14 @@ public:
         
         g.setFont(14.0f);
         g.setColour(juce::Colours::lightgrey);
-        g.drawText("Version 1.0.0", area.removeFromTop(30), juce::Justification::centred, true);
+        g.drawText("Version 1.0.0 (Build " + juce::String(CZ_BUILD_VERSION) + ")", area.removeFromTop(20), juce::Justification::centred, true);
+        
+        g.setFont(10.0f);
+        g.setColour(juce::Colours::grey);
+        g.drawText("Compiled on: " + juce::String(CZ_BUILD_TIMESTAMP), area.removeFromTop(20), juce::Justification::centred, true);
+        
+        g.setFont(14.0f);
+        g.setColour(juce::Colours::lightgrey);
         g.drawText("Enhanced Hybrid Phase Distortion Synthesis", area.removeFromTop(30), juce::Justification::centred, true);
         
         g.setColour(juce::Colours::grey);

@@ -16,6 +16,7 @@ public:
 
     void paint(juce::Graphics& g) override;
     void resized() override;
+    void updateToggleStates();
 
 private:
     CZ101AudioProcessor& audioProcessor;

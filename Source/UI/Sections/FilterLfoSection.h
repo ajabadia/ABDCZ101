@@ -19,6 +19,7 @@ public:
     void resized() override;
     void parameterChanged(const juce::String& parameterID, float newValue) override;
     void updateVisibility();
+    void updateSliderValues();
 
 private:
     CZ101AudioProcessor& audioProcessor;

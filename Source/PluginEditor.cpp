@@ -73,6 +73,7 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
     
     // Register as Preset Listener
     audioProcessor.getPresetManager().addListener(this);
+    audioProcessor.getPresetManager().addChangeListener(this); // Audit Fix 10.6: Compare UI Sync
 
     // 2. Containers & Tabs
     pitchEditorL1.setLine(1); pitchEditorL2.setLine(2);
@@ -96,6 +97,11 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
     mainTabs.addTab("EFFECTS", juce::Colours::transparentBlack, &effectsSection, false);
     mainTabs.addTab("GENERAL", juce::Colours::transparentBlack, &generalSection, false);
 
+    // Audit Fix 2: Ensure ArpPanel is visible (TabbedComponent usually handles this, but explicit request avoids issues)
+    arpPanel.setVisible(true);
+    // Audit Fix [2.2]: Initial Refresh
+    arpPanel.refreshFromAPVTS();
+
     // Sync UIManager with Tabs
     mainTabs.getTabbedButtonBar().addChangeListener(this);
 
@@ -117,6 +123,13 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
     addAndMakeVisible(panicButton);
     panicButton.setColour(juce::TextButton::buttonOnColourId, CZ101::UI::DesignTokens::Colors::czRed);
     panicButton.onClick = [this]() { audioProcessor.getVoiceManager().allNotesOff(); };
+
+    addAndMakeVisible(compareButton);
+    compareButton.setClickingTogglesState(true);
+    compareButton.setColour(juce::TextButton::buttonOnColourId, juce::Colours::orange);
+    compareButton.onClick = [this]() { 
+        audioProcessor.toggleCompareMode(compareButton.getToggleState()); 
+    };
 
     // Header Navigation
     addAndMakeVisible(cursorLeft); addAndMakeVisible(cursorRight);
@@ -177,6 +190,7 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
     // 5. Finalize
     juce::Logger::writeToLog("CZ101 Editor: Finalizing Components");
     addAndMakeVisible(keyboardComponent);
+    keyboardComponent.setLowestVisibleKey(24); // Set start to C1 (One octave below default C2)
     keyboardState.addListener(this);
     waveformDisplay.setProcessor(&audioProcessor);
 
@@ -204,11 +218,11 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
 
 CZ101AudioProcessorEditor::~CZ101AudioProcessorEditor()
 {
+    bankManagerOverlay.listBox.setModel(nullptr); // Audit Fix: Prevent use-after-free
     stopTimer();
     tooltipWindow.setVisible(false); // Audit Fix: Hide tooltip on destruction to prevent race
     audioProcessor.getParameters().getAPVTS().removeParameterListener("OPERATION_MODE", &lcdDisplay);
     audioProcessor.getParameters().getAPVTS().removeParameterListener("OPERATION_MODE", this);
-    bankManagerOverlay.listBox.setModel(nullptr); // Audit Fix: Prevent use-after-free
     CZ101::UI::SkinManager::getInstance().removeChangeListener(this);
     keyboardState.removeListener(this);
     openGLContext.detach();
@@ -259,19 +273,22 @@ void CZ101AudioProcessorEditor::resized()
     mainTabs.setBounds(area.reduced(10, 5));
     
     // --- Header Layout ---
-    auto hLeft  = headerArea.removeFromLeft(getWidth() * 0.30f).reduced(5);
-    auto hRight = headerArea.removeFromRight(getWidth() * 0.20f).reduced(5);
+    auto hLeft  = headerArea.removeFromLeft(getWidth() * 0.28f).reduced(5);
+    auto hRight = headerArea.removeFromRight(getWidth() * 0.25f).reduced(5);
     auto hMid   = headerArea.reduced(5);
     
     presetBrowser.setBounds(hLeft);
     
-    presetBrowser.setBounds(hLeft);
+    // RNDM + COMPR + ALL OFF Button Right
+    auto rightBox = hRight.reduced(2, 5);
+    int totalW = rightBox.getWidth();
+    int buttonW = totalW / 3 - 2;
     
-    // RANDOM + PANIC Button Right
-    auto rightBox = hRight.reduced(5);
-    int buttonW = rightBox.getWidth() / 2 - 5;
     randomButton.setBounds(rightBox.removeFromLeft(buttonW));
-    panicButton.setBounds(rightBox.removeFromRight(buttonW));
+    rightBox.removeFromLeft(2); // small gap
+    compareButton.setBounds(rightBox.removeFromLeft(buttonW));
+    rightBox.removeFromLeft(2); // small gap
+    panicButton.setBounds(rightBox.removeFromLeft(buttonW));
     
     // LCD + Cursors
     
@@ -380,11 +397,26 @@ void CZ101AudioProcessorEditor::randomizePatch()
     // Listener will trigger UI refresh
     audioProcessor.getPresetManager().loadPresetFromStruct(newPreset);
     
+    // Audit Fix [2.2]: Ensure Arp UI reflects new state immediately
+    arpPanel.refreshFromAPVTS();
+    
+    // Audit Fix: Explicitly refresh Envelope Editors after struct load
+    // (loadPresetFromStruct does not trigger 'presetLoaded' listener index callback)
+    pitchEditorL1.updateData();
+    pitchEditorL2.updateData();
+    dcwEditorL1.updateData();
+    dcwEditorL2.updateData();
+    dcaEditorL1.updateData();
+    dcaEditorL2.updateData();
+    
+    // And global sections
+    oscSection.updateToggleStates();
+    filterLfoSection.updateSliderValues();
+    effectsSection.updateSliderValues();
+    
     lcd.setParameterFeedbackSuppressed(false);
     lcd.showProgramMode();
-    // waveformDisplay.repaint(); // Timer handles this
-    // lcdDisplay.repaint();      // Listener handles this
-    // repaint();
+    repaint();
 }
 
 bool CZ101AudioProcessorEditor::isInterestedInFileDrag(const juce::StringArray& f) { for (auto& s : f) if (s.endsWithIgnoreCase(".syx") || s.endsWithIgnoreCase(".json")) return true; return false; }
@@ -650,6 +682,17 @@ void CZ101AudioProcessorEditor::changeListenerCallback(juce::ChangeBroadcaster* 
     else if (s == &mainTabs.getTabbedButtonBar())
     {
         uiManager.setCurrentTab(mainTabs.getCurrentTabIndex());
+    }
+    else if (s == &audioProcessor.getPresetManager())
+    {
+        // Audit Fix 10.6: Compare Toggle Refresh
+        // Ensure Envelopes update their visual state (they might not follow APVTS directly for the graph)
+        juce::MessageManager::callAsync([this]() {
+            pitchEditorL1.updateData(); pitchEditorL2.updateData();
+            dcwEditorL1.updateData();   dcwEditorL2.updateData();
+            dcaEditorL1.updateData();   dcaEditorL2.updateData();
+            repaint();
+        });
     }
 }
 

@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cmath>
+#include <algorithm>
+#include <cstdlib>
+
 namespace CZ101 {
 namespace Core {
 namespace HardwareConstants {
@@ -32,6 +36,15 @@ namespace HardwareConstants {
     // Control Rate Divider (Process control every 8 samples)
     constexpr int CONTROL_RATE_DIVIDER = 8;
     constexpr int CONTROL_RATE_MASK = CONTROL_RATE_DIVIDER - 1;
+
+    // Audit Fix 10.3: Non-Linear Line Mixing (Simulate summing amp saturation)
+    // Uses tanh approximation for warmth and safety.
+    inline float mixLines(float l1, float l2) {
+        float sum = l1 + l2;
+        // Soft saturation: std::tanh(sum)
+        // We allow a bit of "hotness"
+        return std::tanh(sum); 
+    }
 
 } // namespace HardwareConstants
 } // namespace Core

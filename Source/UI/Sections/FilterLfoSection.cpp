@@ -46,10 +46,22 @@ void FilterLfoSection::parameterChanged(const juce::String&, float)
     juce::MessageManager::callAsync([this]() { updateVisibility(); });
 }
 
+
 void FilterLfoSection::updateVisibility()
 {
     resized();
     repaint();
+}
+
+void FilterLfoSection::updateSliderValues()
+{
+    auto& params = audioProcessor.getParameters();
+    
+    if (auto* p = params.getLfoRate()) lfoRateKnob.getSlider().setValue(p->get(), juce::dontSendNotification);
+    if (auto* p = params.getLfoDepth()) lfoDepthKnob.getSlider().setValue(p->get(), juce::dontSendNotification);
+    if (auto* p = params.getLfoDelay()) lfoDelayKnob.getSlider().setValue(p->get(), juce::dontSendNotification);
+    
+    if (auto* p = params.getLfoWaveform()) lfoWaveSelector.setSelectedItemIndex(p->getIndex(), juce::dontSendNotification);
 }
 
 void FilterLfoSection::paint(juce::Graphics& g) {

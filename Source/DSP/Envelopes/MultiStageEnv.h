@@ -59,6 +59,9 @@ public:
     bool isReleased() const noexcept { return released; }
     int getCurrentStage() const noexcept { return currentStage; }
     
+    // Audit Fix [3.1]: Helper for click emulation
+    bool isAttackPhase() const noexcept { return active && currentStage == 0; }
+    
     int getSustainPoint() const noexcept { return sustainPoint; }
     int getEndPoint() const noexcept { return endPoint; }
     
@@ -94,7 +97,14 @@ private:
     float mapValue(float v) const noexcept { return v; } 
 public:
     void setRateScaler(float scale) noexcept { rateScaler = scale; }
+    
+    // Audit Fix [11.2]: Configurable Start Value (e.g. 0.5 for Pitch)
+    void setInitialValue(float val) noexcept { initialValue = val; }
+    
+private:
+    float initialValue = 0.0f; // Default 0.0 for DCA/DCW, set to 0.5 for Pitch
 };
+
 
 } // namespace DSP
 } // namespace CZ101

@@ -31,6 +31,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
         group->addChild(std::make_unique<juce::AudioParameterFloat>("LINE_MIX", "Line Mix", 0.0f, 1.0f, 0.5f));
         group->addChild(std::make_unique<juce::AudioParameterBool>("HARD_SYNC", "Hard Sync", false));
         group->addChild(std::make_unique<juce::AudioParameterBool>("RING_MOD", "Ring Mod", false));
+        group->addChild(std::make_unique<juce::AudioParameterBool>("NOISE_MOD", "Noise Mod", false)); // Audit Fix
         group->addChild(std::make_unique<juce::AudioParameterFloat>("GLIDE", "Portamento Time", 0.0f, 1.0f, 0.0f));
         layout.add(std::move(group));
     }
@@ -108,7 +109,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
         group->addChild(std::make_unique<juce::AudioParameterBool>("PROTECT_SWITCH", "Memory Protect", true));
         group->addChild(std::make_unique<juce::AudioParameterBool>("SYSTEM_PRG", "SysEx Data Interchange", false));
         group->addChild(std::make_unique<juce::AudioParameterBool>("BYPASS", "Bypass", false));
-        group->addChild(std::make_unique<juce::AudioParameterBool>("BYPASS", "Bypass", false));
         // Audit Fix [2.2a]: Unified Operation Mode
         // 0: Classic 101, 1: Classic 5000, 2: Modern
         group->addChild(std::make_unique<juce::AudioParameterChoice>("OPERATION_MODE", "Operation Mode", juce::StringArray{"Classic 101", "Classic 5000", "Modern"}, 0));
@@ -121,6 +121,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
         
         // Phase 5.1: Oversampling Quality
         group->addChild(std::make_unique<juce::AudioParameterChoice>("OVERSAMPLING_QUALITY", "Oversampling", juce::StringArray{"1x (Eco)", "2x (High)", "4x (Ultra)"}, 0));
+        group->addChild(std::make_unique<juce::AudioParameterBool>("HARDWARE_NOISE", "Hardware Noise", true));
         
         layout.add(std::move(group));
     }
@@ -175,6 +176,7 @@ Parameters::Parameters(juce::AudioProcessor& processor, juce::UndoManager* undoM
     detuneFine   = dynamic_cast<juce::AudioParameterInt*>(apvts->getParameter("DETUNE_FINE"));
     hardSync     = dynamic_cast<juce::AudioParameterBool*>(apvts->getParameter("HARD_SYNC"));
     ringMod      = dynamic_cast<juce::AudioParameterBool*>(apvts->getParameter("RING_MOD"));
+    noiseMod     = dynamic_cast<juce::AudioParameterBool*>(apvts->getParameter("NOISE_MOD")); // Audit Fix
     glideTime    = dynamic_cast<juce::AudioParameterFloat*>(apvts->getParameter("GLIDE"));
     
     lfoWaveform  = dynamic_cast<juce::AudioParameterChoice*>(apvts->getParameter("LFO_WAVE"));
@@ -204,7 +206,7 @@ Parameters::Parameters(juce::AudioProcessor& processor, juce::UndoManager* undoM
     protectSwitch = dynamic_cast<juce::AudioParameterBool*>(apvts->getParameter("PROTECT_SWITCH"));
     systemPrg     = dynamic_cast<juce::AudioParameterBool*>(apvts->getParameter("SYSTEM_PRG"));
     masterVolume   = dynamic_cast<juce::AudioParameterFloat*>(apvts->getParameter("MASTER_VOLUME"));
-    masterVolume   = dynamic_cast<juce::AudioParameterFloat*>(apvts->getParameter("MASTER_VOLUME"));
+    hardwareNoise  = dynamic_cast<juce::AudioParameterBool*>(apvts->getParameter("HARDWARE_NOISE"));
     operationMode  = dynamic_cast<juce::AudioParameterChoice*>(apvts->getParameter("OPERATION_MODE"));
 
     modernLpfCutoff = dynamic_cast<juce::AudioParameterFloat*>(apvts->getParameter("MODERN_LPF_CUTOFF"));

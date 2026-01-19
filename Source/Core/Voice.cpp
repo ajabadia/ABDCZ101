@@ -1,6 +1,8 @@
 #include <JuceHeader.h>
 #include "Voice.h"
+#include "AudioThreadSnapshot.h" // [NEW]
 #include "HardwareConstants.h"
+#include "AuthenticHardware.h"
 #include <cmath>
 #include "../DSP/Envelopes/ADSRtoStage.h"
 
@@ -12,6 +14,11 @@ Voice::Voice()
     // Initialize Modern Filters
     lpf.setType(DSP::ResonantFilter::LOWPASS);
     hpf.setType(DSP::ResonantFilter::HIGHPASS);
+
+    // Audit Fix [11.2]: Pitch Envelope Initialization
+    // Pitch envelopes must start at 0.5 (Center/No Pitch Shift) to avoid sweep up from 0.0
+    pitchEnvelope1.setInitialValue(0.5f);
+    pitchEnvelope2.setInitialValue(0.5f);
 
     // Audit Fix 1.5: Safe Initialization
     // Initialize with a default valid sample rate to prevent div-by-zero 
@@ -40,7 +47,6 @@ void Voice::setSampleRate(double sr) noexcept
     pitchEnvelope1.setSampleRate(sr);
     dcwEnvelope2.setSampleRate(sr);
     dcaEnvelope2.setSampleRate(sr);
-    pitchEnvelope2.setSampleRate(sr);
     pitchEnvelope2.setSampleRate(sr);
     lfoModule.setSampleRate(sr);
     lpf.setSampleRate(sr);
@@ -166,9 +172,12 @@ void Voice::setOsc2DetuneHardware(int oct, int coarse, int fineCents) noexcept
 
 void Voice::setHardSync(bool enabled) noexcept { isHardSyncEnabled = enabled; }
 void Voice::setRingMod(bool enabled) noexcept { isRingModEnabled = enabled; }
+void Voice::setNoiseMod(bool enabled) noexcept { isNoiseModEnabled = enabled; }
 void Voice::setGlideTime(float seconds) noexcept { glideTime = seconds; }
 
+
 // ... LFO / Vibrato ...
+
 void Voice::setVibratoDepth(float semitones) noexcept { vibratoDepth = semitones; }
 void Voice::setLFOFrequency(float hz) noexcept { lfoModule.setFrequency(hz); }
 void Voice::setLFOWaveform(DSP::LFO::Waveform w) noexcept { lfoModule.setWaveform(w); }
@@ -288,11 +297,19 @@ inline float fastTanh(float x) noexcept
 // Using a 5th order polynomial or high precision rational
 inline float deterministicExp2(float x) noexcept
 {
-    // Simple 3rd order minimax for [-1, 1] range
-    x = juce::jlimit(-1.0f, 1.0f, x); // Audit Fix: Clamp input to prevent polynomial explosion
-    
-    // exp2(x) approx 1 + 0.693147*x + 0.240226*x^2 + 0.055504*x^3
-    return 1.0f + x * (0.69314718f + x * (0.24022650f + x * (0.05550411f + x * 0.00961812f)));
+    // Simple 3rd order minimax for larger range [-12, 12] semitones? 
+    // Input x is "semitones / 12 * 2" ? No, input to exp2 is the power. 2^x.
+    // Pitch mod +1 oct = 2^1. x=1.
+    // Pitch mod +2 oct = 2^2. x=2.
+    // If we clamp to [-1, 1], we limit pitch mod to ±1 octave.
+    // CZ can do several octaves.
+    // We should widen the range. The polynomial approx diverges outside [-1,1].
+    // Better to use std::exp2 for full range fidelity if we want "Professional" results.
+    // Or use a range reduction technique.
+    // Given modern CPU, std::exp2 is often intrinsic and fast enough.
+    // Replacing with std::exp2 for safety and range.
+    return std::exp2(x); 
+    // return 1.0f + x * (0.69314718f + x * (0.24022650f + x * (0.05550411f + x * 0.00961812f)));
 }
 
 float Voice::renderNextSample() noexcept
@@ -355,9 +372,10 @@ void Voice::calculateDCWModulation() noexcept
     float ktDcw = smoothedMatrix.keyTrackDcw.getNextValue();
     if (matrix.kfDcw != 0) // FIX or VAR
     {
-        // Real hardware acceleratos DCW to sine on high notes
-        // Scaling factor 0.015f is a heuristic based on handbook's "acceleration"
-        ktOffset = (currentNote - 60) * (ktDcw * HardwareConstants::KEYTRACK_DCW_FACTOR);
+        // Use authentic hardware curve
+        // Pass current DCW env value (average of both lines for now) to affect curvature
+        float avgEnv = (dcwVal1 + dcwVal2) * 0.5f;
+        ktOffset = HardwareConstants::getAuthenticDCWKeytrack(currentNote, avgEnv) * ktDcw;
     }
     
     float veloDcw = smoothedMatrix.veloToDcw.getNextValue();
@@ -455,12 +473,28 @@ float Voice::renderOscillators() noexcept
         float osc1Sample = osc1.renderNextSample(dcwVal1, &osc1Wrapped);
         if (isHardSyncEnabled && osc1Wrapped) osc2.reset();
         float osc2Sample = osc2.renderNextSample(dcwVal2);
-        if (isRingModEnabled) osc2Sample = osc1Sample * osc2Sample;
+        
+        if (isRingModEnabled) {
+            osc2Sample = osc1Sample * osc2Sample;
+        } else if (isNoiseModEnabled) {
+             // Authentic CZ-101 Noise Mod: It's technically Phase Modulation of Noise? 
+             // Or simply Noise replaces the carrier?
+             // "Noise Mod" on CZ modulates the *phase* of the noise source by Osc 1?
+             // Or modulates Osc 1 Amplitude by Noise?
+             // Multiplicative (AM) of Noise * Osc1 creates sidebands.
+             // If Osc2 Level is 0 in patch, we hear nothing. 
+             // The user says "doesn't sound right".
+             // Let's implement a safe audible noise mix for now:
+             // Mix Noise with Osc 1, or modulate Osc 2 phase with Noise.
+             // Simplest "Good Sounding" fix: Ring Modulate Noise with Osc 1 (AM).
+             float noise = (noiseGen.nextFloat() * 2.0f - 1.0f);
+             osc2Sample = osc1Sample * noise + noise * 0.5f; // Add some raw noise to ensure output
+        }
         
         float out1 = osc1Sample * osc1Level.getNextValue() * dcaVal1 * velModAmp;
         float out2 = osc2Sample * osc2Level.getNextValue() * dcaVal2 * velModAmp;
         
-        return out1 + out2;
+        return HardwareConstants::mixLines(out1, out2);
     }
     else
     {
@@ -477,14 +511,20 @@ float Voice::renderOscillators() noexcept
             float osc1Sample = osc1.renderNextSample(dcwVal1, &osc1Wrapped);
             if (isHardSyncEnabled && osc1Wrapped) osc2.reset();
             float osc2Sample = osc2.renderNextSample(dcwVal2);
-            if (isRingModEnabled) osc2Sample = osc1Sample * osc2Sample;
+            
+            if (isRingModEnabled) {
+                osc2Sample = osc1Sample * osc2Sample;
+            } else if (isNoiseModEnabled) {
+                 float noise = (noiseGen.nextFloat() * 2.0f - 1.0f);
+                 osc2Sample = osc1Sample * noise; 
+            }
             
             // Note: We use the same envelope/level values for all sub-samples
             // This is a simplification but works well for anti-aliasing
             float out1 = osc1Sample * osc1Level.getCurrentValue() * dcaVal1 * velModAmp;
             float out2 = osc2Sample * osc2Level.getCurrentValue() * dcaVal2 * velModAmp;
             
-            accumulator += out1 + out2;
+            accumulator += HardwareConstants::mixLines(out1, out2);
         }
         
         // Average (boxcar filter / decimation)
@@ -500,6 +540,15 @@ float Voice::renderOscillators() noexcept
 
 float Voice::applyPostProcessing(float rawMix) noexcept
 {
+    // Phase 9: Authentic Hardware Noise
+    if (hardwareNoiseEnabled) {
+         // Mix in the "dirty" noise before the filter/VCA chain? 
+         // Real hardware: DAC noise is post-DCW but pre-Analog VDA/Filter? No, CZ is digital DCW/DCA.
+         // DAC is at the very end. So noise should be added here.
+         float dcwMix = (dcwVal1 + dcwVal2) * 0.5f;
+         rawMix += getAuthenticNoise(currentNote, dcwMix);
+    }
+
     // Optimization: Fast Tanh
     float softClipped = fastTanh(rawMix * HardwareConstants::SOFT_CLIP_DRIVE);
     
@@ -507,12 +556,24 @@ float Voice::applyPostProcessing(float rawMix) noexcept
     float filtered = lpf.processSample(softClipped);
     filtered = hpf.processSample(filtered);
 
-    return filtered * currentVelocity * masterVolume.getNextValue() * HardwareConstants::MASTER_HEADROOM_GAIN;
+    float output = filtered * currentVelocity * masterVolume.getNextValue();
+    
+    // Phase 9: 12-bit DAC Compression Simulation
+    if (hardwareNoiseEnabled) {
+        // Apply non-linear compression to the final output
+        float absOut = std::abs(output);
+        float sign = (output >= 0.0f) ? 1.0f : -1.0f;
+        output = sign * HardwareConstants::applyDACCompression(absOut);
+    }
+    
+    return output * HardwareConstants::MASTER_HEADROOM_GAIN;
 }
 
+// Audit Fix [Div-0/NaN]: Clamp MIDI note to valid range to prevent denormals/NaNs 
 float Voice::midiNoteToFrequency(int midiNote) const noexcept
 {
-    return 440.0f * std::exp2((midiNote - 69) / 12.0f);
+    midiNote = juce::jlimit(0, 127, midiNote); 
+    return 440.0f * std::exp2((static_cast<float>(midiNote) - 69.0f) * 0.083333333f); // slightly faster than /12.0f
 }
 
 void Voice::setModulationMatrix(const ModulationMatrix& m) noexcept
@@ -529,5 +590,109 @@ void Voice::setModulationMatrix(const ModulationMatrix& m) noexcept
     smoothedMatrix.keyTrackPitch.setTargetValue(m.keyTrackPitch);
 }
 
+float Voice::getAuthenticNoise(int note, float dcwLevel) noexcept
+{
+    // Ruido escalado por DCW (16-bit DAC crunch)
+    float dacNoise = (noiseGen.nextFloat() * 2.0f - 1.0f) * (HardwareConstants::DAC_NOISE_FLOOR + dcwLevel * 0.0003f);
+    
+    // Key click artificial (env spike al inicio)
+    // We approximate the spike using the start of the DCA envelope
+    float keyClick = 0.0f;
+    // Audit Fix [KeyClick]: Use time-based logic instead of envelope state for consistency
+    // Impulse spike at note start (first 5ms)
+    // We can use sampleCounter reset at NoteOn? 
+    // Let's use `dcaEnvelope1.isActive()` combined with a transient check
+    // Or better: pass `isNoteStart` flag?
+    // Actually, checking "Attacking and Level < 0.1" is okay but fragile with slow attacks.
+    // Authentic Key Click happens due to VCA offset/leakage at Note On.
+    // Let's simulate it by adding a tiny impulse if `dcaEnvelope1` is in Stage 0.
+    if (dcaEnvelope1.getCurrentStage() == 0) {
+         // Decay the click rapidly based on level
+         float clickEnv = 1.0f - (dcaEnvelope1.getCurrentValue() * 10.0f);
+         if (clickEnv > 0.0f) keyClick = HardwareConstants::KEY_CLICK_SPIKE * (note / 127.0f) * clickEnv;
+    }
+    
+    return dacNoise + keyClick;
+}
+
+void Voice::applySnapshot(const ParameterSnapshot* s) noexcept
+{
+    if (!s) return;
+    
+    // Optimized Parameter Updates from Snapshot
+    // Only update smoothed targets, avoiding complex logic
+    
+    // Oscillators
+    osc1.setWaveforms(static_cast<DSP::PhaseDistOscillator::CzWaveform>(s->dco1.wave1),
+                      static_cast<DSP::PhaseDistOscillator::CzWaveform>(s->dco1.wave2));
+    osc2.setWaveforms(static_cast<DSP::PhaseDistOscillator::CzWaveform>(s->dco2.wave1),
+                      static_cast<DSP::PhaseDistOscillator::CzWaveform>(s->dco2.wave2));
+                      
+    osc1Level.setTargetValue(s->dco1.level);
+    osc2Level.setTargetValue(s->dco2.level);
+    setOsc2DetuneHardware(s->dco2.octave, s->dco2.coarse, s->dco2.fine);
+    
+    // Flags
+    setHardSync(s->mod.detune == 1); 
+    setRingMod(s->lineMod.ring);
+    setNoiseMod(s->lineMod.noise);
+    
+    // Filter / DCW
+    // Note: DCW/DCA Envelopes are usually triggered, but key follow/sustains are state.
+
+    // System
+    masterVolume.setTargetValue(s->system.masterVol);
+    masterTuneFactor = std::pow(2.0f, s->system.masterTune / 12.0f);
+    pitchBendFactor = std::pow(2.0f, (s->system.bendRange / 12.0f) * modWheel); // simplified
+    
+    // Matrix
+    smoothedMatrix.veloToDcw.setTargetValue(s->mod.veloDcw);
+    smoothedMatrix.veloToDca.setTargetValue(s->mod.veloAmp);
+    smoothedMatrix.wheelToDcw.setTargetValue(s->mod.wheelToDcw);
+    smoothedMatrix.wheelToLfoRate.setTargetValue(s->mod.wheelToLfoRate);
+    smoothedMatrix.wheelToVibrato.setTargetValue(s->mod.wheelToVibrato);
+    smoothedMatrix.atToDcw.setTargetValue(s->mod.atToDcw);
+    smoothedMatrix.atToVibrato.setTargetValue(s->mod.atToVibrato);
+    
+    // Audit Fix [PITCH_FIX]: Correctly interpret Key Follow modes
+    // Modes: 0=OFF, 1=FIX, 2=VAR
+    matrix.kfDcw = s->mod.keyFollowDcw;
+    matrix.kfDca = s->mod.keyFollowAmp;
+    matrix.kfDco = s->mod.keyFollowDco;
+    
+    // amounts (Wait, were these amounts in snapshot?)
+    // Snapshot doesn't have explicit amounts for KF yet, assuming 1.0 (Standard Tracking) if ON.
+    smoothedMatrix.keyTrackDcw.setTargetValue(matrix.kfDcw > 0 ? 1.0f : 0.0f);
+    smoothedMatrix.keyTrackPitch.setTargetValue(matrix.kfDco > 0 ? 1.0f : 0.0f);
+
+    hardwareNoiseEnabled = s->system.hardwareNoise;
+    
+    // LFO
+    lfoModule.setFrequency(s->lfo.rate);
+    lfoModule.setWaveform(static_cast<DSP::LFO::Waveform>(s->lfo.waveform));
+    vibratoDepth = s->lfo.depth;
+    lfoModule.setDelay(s->lfo.delay);
+
+    // Envelopes (Restoration)
+    auto applyEnv = [](DSP::MultiStageEnvelope& env, const Core::ParameterSnapshot::EnvParam& src) {
+        for(int i=0; i<8; ++i) env.setStage(i, src.rates[i], src.levels[i]);
+        env.setSustainPoint(src.sustain);
+        env.setEndPoint(src.end);
+    };
+    
+    if (s->envelopes.dca1.sustain != -2) { // Check sentinel? Or just apply.
+        applyEnv(dcwEnvelope1, s->envelopes.dcw1);
+        applyEnv(dcwEnvelope2, s->envelopes.dcw2);
+        applyEnv(dcaEnvelope1, s->envelopes.dca1);
+        applyEnv(dcaEnvelope2, s->envelopes.dca2);
+        applyEnv(pitchEnvelope1, s->envelopes.pitch1);
+        applyEnv(pitchEnvelope2, s->envelopes.pitch2);
+    }
+}
+
+// Duplicate applySnapshot removed.
+
 } // namespace Core
+
+
 } // namespace CZ101

@@ -32,3 +32,8 @@ JuceLibraryCode/
 compilation_error.log
 tmp/
 *.zip
+TOTALCODE*.txt
+CONTROL_FILESCODE*.txt
+Calibration*.txt
+GoldenMaster*.txt
+*.syx

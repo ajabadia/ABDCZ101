@@ -10,10 +10,12 @@
 #include "State/Parameters.h"
 #include "State/PresetManager.h"
 
-#include "DSP/Effects/Delay.h"
 #include "DSP/Effects/Chorus.h"
+#include "DSP/Effects/StereoDelay.h" // Audit Fix 10.5
 #include "DSP/Effects/Reverb.h"
+#include <juce_dsp/juce_dsp.h> // Required for LadderFilter
 #include "DSP/Modulation/LFO.h"
+#include "Core/AudioThreadSnapshot.h"
 // #include "UI/LCDStateManager.h" // Removed to prevent circular dependency
 namespace CZ101 { namespace UI { class LCDStateManager; } }
 
@@ -111,6 +113,10 @@ public:
 
     // Callbacks
     std::function<void()> requestAudioSettings; // For Standalone Audio/MIDI Settings
+    
+    // Audit Fix 10.6: Compare Logic
+    void toggleCompareMode(bool enable);
+    bool isCompareMode() const noexcept { return isCompareEnabled; }
 
     // --- UI State Management ---
     std::unique_ptr<CZ101::UI::LCDStateManager> lcdStateManager;
@@ -126,10 +132,14 @@ private:
     CZ101::State::Parameters parameters;
     CZ101::State::PresetManager presetManager;
     CZ101::MIDI::SysExManager sysExManager;
+    bool isCompareEnabled = false; // Audit Fix 10.6
     
-
-    CZ101::DSP::Effects::Delay delayL;
-    CZ101::DSP::Effects::Delay delayR;
+    CZ101::Core::AudioThreadSnapshot audioSnapshot;
+    
+    // Phase 7: Snapshot Builder
+    std::unique_ptr<CZ101::Core::ParameterSnapshot> buildAudioSnapshot();
+    
+    CZ101::DSP::Effects::StereoDelay stereoDelay; // Added Audit Fix 10.5
     
     juce::Reverb reverb;
     juce::Reverb::Parameters reverbParams;
@@ -146,6 +156,17 @@ private:
     static constexpr int COMMAND_QUEUE_SIZE = 4096; // Audit Fix 4.1: Increased for high SR
     juce::AbstractFifo commandFifo { COMMAND_QUEUE_SIZE };
     std::array<EnvelopeUpdateCommand, COMMAND_QUEUE_SIZE> commandBuffer;
+    
+    // Audit Fix 10.1: Real-Time Safe MIDI Parameter Queue
+    struct MidiParamUpdate {
+        char paramID[64]; // Fixed size for POD
+        float value;
+    };
+    static constexpr int MIDI_QUEUE_SIZE = 512;
+    juce::AbstractFifo midiParamFifo { MIDI_QUEUE_SIZE };
+    std::array<MidiParamUpdate, MIDI_QUEUE_SIZE> midiParamBuffer;
+    
+    void scheduleMidiParamUpdate(const char* id, float value);
     
     void handleAsyncUpdate() override;
     

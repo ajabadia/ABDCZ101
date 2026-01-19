@@ -30,6 +30,14 @@ private:
     Core::VoiceManager& voiceManager;
     State::PresetManager& presetManager; 
     
+    // Audit Fix 10.1: Lock-free callback for parameter updates
+    std::function<void(const char*, float)> onMidiParamChange; 
+    
+public:
+    void setParamChangeCallback(std::function<void(const char*, float)> cb) { onMidiParamChange = cb; }
+
+private:
+    
     SysExManager* sysExManager = nullptr;
     int pitchBendRange = 2;  // ±2 semitones
     int listenChannel = 0;   // 0 = OMNI, 1-16 = Single Channel

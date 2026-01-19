@@ -23,6 +23,10 @@ public:
      * @return Index of the voice to steal, or -1.
      */
     virtual int findVoiceToSteal(const Voice* voices, int numVoices, int maxActiveVoices) = 0;
+    
+    // Optional hooks
+    virtual void noteOn(int voiceIndex, int midiNote) {}
+    virtual void reset() {}
 };
 
 /**

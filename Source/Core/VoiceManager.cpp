@@ -1,4 +1,6 @@
 #include "VoiceManager.h"
+#include "CZ5000VoiceStrategy.h"
+#include "AudioThreadSnapshot.h" // Required for parameter snapshot definition
 #include "../DSP/Modulation/LFO.h"
 #include <algorithm>
 
@@ -12,10 +14,12 @@ VoiceManager::VoiceManager()
     updateStrategy();
 }
 
+#include "CZ5000VoiceStrategy.h" // [NEW]
+
 void VoiceManager::updateStrategy()
 {
     // [NEW] Phase 4.3: Initialize Strategy
-    // For now we only support Oldest, but structure allows expansion
+    // Initialize with default (Oldest)
     strategy = std::make_unique<OldestVoiceStrategy>();
 }
 
@@ -23,6 +27,15 @@ void VoiceManager::updateStrategy()
 void VoiceManager::setSynthModel(DSP::MultiStageEnvelope::Model model) noexcept
 {
     applyToAllVoices([model](Voice& v) { v.setModel(model); });
+    
+    // Switch strategy based on model
+    if (model == DSP::MultiStageEnvelope::Model::CZ5000) {
+        strategy = std::make_unique<CZ5000VoiceStrategy>();
+    } else {
+        strategy = std::make_unique<OldestVoiceStrategy>();
+    }
+    
+    // Audit Fix [2.3]: Dynamic Voice Count
     
     // Audit Fix [2.3]: Dynamic Voice Count
     // CZ-101: 4 Voices (8 DCOs)
@@ -274,6 +287,31 @@ int VoiceManager::findVoicePlayingNote(int midiNote) const noexcept
     for (int i = 0; i < maxActiveVoices; ++i) 
         if (voices[i].getCurrentNote() == midiNote) return i;
     return -1;
+}
+
+// Phase 7: Snapshot System
+void VoiceManager::applySnapshot(const ParameterSnapshot* snapshot) noexcept
+{
+    if (!snapshot) return;
+    
+    // Global parameters affecting logic
+    maxActiveVoices = snapshot->system.voiceLimit;
+    
+    // Propagate to all voices
+    applyToAllVoices([snapshot](Voice& v) { 
+        v.applySnapshot(snapshot); 
+    });
+    
+    // Audit Fix [2.4]: Apply Arpeggiator Snapshot
+    auto& arp = getArpeggiator();
+    arp.setEnabled(snapshot->arp.enabled);
+    arp.setLatch(snapshot->arp.latch);
+    arp.setRate(static_cast<DSP::Arpeggiator::Rate>(snapshot->arp.rate));
+    arp.setPattern(static_cast<DSP::Arpeggiator::Pattern>(snapshot->arp.pattern));
+    arp.setOctaveRange(snapshot->arp.octave);
+    arp.setGateTime(snapshot->arp.gate);
+    arp.setSwing(snapshot->arp.swing);
+    arp.setSwingMode(static_cast<DSP::Arpeggiator::SwingMode>(snapshot->arp.swingMode));
 }
 
 } // namespace Core

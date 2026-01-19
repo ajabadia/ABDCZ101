@@ -22,31 +22,49 @@ PresetManager::~PresetManager() = default;
 void PresetManager::addListener(Listener* l) { listeners.add(l); }
 void PresetManager::removeListener(Listener* l) { listeners.remove(l); }
 
-void PresetManager::beginCompare()
+void PresetManager::setCompareMode(bool enabled)
 {
     const juce::ScopedWriteLock sl(presetLock);
-    if (isComparing) return;
     
-    // Save current EDITED state to buffer
-    copyStateFromProcessor();
-    compareBuffer = currentPreset;
-    isComparing = true;
-    
-    // Reload original state from bank
-    if (currentPresetIndex >= 0 && currentPresetIndex < (int)presets.size())
+    if (enabled && !isComparing)
     {
-        loadPreset(currentPresetIndex, true);
+        // Enter Compare: Backup current -> Load Saved
+        copyStateFromProcessor(); // Save current edits to 'currentPreset'
+        compareBuffer = currentPreset; // Backup edits to 'compareBuffer'
+        isComparing = true;
+        
+        // Load original from bank
+        if (currentPresetIndex >= 0 && currentPresetIndex < (int)presets.size())
+        {
+             // We load into 'currentPreset' so the engine & UI reflect the "Saved" state
+             // But we DON'T update the index or anything else.
+             currentPreset = presets[currentPresetIndex];
+        }
+        // Apply "Saved" state to engine
+        applyPresetToProcessor(currentPreset);
+        // We do typically execute updateVoice logic here too
+        // Reuse loadPresetFromStruct internal logic but without the lock re-entry potential?
+        // Let's safe-call apply:
     }
-}
-
-void PresetManager::endCompare()
-{
-    const juce::ScopedWriteLock sl(presetLock);
-    if (!isComparing) return;
+    else if (!enabled && isComparing)
+    {
+        // Exit Compare: Restore Backup -> Engine
+        currentPreset = compareBuffer;
+        isComparing = false;
+        applyPresetToProcessor(currentPreset);
+    }
     
-    // Restore the edited state from buffer
-    loadPresetFromStruct(compareBuffer, true);
-    isComparing = false;
+    // Update Voice Envelopes
+    if (voiceManager)
+    {
+        applyEnvelopeToVoice(currentPreset.pitchEnv, 0, 1);
+        applyEnvelopeToVoice(currentPreset.dcwEnv, 1, 1);
+        applyEnvelopeToVoice(currentPreset.dcaEnv, 2, 1);
+        
+        applyEnvelopeToVoice(currentPreset.pitchEnv2, 0, 2);
+        applyEnvelopeToVoice(currentPreset.dcwEnv2, 1, 2);
+        applyEnvelopeToVoice(currentPreset.dcaEnv2, 2, 2);
+    }
 }
 
 void PresetManager::loadPreset(int index, bool updateVoice)
@@ -84,7 +102,7 @@ void PresetManager::loadPreset(int index, bool updateVoice)
     }
 } 
 
-void PresetManager::loadPresetFromStruct(const Preset& p, bool updateVoice)
+void PresetManager::loadPresetFromStruct(const Preset& p, bool updateVoice, bool notifyHost)
 {
     {
         const juce::ScopedWriteLock sl(presetLock);
@@ -102,6 +120,13 @@ void PresetManager::loadPresetFromStruct(const Preset& p, bool updateVoice)
         applyEnvelopeToVoice(p.pitchEnv2, 0, 2);
         applyEnvelopeToVoice(p.dcwEnv2, 1, 2);
         applyEnvelopeToVoice(p.dcaEnv2, 2, 2);
+    }
+    
+    // Audit Fix [2.1]: Ensure Host Display and APVTS are in sync
+    if (notifyHost && parameters)
+    {
+         // Note: We cannot call audioProcessor.updateHostDisplay() directly here as we only have Parameters.
+         // However, applyPresetToProcessor calls setValueNotifyingHost which triggers listeners.
     }
 }
 
@@ -148,75 +173,62 @@ void PresetManager::applyEnvelopeToVoice(const EnvelopeData& env, int type, int 
 
 void PresetManager::copyStateFromProcessor()
 {
-    // 1. Capture Parameters (Denormalized)
-    if (parameters)
     {
-        // Iterate over ALL defined parameters using the new getter
-        const auto& map = parameters->getParameterMap();
-        for (const auto& pair : map) // use pair to avoid structured binding confusion if const ref issues
+        const juce::ScopedWriteLock swl(presetLock);
+        // 1. Capture Parameters (Denormalized)
+        if (parameters)
         {
-            const juce::String& key = pair.first;
-            juce::RangedAudioParameter* param = pair.second;
-            
-            // Convert juce::String key to std::string for the std::map index
-            std::string stdKey = key.toStdString();
+            // Iterate over ALL defined parameters using the new getter
+            const auto& map = parameters->getParameterMap();
+            for (const auto& pair : map) 
+            {
+                const juce::String& key = pair.first;
+                juce::RangedAudioParameter* param = pair.second;
+                std::string stdKey = key.toStdString();
 
-            if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(param))
-            {
-                currentPreset.parameters[stdKey] = p->get();
-            }
-            else if (auto* pInt = dynamic_cast<juce::AudioParameterInt*>(param))
-            {
-                 currentPreset.parameters[stdKey] = (float)pInt->get();
-            }
-            else if (auto* pChoice = dynamic_cast<juce::AudioParameterChoice*>(param))
-            {
-                 currentPreset.parameters[stdKey] = (float)pChoice->getIndex();
-            }
-             else if (auto* pBool = dynamic_cast<juce::AudioParameterBool*>(param))
-            {
-                 currentPreset.parameters[stdKey] = pBool->get() ? 1.0f : 0.0f;
+                if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(param))
+                    currentPreset.parameters[stdKey] = p->get();
+                else if (auto* pInt = dynamic_cast<juce::AudioParameterInt*>(param))
+                    currentPreset.parameters[stdKey] = (float)pInt->get();
+                else if (auto* pChoice = dynamic_cast<juce::AudioParameterChoice*>(param))
+                    currentPreset.parameters[stdKey] = (float)pChoice->getIndex();
+                else if (auto* pBool = dynamic_cast<juce::AudioParameterBool*>(param))
+                    currentPreset.parameters[stdKey] = pBool->get() ? 1.0f : 0.0f;
             }
         }
-    }
 
-    // 2. Capture Envelopes from VoiceManager
-    if (voiceManager)
-    {
-        // --- LINE 1 ---
-        // DCW
-        for(int i=0; i<8; ++i) voiceManager->getDCWStage(1, i, currentPreset.dcwEnv.rates[i], currentPreset.dcwEnv.levels[i]);
-        currentPreset.dcwEnv.sustainPoint = voiceManager->getDCWSustainPoint(1);
-        currentPreset.dcwEnv.endPoint = voiceManager->getDCWEndPoint(1);
-        
-        // DCA
-        for(int i=0; i<8; ++i) voiceManager->getDCAStage(1, i, currentPreset.dcaEnv.rates[i], currentPreset.dcaEnv.levels[i]);
-        currentPreset.dcaEnv.sustainPoint = voiceManager->getDCASustainPoint(1);
-        currentPreset.dcaEnv.endPoint = voiceManager->getDCAEndPoint(1);
-        
-        // Pitch
-        for(int i=0; i<8; ++i) voiceManager->getPitchStage(1, i, currentPreset.pitchEnv.rates[i], currentPreset.pitchEnv.levels[i]);
-        currentPreset.pitchEnv.sustainPoint = voiceManager->getPitchSustainPoint(1);
-        currentPreset.pitchEnv.endPoint = voiceManager->getPitchEndPoint(1);
+        // 2. Capture Envelopes from VoiceManager
+        if (voiceManager)
+        {
+            // --- LINE 1 ---
+            for(int i=0; i<8; ++i) voiceManager->getDCWStage(1, i, currentPreset.dcwEnv.rates[i], currentPreset.dcwEnv.levels[i]);
+            currentPreset.dcwEnv.sustainPoint = voiceManager->getDCWSustainPoint(1);
+            currentPreset.dcwEnv.endPoint = voiceManager->getDCWEndPoint(1);
+            
+            for(int i=0; i<8; ++i) voiceManager->getDCAStage(1, i, currentPreset.dcaEnv.rates[i], currentPreset.dcaEnv.levels[i]);
+            currentPreset.dcaEnv.sustainPoint = voiceManager->getDCASustainPoint(1);
+            currentPreset.dcaEnv.endPoint = voiceManager->getDCAEndPoint(1);
+            
+            for(int i=0; i<8; ++i) voiceManager->getPitchStage(1, i, currentPreset.pitchEnv.rates[i], currentPreset.pitchEnv.levels[i]);
+            currentPreset.pitchEnv.sustainPoint = voiceManager->getPitchSustainPoint(1);
+            currentPreset.pitchEnv.endPoint = voiceManager->getPitchEndPoint(1);
 
-        // --- LINE 2 ---
-        // DCW
-        for(int i=0; i<8; ++i) voiceManager->getDCWStage(2, i, currentPreset.dcwEnv2.rates[i], currentPreset.dcwEnv2.levels[i]);
-        currentPreset.dcwEnv2.sustainPoint = voiceManager->getDCWSustainPoint(2);
-        currentPreset.dcwEnv2.endPoint = voiceManager->getDCWEndPoint(2);
-        
-        // DCA
-        for(int i=0; i<8; ++i) voiceManager->getDCAStage(2, i, currentPreset.dcaEnv2.rates[i], currentPreset.dcaEnv2.levels[i]);
-        currentPreset.dcaEnv2.sustainPoint = voiceManager->getDCASustainPoint(2);
-        currentPreset.dcaEnv2.endPoint = voiceManager->getDCAEndPoint(2);
-        
-        // Pitch
-        for(int i=0; i<8; ++i) voiceManager->getPitchStage(2, i, currentPreset.pitchEnv2.rates[i], currentPreset.pitchEnv2.levels[i]);
-        currentPreset.pitchEnv2.sustainPoint = voiceManager->getPitchSustainPoint(2);
-        currentPreset.pitchEnv2.endPoint = voiceManager->getPitchEndPoint(2);
+            // --- LINE 2 ---
+            for(int i=0; i<8; ++i) voiceManager->getDCWStage(2, i, currentPreset.dcwEnv2.rates[i], currentPreset.dcwEnv2.levels[i]);
+            currentPreset.dcwEnv2.sustainPoint = voiceManager->getDCWSustainPoint(2);
+            currentPreset.dcwEnv2.endPoint = voiceManager->getDCWEndPoint(2);
+            
+            for(int i=0; i<8; ++i) voiceManager->getDCAStage(2, i, currentPreset.dcaEnv2.rates[i], currentPreset.dcaEnv2.levels[i]);
+            currentPreset.dcaEnv2.sustainPoint = voiceManager->getDCASustainPoint(2);
+            currentPreset.dcaEnv2.endPoint = voiceManager->getDCAEndPoint(2);
+            
+            for(int i=0; i<8; ++i) voiceManager->getPitchStage(2, i, currentPreset.pitchEnv2.rates[i], currentPreset.pitchEnv2.levels[i]);
+            currentPreset.pitchEnv2.sustainPoint = voiceManager->getPitchSustainPoint(2);
+            currentPreset.pitchEnv2.endPoint = voiceManager->getPitchEndPoint(2);
+        }
     }
     
-    // Notify Listeners OUTSIDE the lock (copyStateFromProcessor doesn't hold lock)
+    // Notify Listeners OUTSIDE the lock
     listeners.call([this](Listener& l) { l.presetLoaded(currentPresetIndex); });
 }
 
@@ -251,6 +263,7 @@ static void initEnvelopes(Preset& p)
 
 void PresetManager::createFactoryPresets()
 {
+    const juce::ScopedWriteLock swl(presetLock);
     presets.clear();
     
     // --- PRESTIGIOUS USER CONTRIBUTIONS ---
@@ -395,16 +408,28 @@ void PresetManager::createBassPreset()
     
     p.parameters["OSC2_DETUNE"] = -10.0f;      // -10 cents
     
-    // ===== ADSR (IN SECONDS) =====
-    p.parameters["DCW_ATTACK"] = 0.01f;        // âœ… 10ms (crisp)
-    p.parameters["DCW_DECAY"] = 0.2f;          // âœ… 200ms
-    p.parameters["DCW_SUSTAIN"] = 0.2f;        // âœ… 20% level
-    p.parameters["DCW_RELEASE"] = 0.1f;        // âœ… 100ms
-    
-    p.parameters["DCA_ATTACK"] = 0.001f;       // âœ… 1ms (very crisp)
-    p.parameters["DCA_DECAY"] = 0.2f;          // âœ… 200ms
-    p.parameters["DCA_SUSTAIN"] = 0.5f;        // âœ… 50% level
-    p.parameters["DCA_RELEASE"] = 0.15f;       // âœ… 150ms
+    // ===== ENVELOPES (Explicit for 8-stage engine) =====
+    // Pitch: Flat
+    p.pitchEnv.rates[0] = 0.99f; p.pitchEnv.levels[0] = 0.5f;
+    p.pitchEnv.sustainPoint = 0; p.pitchEnv.endPoint = 0;
+
+    // DCW: Pluck (Filter)
+    p.dcwEnv.rates[0] = 0.95f; p.dcwEnv.levels[0] = 0.9f;  // Attack
+    p.dcwEnv.rates[1] = 0.5f;  p.dcwEnv.levels[1] = 0.2f;  // Decay to Sustain
+    p.dcwEnv.rates[2] = 0.99f; p.dcwEnv.levels[2] = 0.2f;  // Sustain
+    p.dcwEnv.rates[3] = 0.6f;  p.dcwEnv.levels[3] = 0.0f;  // Release
+    p.dcwEnv.sustainPoint = 2; p.dcwEnv.endPoint = 3;
+
+    // DCA: Pluck (Amp)
+    p.dcaEnv.rates[0] = 0.99f; p.dcaEnv.levels[0] = 1.0f;  // Instant Attack
+    p.dcaEnv.rates[1] = 0.6f;  p.dcaEnv.levels[1] = 0.5f;  // Decay
+    p.dcaEnv.rates[2] = 0.99f; p.dcaEnv.levels[2] = 0.5f;  // Sustain
+    p.dcaEnv.rates[3] = 0.6f;  p.dcaEnv.levels[3] = 0.0f;  // Release
+    p.dcaEnv.sustainPoint = 2; p.dcaEnv.endPoint = 3;
+
+    // Also set legacy params for display
+    p.parameters["DCW_ATTACK"] = 0.01f; p.parameters["DCW_DECAY"] = 0.2f; p.parameters["DCW_SUSTAIN"] = 0.2f; p.parameters["DCW_RELEASE"] = 0.1f;
+    p.parameters["DCA_ATTACK"] = 0.001f; p.parameters["DCA_DECAY"] = 0.2f; p.parameters["DCA_SUSTAIN"] = 0.5f; p.parameters["DCA_RELEASE"] = 0.15f;
     
     // ===== FILTER =====
     p.parameters["FILTER_CUTOFF"] = 2000.0f;   // 2000 Hz
@@ -448,16 +473,28 @@ void PresetManager::createStringPreset()
     
     p.parameters["OSC2_DETUNE"] = 12.0f;       // +1 octava
     
-    // ===== ADSR (IN SECONDS) - REALISTIC STRINGS =====
-    p.parameters["DCW_ATTACK"] = 0.3f;         // âœ… 300ms (bow friction)
-    p.parameters["DCW_DECAY"] = 0.4f;          // âœ… 400ms
-    p.parameters["DCW_SUSTAIN"] = 0.7f;        // âœ… 70% level
-    p.parameters["DCW_RELEASE"] = 0.5f;        // âœ… 500ms
-    
-    p.parameters["DCA_ATTACK"] = 0.4f;         // âœ… 400ms (smooth)
-    p.parameters["DCA_DECAY"] = 0.3f;          // âœ… 300ms
-    p.parameters["DCA_SUSTAIN"] = 0.8f;        // âœ… 80% level
-    p.parameters["DCA_RELEASE"] = 0.6f;        // âœ… 600ms (smooth release)
+    // ===== ENVELOPES (Explicit for 8-stage engine) =====
+    // Pitch: Flat
+    p.pitchEnv.rates[0] = 0.99f; p.pitchEnv.levels[0] = 0.5f;
+    p.pitchEnv.sustainPoint = 0; p.pitchEnv.endPoint = 0;
+
+    // DCW: Slow Bow
+    p.dcwEnv.rates[0] = 0.3f;  p.dcwEnv.levels[0] = 1.0f;  // Slow Attack
+    p.dcwEnv.rates[1] = 0.99f; p.dcwEnv.levels[1] = 0.7f;  // Decay/Sustain
+    p.dcwEnv.rates[2] = 0.99f; p.dcwEnv.levels[2] = 0.7f;  // Sustain
+    p.dcwEnv.rates[3] = 0.4f;  p.dcwEnv.levels[3] = 0.0f;  // Slow Release
+    p.dcwEnv.sustainPoint = 2; p.dcwEnv.endPoint = 3;
+
+    // DCA: Slow Bow
+    p.dcaEnv.rates[0] = 0.3f;  p.dcaEnv.levels[0] = 1.0f;  // Slow Attack
+    p.dcaEnv.rates[1] = 0.99f; p.dcaEnv.levels[1] = 0.8f;  // Decay/Sustain
+    p.dcaEnv.rates[2] = 0.99f; p.dcaEnv.levels[2] = 0.8f;  // Sustain
+    p.dcaEnv.rates[3] = 0.4f;  p.dcaEnv.levels[3] = 0.0f;  // Slow Release
+    p.dcaEnv.sustainPoint = 2; p.dcaEnv.endPoint = 3;
+
+    // Legacy Params for display
+    p.parameters["DCW_ATTACK"] = 0.3f; p.parameters["DCW_DECAY"] = 0.4f; p.parameters["DCW_SUSTAIN"] = 0.7f; p.parameters["DCW_RELEASE"] = 0.5f;
+    p.parameters["DCA_ATTACK"] = 0.4f; p.parameters["DCA_DECAY"] = 0.3f; p.parameters["DCA_SUSTAIN"] = 0.8f; p.parameters["DCA_RELEASE"] = 0.6f;
     
     // ===== FILTER =====
     p.parameters["FILTER_CUTOFF"] = 8000.0f;   // Open
@@ -833,29 +870,27 @@ void PresetManager::loadBank(const juce::File& file)
 {
     if (!file.existsAsFile()) return;
     
+    juce::Logger::writeToLog("PresetManager: Parsing JSON...");
     juce::var data = juce::JSON::parse(file);
-    juce::var presetsArray;
+    juce::Logger::writeToLog("PresetManager: JSON Parsed");
     
-    int version = 0; // Default legacy
+    juce::var presetsArray;
+    int version = 0;
 
-    // Audit Fix 5.2: Check Version
     if (data.isObject() && data.hasProperty("presets")) {
         version = data["version"];
-        if (version < 1) {
-            juce::Logger::writeToLog("Warning: Loading old or unknown bank version");
-        }
         presetsArray = data["presets"];
     } else if (data.isArray()) {
-        presetsArray = data; // Legacy support
+        presetsArray = data; 
     } else {
         return;
     }
 
     if (!presetsArray.isArray()) return;
     
-    presets.clear(); // Important: Clear definition
+    std::vector<Preset> newPresets;
+    juce::Logger::writeToLog("PresetManager: Loading " + juce::String(presetsArray.size()) + " presets");
     
-    // We expect 64 presets
     for (int i = 0; i < presetsArray.size(); ++i) {
         if (i >= 64) break;
         
@@ -907,17 +942,21 @@ void PresetManager::loadBank(const juce::File& file)
             if (presetVar.hasProperty("dcaEnv2")) loadEnv(presetVar["dcaEnv2"], p.dcaEnv2);
             if (presetVar.hasProperty("pitchEnv2")) loadEnv(presetVar["pitchEnv2"], p.pitchEnv2);
             
-            presets.push_back(p);
+            newPresets.push_back(p);
         }
     }
     
-    // Ensure 64 slots
-    while (presets.size() < 64) {
-        presets.push_back(Preset("Init User " + std::to_string(presets.size() + 1)));
+    while (newPresets.size() < 64) {
+        newPresets.push_back(Preset("Init User " + std::to_string(newPresets.size() + 1)));
     }
     
-    // Audit Fix 3.1: Reset index after bank load to prevent offset mismatch
-    currentPresetIndex = 0; 
+    {
+        const juce::ScopedWriteLock swl(presetLock);
+        presets = std::move(newPresets);
+        currentPresetIndex = 0; 
+    }
+    
+    juce::Logger::writeToLog("PresetManager: Bank applied, loading preset 0");
     loadPreset(currentPresetIndex);
 }
 
@@ -1087,6 +1126,22 @@ void PresetManager::movePreset(int fromIndex, int toIndex)
         autoSaveUserBank();
         listeners.call(&Listener::bankUpdated);
     }
+}
+
+
+// Audit Fix: Thread-safe accessors
+int PresetManager::getNumPresets() const
+{
+    const juce::ScopedReadLock sl(presetLock);
+    return (int)presets.size();
+}
+
+std::string PresetManager::getPresetName(int index) const
+{
+    const juce::ScopedReadLock sl(presetLock);
+    if (index >= 0 && index < (int)presets.size())
+        return presets[index].name;
+    return "";
 }
 
 } // namespace State

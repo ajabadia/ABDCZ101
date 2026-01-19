@@ -1,5 +1,6 @@
 #include "MultiStageEnv.h"
 #include <algorithm>
+#include "../../Core/AuthenticHardware.h"
 
 namespace CZ101 {
 namespace DSP {
@@ -56,8 +57,8 @@ void MultiStageEnvelope::noteOn() noexcept
     active = true;
     released = false;
     
-    // Start from 0
-    float startVal = 0.0f;
+    // Start from Configured Initial Value (0.0 for Amp/DCW, 0.5 for Pitch)
+    float startVal = initialValue;
     smoother.setCurrentAndTargetValue(startVal);
     
     // Setup first stage
@@ -170,43 +171,12 @@ void MultiStageEnvelope::setModel(Model newModel) noexcept
 
 float MultiStageEnvelope::rateToSeconds(float rate) const noexcept
 {
-    // Authentic CZ-101 Rate Table (Approximate Mapping of 0-99 values to Seconds)
-    static const float cz101RateTable[100] = {
-        60.000f, 47.931f, 38.309f, 30.635f, 24.512f, 19.620f, 15.711f, 12.589f, 10.096f, 8.106f,
-        6.516f, 5.244f, 4.225f, 3.411f, 2.761f, 2.240f, 1.821f, 1.484f, 1.213f, 0.995f,
-        0.819f, 0.676f, 0.560f, 0.466f, 0.389f, 0.325f, 0.273f, 0.230f, 0.194f, 0.165f,
-        0.141f, 0.120f, 0.103f, 0.089f, 0.077f, 0.067f, 0.058f, 0.051f, 0.045f, 0.039f,
-        0.035f, 0.031f, 0.027f, 0.024f, 0.022f, 0.020f, 0.018f, 0.016f, 0.014f, 0.013f,
-        0.012f, 0.011f, 0.010f, 0.009f, 0.008f, 0.007f, 0.007f, 0.006f, 0.006f, 0.005f,
-        0.005f, 0.005f, 0.004f, 0.004f, 0.004f, 0.004f, 0.003f, 0.003f, 0.003f, 0.003f,
-        0.002f, 0.002f, 0.002f, 0.002f, 0.002f, 0.002f, 0.001f, 0.001f, 0.001f, 0.001f,
-        0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f,
-        0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f, 0.001f
-    };
-
-    // CZ-5000 Rate Table (Slightly faster/snappier curves based on community analysis)
-    // Note: This is an approximation. CZ-5000 envelopes are notably faster at the attack phase.
-    static const float cz5000RateTable[100] = {
-        55.000f, 43.000f, 34.000f, 27.000f, 21.000f, 17.000f, 13.500f, 10.800f, 8.600f, 6.900f,
-        5.500f, 4.400f, 3.500f, 2.800f, 2.200f, 1.800f, 1.450f, 1.150f, 0.920f, 0.740f,
-        0.600f, 0.480f, 0.390f, 0.320f, 0.260f, 0.210f, 0.170f, 0.140f, 0.115f, 0.095f,
-        0.080f, 0.068f, 0.057f, 0.048f, 0.040f, 0.034f, 0.029f, 0.025f, 0.021f, 0.018f,
-        0.015f, 0.013f, 0.011f, 0.010f, 0.009f, 0.008f, 0.007f, 0.006f, 0.005f, 0.0045f,
-        0.004f, 0.0035f, 0.003f, 0.0028f, 0.0025f, 0.0023f, 0.002f, 0.0018f, 0.0016f, 0.0014f,
-        0.0012f, 0.0011f, 0.0010f, 0.0009f, 0.0008f, 0.0008f, 0.0007f, 0.0007f, 0.0006f, 0.0006f,
-        0.0005f, 0.0005f, 0.0005f, 0.0005f, 0.0004f, 0.0004f, 0.0004f, 0.0004f, 0.0003f, 0.0003f,
-        0.0003f, 0.0003f, 0.0002f, 0.0002f, 0.0002f, 0.0002f, 0.0002f, 0.0002f, 0.0001f, 0.0001f,
-        0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f
-    };
-
-    const float* table = (activeModel == Model::CZ5000) ? cz5000RateTable : cz101RateTable;
-
-    // Interpolate between discrete hardware steps
-    float scaledRate = rate * 99.0f;
-    int index = std::clamp(static_cast<int>(scaledRate), 0, 98);
-    float frac = scaledRate - static_cast<float>(index);
+    // Authentic 0-99 Step Mapping
+    int rate99 = static_cast<int>(rate * 99.0f);
     
-    float seconds = (1.0f - frac) * table[index] + frac * table[index + 1];
+    // Use AuthenticHardware utility
+    float seconds = CZ101::Core::HardwareConstants::getRateInSeconds(rate99, activeModel == Model::CZ5000);
+
     return seconds * rateScaler;
 }
 

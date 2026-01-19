@@ -1,22 +1,32 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "Knob.h"
+#include "../Components/Knob.h"
 #include "../ScaledComponent.h"
 #include "../../PluginProcessor.h"
 
 namespace CZ101 {
 namespace UI {
 
-class ArpeggiatorPanel : public ScaledComponent
+class ArpeggiatorSection : public ScaledComponent,
+                           public juce::AudioProcessorValueTreeState::Listener
 {
 public:
-    ArpeggiatorPanel(CZ101AudioProcessor& p);
+    ArpeggiatorSection(CZ101AudioProcessor& p);
+    ~ArpeggiatorSection() override;
     
     void paint(juce::Graphics& g) override;
     void resized() override;
+    
+    // Audit Fix [2.2]: Explicit UI Refresh
+    void refreshFromAPVTS();
+
+    // Listener callback
+    void parameterChanged(const juce::String& parameterID, float newValue) override;
 
 private:
+    void updateVisibility();
+
     CZ101AudioProcessor& audioProcessor;
     
     Knob arpRateKnob;
@@ -37,6 +47,8 @@ private:
     juce::Label swingLabel { {}, "SWING" };
     juce::Label typeLabel { {}, "MODE" };
 
+    juce::Label classicWarningLabel { {}, "ARPEGGIATOR IS DISABLED IN CLASSIC 101 MODE" };
+
     using SliderAttachment = juce::SliderParameterAttachment;
     std::unique_ptr<SliderAttachment> arpRateAttachment;
     std::unique_ptr<SliderAttachment> arpBpmAttachment;
@@ -53,7 +65,7 @@ private:
     std::unique_ptr<ButtonAttachment> arpEnableAttachment;
     std::unique_ptr<ButtonAttachment> arpLatchAttachment;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ArpeggiatorPanel)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ArpeggiatorSection)
 };
 
 } // namespace UI

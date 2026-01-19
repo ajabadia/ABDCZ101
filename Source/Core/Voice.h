@@ -12,7 +12,10 @@
 #include <cstdint>
 
 namespace CZ101 {
+
 namespace Core {
+
+struct ParameterSnapshot; // Forward declaration (Correct Namespace)
 
 /**
  * @brief Voice - Complete synthesizer voice
@@ -24,6 +27,9 @@ class Voice
 {
 public:
     Voice();
+    
+    // Phase 7: Snapshot System
+    void applySnapshot(const ParameterSnapshot* snapshot) noexcept;
     
     void setSampleRate(double sampleRate) noexcept;
 
@@ -58,6 +64,7 @@ public:
      * @brief Enable/Disable Ring Modulation (Osc2 output = Osc1 * Osc2)
      */
     void setRingMod(bool enabled) noexcept;
+    void setNoiseMod(bool enabled) noexcept; // Audit Fix: Missing Noise Mod decl
 
     /**
      * @brief Set Glide (Portamento) Time in seconds
@@ -105,6 +112,9 @@ public:
     
     // Phase 5.1: Oversampling
     void setOversamplingFactor(int factor) noexcept { oversamplingFactor = juce::jlimit(1, 4, factor); }
+    
+    // Phase 9
+    void setHardwareNoiseEnabled(bool enabled) noexcept { hardwareNoiseEnabled = enabled; }
 
     // --- Pitch Envelope Controls ---
     
@@ -189,6 +199,7 @@ private:
     
     bool isHardSyncEnabled = false;
     bool isRingModEnabled = false;
+    bool isNoiseModEnabled = false; // Audit Fix
     
     float glideTime = 0.0f;
     float currentFrequency = 440.0f;
@@ -215,6 +226,11 @@ private:
     float modWheel = 0.0f;
     float aftertouch = 0.0f;
     ModulationMatrix matrix;
+    
+    // Phase 9: Authentic Noise
+    bool hardwareNoiseEnabled = false;
+    float getAuthenticNoise(int note, float dcwLevel) noexcept;
+    juce::Random noiseGen;
 
     void setMasterBend(float semitones) noexcept { pitchBendFactor = std::exp2(semitones / 12.0f); }
 

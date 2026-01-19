@@ -29,6 +29,7 @@ public:
     void setLatch(bool shouldLatch) noexcept { latch = shouldLatch; }
     void setGateTime(float g) noexcept { gateTime = std::clamp(g, 0.05f, 1.0f); }
     void setSwing(float s) noexcept { swingAmount = std::clamp(s, 0.0f, 1.0f); }
+    void setJitter(float j) noexcept { jitterAmount = std::clamp(j, 0.0f, 1.0f); }
     void setSwingMode(SwingMode m) noexcept { currentSwingMode = m; }
 
     // Incoming Event Processing (Audio Thread)
@@ -99,42 +100,35 @@ public:
             
             int timingStep = absoluteStepCount;
             
-            if (currentSwingMode == SwingMode::_1_8)
-            {
-                // In 1/8 swing, we care about 1/8th notes (2 per beat).
-                // If our Rate is 1/16th, one timingStep is 1/16th.
-                // Step 0: Downbeat (Straight)
-                // Step 1: Off-beat 1/16th
-                // Step 2: 1/8th note off-beat (SWING)
-                // Step 3: 1/16th note off-beat
-                
-                // Better: Map timingStep to the grid defined by currentRate.
-                float multiplier = getRateMultiplier(); // 1/4=1, 1/8=0.5, 1/16=0.25
-                double stepInQuarters = timingStep * multiplier;
-                
-                // A step is "swingable" if it's an even 1/8th (0.5, 1.5, 2.5...)
-                // or an even 1/16th (0.25, 0.75, 1.25...)
-                
-                if (currentSwingMode == SwingMode::_1_8) {
-                    // Swing on 0.5, 1.5, 2.5...
-                    double remainder = fmod(stepInQuarters, 1.0);
-                    if (std::abs(remainder - 0.5) < 0.01) isSwingStep = true;
-                } else if (currentSwingMode == SwingMode::_1_16) {
-                    // Swing on 0.25, 0.75, 1.25, 1.75...
-                    double remainder = fmod(stepInQuarters, 0.5);
-                    if (std::abs(remainder - 0.25) < 0.01) isSwingStep = true;
-                }
+            // Map timingStep to the grid defined by currentRate.
+            float multiplier = getRateMultiplier(); // 1/4=1, 1/8=0.5, 1/16=0.25
+            double stepInQuarters = absoluteStepCount * multiplier;
+            
+            if (currentSwingMode == SwingMode::_1_8) {
+                // Swing on 0.5, 1.5, 2.5...
+                double remainder = fmod(stepInQuarters, 1.0);
+                if (std::abs(remainder - 0.5) < 0.01) isSwingStep = true;
+            } else if (currentSwingMode == SwingMode::_1_16) {
+                // Swing on 0.25, 0.75, 1.25, 1.75...
+                double remainder = fmod(stepInQuarters, 0.5);
+                if (std::abs(remainder - 0.25) < 0.01) isSwingStep = true;
             }
             
             if (isSwingStep) swingFactor = 1.0f + (swingAmount * 0.66f); // Max 66% delay (triplet feel)
-            else {
-                 // If the PREVIOUS step was swung, this one must be shorter to compensate
-                 // but in sample counting 'trigger' mode, we just check if it's time to trigger.
-                 // Correct way: Even steps are DELAYED.
-            }
+            // Note: In a sample-based trigger system, delaying one step automatically shortens the gap to the next if the next is on time.
+            // Complex compensation not needed for basic swing in this architecture.
         }
 
         float currentStepDuration = samplesPerStep * swingFactor;
+        
+        // Phase 8: Microtiming Jitter (Humanization)
+        if (jitterAmount > 0.001f) {
+             // Jitter up to ±20ms (approx 880 samples at 44.1k) scaled by amount
+             float jitterSamples = (rng.nextFloat() * 2.0f - 1.0f) * (sampleRate * 0.02f) * jitterAmount;
+             currentStepDuration += jitterSamples;
+             // Ensure we don't go negative or too small
+             if (currentStepDuration < 100.0f) currentStepDuration = 100.0f;
+        }
 
         // Gate Logic (Note Off)
         // If gateTime < 1.0, we emit a Note Off at gateTime * currentStepDuration
@@ -195,6 +189,10 @@ private:
     int absoluteStepCount = 0;
     int currentPlayingNote = -1; // Currently sounding note (to send noteOff)
     int stepsSinceNoteOn = 0;
+    
+    // Phase 8
+    float jitterAmount = 0.0f;
+    juce::Random rng;
     
     std::map<int, float> lastVelocities;
     juce::CriticalSection lock;

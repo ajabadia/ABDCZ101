@@ -33,6 +33,7 @@ public:
     juce::AudioParameterInt*   getDetuneFine() const { return detuneFine; }
     juce::AudioParameterBool*  getHardSync() const { return hardSync; }
     juce::AudioParameterBool*  getRingMod() const { return ringMod; }
+    juce::AudioParameterBool*  getNoiseMod() const { return noiseMod; } // Audit Fix
     juce::AudioParameterFloat* getGlideTime() const { return glideTime; }
 
     juce::AudioParameterFloat* getMasterVolume() const { return masterVolume; }
@@ -46,6 +47,7 @@ public:
     juce::AudioParameterInt*   getKeyTranspose() const { return keyTranspose; }
     
     juce::AudioParameterBool*  getProtectSwitch() const { return protectSwitch; } // Audit Fix [2.5]
+    juce::AudioParameterBool*  getHardwareNoise() const { return hardwareNoise; }
 
     // Envelopes
     juce::AudioParameterFloat* getDcaAttack() const { return dcaAttack; }
@@ -115,6 +117,7 @@ private:
     juce::AudioParameterInt*   detuneFine = nullptr;
     juce::AudioParameterBool* hardSync = nullptr;
     juce::AudioParameterBool* ringMod = nullptr;
+    juce::AudioParameterBool* noiseMod = nullptr; // Audit Fix
     juce::AudioParameterFloat* glideTime = nullptr;
 
     juce::AudioParameterChoice* lfoWaveform = nullptr;
@@ -144,7 +147,8 @@ private:
     juce::AudioParameterBool* protectSwitch = nullptr;
     juce::AudioParameterBool* systemPrg = nullptr;
     juce::AudioParameterFloat* masterVolume = nullptr;
-    juce::AudioParameterBool* bypass = nullptr;
+    juce::AudioParameterBool*  hardwareNoise = nullptr;
+    juce::AudioParameterBool*  bypass = nullptr;
 
     juce::AudioParameterChoice* operationMode = nullptr; // Audit Fix [2.2a]: Unified Mode
 

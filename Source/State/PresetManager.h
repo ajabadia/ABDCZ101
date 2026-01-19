@@ -24,9 +24,12 @@ struct EnvelopeData
     
     EnvelopeData()
     {
-        for (int i=0; i<8; ++i) { rates[i] = 0.5f; levels[i] = 0.0f; }
-        sustainPoint = 2;
-        endPoint = 3;
+        // Audit Fix 10.3: Default Gate Shape (Prevent silence)
+        for (int i=0; i<8; ++i) { rates[i] = 50.0f; levels[i] = 0.0f; }
+        levels[0] = 1.0f; // Stage 0 Target = Full Level
+        // Stage 1 Target = 0.0f (Release)
+        sustainPoint = 0; // Sustain at end of Stage 0
+        endPoint = 1;     // End at end of Stage 1
     }
 };
 
@@ -57,7 +60,7 @@ class Parameters;
 namespace Core { class VoiceManager; } // Forward declaration outside State
 namespace State {
 
-class PresetManager
+class PresetManager : public juce::ChangeBroadcaster
 {
 public:
     static constexpr int MAX_PRESETS = 64;
@@ -81,7 +84,7 @@ public:
     
     void loadPreset(int index, bool updateVoice = true);
     void savePreset(int index, const std::string& name);
-    void loadPresetFromStruct(const Preset& p, bool updateVoice = true); 
+    void loadPresetFromStruct(const Preset& p, bool updateVoice = true, bool notifyHost = true); 
     void copyStateFromProcessor(); 
     void applyPresetToProcessor(const Preset& p);
     
@@ -107,12 +110,15 @@ public:
     void createFactoryPresets(); // Exposed for PluginProcessor fallback
     
     const Preset& getCurrentPreset() const { return currentPreset; }
-    const std::vector<Preset>& getPresets() const { return presets; }
+    const std::vector<Preset>& getPresets() const { return presets; } // Warning: Not thread-safe without calling getLock()
     int getCurrentPresetIndex() const { return currentPresetIndex; }
     
+    // Thread-Safe Accessors (Audit Fix)
+    int getNumPresets() const;
+    std::string getPresetName(int index) const;
+    
     // Compare Support
-    void beginCompare();
-    void endCompare();
+    void setCompareMode(bool enabled);
     bool isComparisonActive() const { return isComparing; }
     
     

@@ -1,19 +1,19 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
-#include "Knob.h"
+#include "../Components/Knob.h"
 #include "../ScaledComponent.h"
 #include "../../PluginProcessor.h"
 
 namespace CZ101 {
 namespace UI {
 
-class ModulationMatrixComponent : public ScaledComponent,
+class ModulationMatrixSection : public ScaledComponent,
                                 public juce::AudioProcessorValueTreeState::Listener
 {
 public:
-    ModulationMatrixComponent(CZ101AudioProcessor& p);
-    ~ModulationMatrixComponent() override;
+    ModulationMatrixSection(CZ101AudioProcessor& p);
+    ~ModulationMatrixSection() override;
 
     void paint(juce::Graphics& g) override;
     void resized() override;
@@ -38,7 +38,7 @@ private:
     using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
     std::vector<std::unique_ptr<SliderAttachment>> attachments;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModulationMatrixComponent)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModulationMatrixSection)
 };
 
 } // namespace UI

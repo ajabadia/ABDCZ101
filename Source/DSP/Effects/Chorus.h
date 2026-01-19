@@ -3,6 +3,7 @@
 #include <vector>
 #include <cmath>
 #include <JuceHeader.h>
+#include "BBDChorus.h"
 
 namespace CZ101 {
 namespace DSP {
@@ -41,6 +42,13 @@ private:
     
     // Helpers
     float getInterpolatedSample(const std::vector<float>& buffer, float readIndex) const;
+    
+    // Phase 8: BBD Authentic Simulation
+    BBDChorus bbd;
+    bool isModern = true;
+
+public:
+    void setModernMode(bool enabled) { isModern = enabled; }
 };
 
 } // namespace Effects

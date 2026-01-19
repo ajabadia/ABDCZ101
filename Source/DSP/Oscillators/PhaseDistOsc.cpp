@@ -28,22 +28,10 @@ void PhaseDistOscillator::setFrequency(float freq) noexcept
 
 void PhaseDistOscillator::setWaveforms(CzWaveform first, CzWaveform second) noexcept
 {
-    firstWaveform = first;
-    
-    // CZ Logic: Second waveform 0-8. If 0 (caller handles mapping to NONE or we handle it here).
-    // Assuming the caller passes NUM_CZ_WAVEFORMS or similar for "Off" if they converted 0->None.
-    // However, the cleanest way is: if second is valid enum, it's active.
-    // We will assume the caller sets 'secondWaveformActive' logic via this call.
-    // For now, let's assume if second is 'NUM_CZ_WAVEFORMS' (8), it is OFF.
-    // But the enum only goes up to 7 (Resonance 3).
-    // Let's modify logic: if caller passes same as first, it's just mixing 2 same. 
-    // We need a way to say "OFF".
-    // I will use a convention: The VoiceManager will refrain from calling this if 0, 
-    // or passing a specific signal.
-    // Let's rely on 'secondWaveformActive' being set by checking if second != NUM_CZ_WAVEFORMS.
-    
+    // Audit Fix 11.1: Explicit logic
+    // If second is NONE or invalid, it is disabled.
     secondWaveform = second;
-    secondWaveformActive = (second != NUM_CZ_WAVEFORMS); 
+    secondWaveformActive = (second != NONE && second < NUM_CZ_WAVEFORMS); 
 }
 
 void PhaseDistOscillator::reset() noexcept

@@ -1,11 +1,11 @@
-#include "ModulationMatrixComponent.h"
+#include "ModulationMatrixSection.h"
 #include "../SkinManager.h"
 #include "../DesignTokens.h"
 
 namespace CZ101 {
 namespace UI {
 
-ModulationMatrixComponent::ModulationMatrixComponent(CZ101AudioProcessor& p)
+ModulationMatrixSection::ModulationMatrixSection(CZ101AudioProcessor& p)
     : audioProcessor(p),
       veloToDcwKnob(""),
       veloToDcaKnob(""),
@@ -39,28 +39,28 @@ ModulationMatrixComponent::ModulationMatrixComponent(CZ101AudioProcessor& p)
     updateVisibility();
 }
 
-ModulationMatrixComponent::~ModulationMatrixComponent()
+ModulationMatrixSection::~ModulationMatrixSection()
 {
     audioProcessor.getParameters().getAPVTS().removeParameterListener("OPERATION_MODE", this);
 }
 
-void ModulationMatrixComponent::parameterChanged(const juce::String&, float)
+void ModulationMatrixSection::parameterChanged(const juce::String&, float)
 {
-    juce::MessageManager::callAsync([this]() { updateVisibility(); });
+    juce::MessageManager::callAsync([this]() { 
+        updateVisibility(); 
+        resized(); // Recalculate layout
+    });
 }
 
-void ModulationMatrixComponent::updateVisibility()
+void ModulationMatrixSection::updateVisibility()
 {
-    // If in Classic mode (0 or 1), the matrix might be disabled or limited?
-    // The requirement was: "Modern extends features".
-    // If we want to hide it in classic modes:
     bool isModern = false;
     if (auto* p = audioProcessor.getParameters().getOperationMode())
         isModern = (p->getIndex() == 2);
         
-    setVisible(isModern); // Example: Matrix only visible in modern mode
+    setVisible(isModern);
 
-    bool visible = isModern; // Use isModern for individual knob visibility
+    bool visible = isModern;
 
     veloToDcwKnob.setVisible(visible);
     veloToDcaKnob.setVisible(visible);
@@ -69,26 +69,19 @@ void ModulationMatrixComponent::updateVisibility()
     wheelToVibKnob.setVisible(visible);
     atToDcwKnob.setVisible(visible);
     atToVibKnob.setVisible(visible);
-    
-    // Key Tracking might be available in Classic? 
-    // Usually Key Follow is standard. But these might be "extra" routings?
-    // "Key Track DCW" / "Key Track Pitch"?
-    // CZ-101 has fixed key tracking logic or minimal control.
-    // If these represent modern flexible routing, hide them.
-    // Assuming these are modern additions for now based on context.
     ktDcwKnob.setVisible(visible);
     ktPitchKnob.setVisible(visible);
 
     repaint();
 }
 
-void ModulationMatrixComponent::paint(juce::Graphics& g)
+void ModulationMatrixSection::paint(juce::Graphics& g)
 {
     auto& palette = SkinManager::getInstance().getCurrentPalette();
-    g.fillAll(palette.sectionBackground); // Use themed background
+    g.fillAll(palette.sectionBackground);
 
     g.setFont(getScaledFont(14.0f).boldened());
-    g.setColour(palette.textPrimary); // Use themed text
+    g.setColour(palette.textPrimary);
     
     auto bounds = getLocalBounds().toFloat();
     g.drawText("MODULATION MATRIX (MODERN)", bounds.removeFromTop(20), juce::Justification::centred, false);
@@ -101,24 +94,21 @@ void ModulationMatrixComponent::paint(juce::Graphics& g)
     }
     else
     {
-        // Draw Grid Labels
         g.setFont(getScaledFont(11.0f).boldened());
         g.setColour(palette.textPrimary.withAlpha(0.6f));
 
         auto gridArea = getLocalBounds().reduced(20);
-        gridArea.removeFromTop(40); // Title + Header space
+        gridArea.removeFromTop(40);
 
         int colW = gridArea.getWidth() / 6;
         int rowH = gridArea.getHeight() / 4;
 
-        // Column headers
         juce::StringArray cols = { "TIMBRE", "AMP", "SPEED", "PITCH", "VIB" };
         float scale = getUiScale();
         for (int i = 0; i < 5; ++i) {
             g.drawText(cols[i], gridArea.getX() + colW + (i * colW), gridArea.getY() - (int)(20 * scale), colW, (int)(20 * scale), juce::Justification::centred);
         }
 
-        // Row headers
         juce::StringArray rows = { "VELO", "WHEEL", "AT", "KT" };
         for (int i = 0; i < 4; ++i) {
             g.drawText(rows[i], gridArea.getX(), gridArea.getY() + (i * rowH), colW, rowH, juce::Justification::centredRight);
@@ -126,13 +116,11 @@ void ModulationMatrixComponent::paint(juce::Graphics& g)
     }
 }
 
-void ModulationMatrixComponent::resized()
+void ModulationMatrixSection::resized()
 {
     float scale = getUiScale();
     auto area = getLocalBounds().reduced((int)(20 * scale));
-    area.removeFromTop((int)(40 * scale)); // Title + Header gap
-
-    // REMOVED visibility check here to ensure layout is done even if initially hidden
+    area.removeFromTop((int)(40 * scale));
 
     int colW = area.getWidth() / 6;
     int rowH = area.getHeight() / 4;
@@ -143,20 +131,13 @@ void ModulationMatrixComponent::resized()
                                   colW, rowH).reduced(4);
     };
 
-    // VELO (Row 0)
     veloToDcwKnob.setBounds(getCell(0, 0));
     veloToDcaKnob.setBounds(getCell(0, 1));
-
-    // WHEEL (Row 1)
     wheelToDcwKnob.setBounds(getCell(1, 0));
     wheelToLfoRateKnob.setBounds(getCell(1, 2));
     wheelToVibKnob.setBounds(getCell(1, 4));
-
-    // AT (Row 2)
     atToDcwKnob.setBounds(getCell(2, 0));
     atToVibKnob.setBounds(getCell(2, 4));
-
-    // KT (Row 3)
     ktDcwKnob.setBounds(getCell(3, 0));
     ktPitchKnob.setBounds(getCell(3, 3));
 }

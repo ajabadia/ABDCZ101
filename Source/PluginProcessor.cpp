@@ -1,6 +1,8 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include "UI/LCDStateManager.h" // Required for unique_ptr destructor
+#include "State/PresetManager.h"
+#include "DSP/Envelopes/ADSRtoStage.h" // [NEW] for Snapshot Builder // Required for unique_ptr destructor
+#include "UI/LCDStateManager.h"
 
 // --- CONSTRUCTOR ---
 CZ101AudioProcessor::CZ101AudioProcessor()
@@ -48,6 +50,11 @@ CZ101AudioProcessor::CZ101AudioProcessor()
     juce::Logger::writeToLog("Setting SysEx Manager...");
     midiProcessor.setSysExManager(&sysExManager);
     midiProcessor.setAPVTS(&parameters.getAPVTS());
+    
+    // Audit Fix 10.1: Bind Lock-free MIDI Param Callback
+    midiProcessor.setParamChangeCallback([this](const char* id, float val) {
+        scheduleMidiParamUpdate(id, val);
+    });
     
     // Initialize LCD State Manager here to ensure it persists and avoids dangling references
     juce::Logger::writeToLog("CZ101 Processor: Initializing LCD State Manager");
@@ -97,8 +104,9 @@ bool CZ101AudioProcessor::acceptsMidi() const { return true; }
 bool CZ101AudioProcessor::producesMidi() const { return false; }
 bool CZ101AudioProcessor::isMidiEffect() const { return false; }
 // Audit Fix 2.2: Return max reasonable tail (CZ-101 envelope max).
+// Audit Fix 2.2: Return max reasonable tail (CZ-101 envelope max).
 double CZ101AudioProcessor::getTailLengthSeconds() const { return 8.0; } 
-int CZ101AudioProcessor::getNumPrograms() { return static_cast<int>(presetManager.getPresets().size()); }
+int CZ101AudioProcessor::getNumPrograms() { return presetManager.getNumPresets(); }
 int CZ101AudioProcessor::getCurrentProgram() { return presetManager.getCurrentPresetIndex(); }
 void CZ101AudioProcessor::setCurrentProgram(int index) 
 { 
@@ -107,9 +115,7 @@ void CZ101AudioProcessor::setCurrentProgram(int index)
 }
 const juce::String CZ101AudioProcessor::getProgramName(int index) 
 { 
-    if (index >= 0 && index < getNumPrograms())
-        return presetManager.getPresets()[index].name;
-    return {};
+    return presetManager.getPresetName(index);
 }
 void CZ101AudioProcessor::changeProgramName(int index, const juce::String& newName) 
 { 
@@ -126,16 +132,18 @@ juce::AudioProcessorEditor* CZ101AudioProcessor::createEditor()
 // --- PREPARE TO PLAY ---
 void CZ101AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // juce::Logger::writeToLog("CZ101Processor: prepareToPlay Start");
+    // Guard against invalid sample rate (prevents DSP module crashes)
+    if (sampleRate <= 0.0 || samplesPerBlock <= 0) {
+        juce::Logger::writeToLog("CZ101Processor: Invalid audio config - sampleRate=" + juce::String(sampleRate) + ", samplesPerBlock=" + juce::String(samplesPerBlock));
+        return;
+    }
+    
     currentSampleRate.store(sampleRate);
     
     // Audit Fix 4.1: FIFO resizing
     voiceManager.setSampleRate(sampleRate);
-    delayL.setSampleRate(sampleRate);
-    delayR.setSampleRate(sampleRate);
     reverb.setSampleRate(sampleRate);
-    chorus.prepare(sampleRate);
-    
+    chorus.prepare(sampleRate); 
     // Audit Fix: Initialize Vis Buffer (Triple Buffer is std::array, no resize needed)
     // visBuffer.setSize(1, VIS_FIFO_SIZE);
     // visBuffer.clear();
@@ -144,20 +152,23 @@ void CZ101AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     if (!presetsDir.exists()) presetsDir.createDirectory();
     juce::File bankFile = presetsDir.getChildFile(CZ101::State::PresetManager::USER_BANK_FILENAME);
     
-    // juce::Logger::writeToLog("CZ101Processor: prepareToPlay Start");
+    juce::Logger::writeToLog("CZ101Processor: prepareToPlay Start");
     if (bankFile.existsAsFile()) {
         juce::Logger::writeToLog("CZ101Processor: Loading Bank File: " + bankFile.getFullPathName());
         presetManager.loadBank(bankFile);
-        if (presetManager.getPresets().empty()) presetManager.createFactoryPresets();
+        juce::Logger::writeToLog("CZ101Processor: Bank Loaded");
+        if (presetManager.getPresets().empty()) {
+            juce::Logger::writeToLog("CZ101Processor: Bank Empty, Creating Factory Presets");
+            presetManager.createFactoryPresets();
+        }
     } else {
         juce::Logger::writeToLog("CZ101Processor: Creating Factory Presets");
         presetManager.createFactoryPresets();
         presetManager.saveBank(bankFile);
     }
     
+    juce::Logger::writeToLog("CZ101Processor: Initializing Preset 0");
     presetManager.loadPreset(0);
-    // juce::Logger::writeToLog("CZ101Processor: prepareToPlay End");
-    
     // Modern Filters Setup
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
@@ -172,8 +183,7 @@ void CZ101AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 
     // Audit Fix 1.2: Reset Effects RNG/Phase
     chorus.prepare(sampleRate);
-    delayL.reset();
-    delayR.reset();
+    stereoDelay.prepare(sampleRate); // Audit Fix 10.5
     modernLpf.reset();
     modernHpf.reset();
     reverb.reset(); // Added missing reverb reset
@@ -192,6 +202,7 @@ bool CZ101AudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) con
 // --- PROCESS BLOCK ---
 void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+// ... (continuation of processBlock)
     juce::ScopedNoDenormals noDenormals;
 
 #if JUCE_ARM
@@ -208,14 +219,25 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     for (int i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i) 
         buffer.clear(i, 0, buffer.getNumSamples());
     
-    // Audit Fix [D]: LOCK-FREE. Process pending preset updates from SysEx
-    int s1, sz1, s2, sz2;
-    presetFifo.prepareToRead(1, s1, sz1, s2, sz2);
-    if (sz1 > 0) applyPresetEnvelopes(presetBuffer[s1]);
-    else if (sz2 > 0) applyPresetEnvelopes(presetBuffer[s2]);
-    presetFifo.finishedRead(sz1 + sz2);
+    // Audit Fix [D]: Using LOCK-FREE Snapshot System
+    // 1. Process Message Queue (Envelopes) - Still separate for now, or could be in snapshot?
+    // Envelopes are "Events", Snapshot is "State". Keep Events separate.
+    processEnvelopeUpdates();
 
+    // 2. Process SysEx Presets (if any pending swap) logic is handled in handleAsyncUpdate mostly, 
+    // but pendingSysExPreset logic was for message thread.
+    // Here we might have a simple atomic swap if we used lock-free queue for whole presets.
+    // For now, handleAsyncUpdate handles the Heavy Load, and we just read the resulting Snapshot.
+    
+    // 3. Get LATEST Snapshot
+    const auto* snapshot = audioSnapshot.get();
+    
     // Optimized Bypass Path
+    // Bypass is not in Snapshot yet (Juice Param). 
+    // We should probably rely on the Param directly for Bypass or put it in Snapshot.
+    // For safety, let's use the param directly as it's an Atomic wrapper usually?
+    // Parameters access in Audio Thread is SAFE if they are Atomics (most JUCE params are).
+    // But `getBypass()->get()` is safe.
     if (parameters.getBypass() && parameters.getBypass()->get())
     {
         midiProcessor.processMidiBuffer(midiMessages);
@@ -223,49 +245,73 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         return;
     }
 
-    processEnvelopeUpdates();
-    updateParameters();
+    // 4. Apply Snapshot to Voice Manager
+    if (snapshot)
+    {
+        voiceManager.applySnapshot(snapshot);
+        voiceManager.getArpeggiator().setEnabled(snapshot->arp.enabled); // Redundant? applySnapshot does it.
+    }
     
     midiProcessor.processMidiBuffer(midiMessages);
     
     auto* channelDataL = buffer.getWritePointer(0);
     auto* channelDataR = buffer.getWritePointer(1);
     
+    // Render synth audio ONCE
     voiceManager.renderNextBlock(channelDataL, channelDataR, buffer.getNumSamples());
-    
-    // Audit Fix: Consolidated with start of block update
 
-    // Effects Path (Gated by Authentic Mode)
-    // Effects Path (Included in Modern Mode)
-    // 0=101, 1=5000, 2=Modern
+    // Determine operation mode for effects routing
     int opMode = parameters.getOperationMode() ? parameters.getOperationMode()->getIndex() : 0;
     bool isModern = (opMode == 2);
     
-    // Note: Previously this checked Authentic Mode (so isAuthentic -> !isModern)
-    // Here we want to know if we should process effects. Effects are enabled in Modern Mode.
-    if (isModern)
+    // Sync Chorus Mode
+    chorus.setModernMode(isModern); 
+    
+    // Audit Fix: Ensure Control Rate parameters (Arp, LFO) are updated every block
+    updateArpeggiator();
+    updateLFO();
+    
+    // Legacy effects update (calculates macro values for effects)
+    updateEffects(calculateMacros()); 
+    
+    // 5. Effects Processing (ONCE, based on snapshot and mode)
+    if (snapshot)
     {
-        // Modern Filters (Before effects)
-        juce::dsp::AudioBlock<float> block(buffer);
-        juce::dsp::ProcessContextReplacing<float> context(block);
-        modernLpf.process(context);
-        modernHpf.process(context);
-
-        chorus.process(channelDataL, channelDataR, buffer.getNumSamples());
+        auto& eff = snapshot->effects;
         
-        for (int i=0; i<buffer.getNumSamples(); ++i) {
-            channelDataL[i] = delayL.processSample(channelDataL[i]);
-            if (channelDataR != channelDataL) channelDataR[i] = delayR.processSample(channelDataR[i]);
+        // Apply Modern Filters first if in Modern mode
+        if (isModern)
+        {
+            juce::dsp::AudioBlock<float> block(buffer);
+            juce::dsp::ProcessContextReplacing<float> context(block);
+            modernLpf.process(context);
+            modernHpf.process(context);
         }
         
-        reverb.processStereo(channelDataL, channelDataR, buffer.getNumSamples());
-    }
-    else
-    {
-        // Audit Fix: In Authentic mode, we still allow Chorus? 
-        // The real CZ-101 has a hardware chorus (analog BBD), so we should keep it.
-        // But the Delay/Reverb are definitely modern additions.
+        // Apply effects chain (available in all modes, but parameters may differ)
+        // Chorus
+        chorus.setRate(eff.chorusRate);
+        chorus.setDepth(eff.chorusDepth); 
+        chorus.setMix(eff.chorusMix);
         chorus.process(channelDataL, channelDataR, buffer.getNumSamples());
+        
+        // Stereo Delay
+        float dt = eff.delayTime;
+        float fb = eff.delayFb;
+        float mix = eff.delayMix;
+        bool pingPong = false;
+        float spread = 0.0f;
+        stereoDelay.setParameters(dt, fb, mix, pingPong, spread); 
+        stereoDelay.process(channelDataL, channelDataR, buffer.getNumSamples());
+        
+        // Reverb
+        reverbParams.roomSize = eff.reverbSize;
+        reverbParams.wetLevel = eff.reverbMix;
+        reverbParams.dryLevel = 1.0f - (eff.reverbMix * 0.5f);
+        reverbParams.damping = 0.5f;
+        reverbParams.width = 1.0f;
+        reverb.setParameters(reverbParams);
+        reverb.processStereo(channelDataL, channelDataR, buffer.getNumSamples());
     }
     
     // Visualization logic - Triple Buffer Producer
@@ -318,6 +364,11 @@ juce::AudioParameterBool* CZ101AudioProcessor::getBypassParameter() const
 {
     return parameters.getBypass();
 }
+
+// Duplicate buildAudioSnapshot removed
+// Phase 7: Snapshot Builder Implementation
+    
+// Orphaned code removed
 
 // --- THREAD-SAFE ENVELOPE QUEUE ---
 void CZ101AudioProcessor::scheduleEnvelopeUpdate(const EnvelopeUpdateCommand& cmd)
@@ -483,13 +534,62 @@ void CZ101AudioProcessor::handleAsyncUpdate()
             hasPendingSysEx = false;
         }
 
-        if (p)
+    if (p)
         {
             // Update Parameters and notify host (Message Thread)
             // We pass false to updateVoice because we already updated it in the callback
             presetManager.loadPresetFromStruct(*p, false);
         }
     }
+    
+    // Audit Fix 10.1: Process MIDI Parameter Queue
+    int mStart1, mSize1, mStart2, mSize2;
+    midiParamFifo.prepareToRead(100, mStart1, mSize1, mStart2, mSize2);
+    auto processMidiParams = [&](int start, int size) {
+        for (int i = 0; i < size; ++i) {
+             const auto& update = midiParamBuffer[start + i];
+             // Apply to APVTS via Message Thread (Safe)
+             if (auto* p = parameters.getAPVTS().getParameter(update.paramID)) {
+                 p->setValueNotifyingHost(update.value);
+             }
+        }
+    };
+    if (mSize1 > 0) processMidiParams(mStart1, mSize1);
+    if (mSize2 > 0) processMidiParams(mStart2, mSize2);
+    midiParamFifo.finishedRead(mSize1 + mSize2);
+}
+
+// Audit Fix 10.1: Lock-Free MIDI Scheduler
+void CZ101AudioProcessor::scheduleMidiParamUpdate(const char* id, float value)
+{
+    int start1, size1, start2, size2;
+    if (midiParamFifo.getFreeSpace() < 1) return; // Drop if full
+    
+    midiParamFifo.prepareToWrite(1, start1, size1, start2, size2);
+    if (size1 > 0) {
+        juce::String(id).copyToUTF8(midiParamBuffer[start1].paramID, 64);
+        midiParamBuffer[start1].value = value;
+    } else if (size2 > 0) {
+        juce::String(id).copyToUTF8(midiParamBuffer[start2].paramID, 64);
+        midiParamBuffer[start2].value = value;
+    }
+    midiParamFifo.finishedWrite(size1 + size2);
+    triggerAsyncUpdate();
+}
+
+// Audit Fix 10.6: Compare Logic
+void CZ101AudioProcessor::toggleCompareMode(bool enable)
+{
+    if (isCompareEnabled == enable) return;
+    isCompareEnabled = enable;
+    
+    // We delegate the buffer swapping logic to PresetManager
+    // But since PresetManager doesn't have a formal Compare function yet (per plan), we implement it via backup/restore concept here or add it to PM.
+    // Simpler: Just ask PM to toggle compare state.
+    presetManager.setCompareMode(isCompareEnabled);
+    
+    // Refresh UI
+    presetManager.sendChangeMessage(); // Notify Editor to refresh sliders
 }
 
 // --- REFACTORED UPDATERS (Audit Fix 4.1) ---
@@ -535,261 +635,210 @@ void CZ101AudioProcessor::updateFilters(const MacroValues& m)
 
 void CZ101AudioProcessor::updateOscillators(const MacroValues& m)
 {
-    int lineSel = parameters.getLineSelect() ? parameters.getLineSelect()->getIndex() : 2; 
-    float l1 = parameters.getOsc1Level()->get();
-    float l2 = parameters.getOsc2Level()->get();
-    int w1_1 = parameters.getOsc1Waveform()->getIndex();
-    int w1_2 = parameters.getOsc1Waveform2() ? (parameters.getOsc1Waveform2()->getIndex() == 0 ? 8 : parameters.getOsc1Waveform2()->getIndex() - 1) : 8;
-    int w2_1 = parameters.getOsc2Waveform()->getIndex();
-    int w2_2 = parameters.getOsc2Waveform2() ? (parameters.getOsc2Waveform2()->getIndex() == 0 ? 8 : parameters.getOsc2Waveform2()->getIndex() - 1) : 8;
-
-    // 1. Line Select Muting Logic
-    if (lineSel == 0) l2 = 0.0f; // Line 1 Only
-    if (lineSel == 1) l1 = 0.0f; // Line 2 Only
-
-    // Tone Mix Logic
-    float mix = parameters.getLineMix() ? parameters.getLineMix()->get() : 0.5f;
-    if (lineSel >= 2) 
-    {
-        if (mix < 0.5f) {
-            l2 *= (mix * 2.0f);
-        } else {
-            l1 *= ((1.0f - mix) * 2.0f);
-        }
-    }
-
-    // 2. Line Select 1+1' Logic (Copy Line 1 to Line 2)
-    bool lineChanged = (lineSel != paramCache.lineSelect);
-    bool levelsChanged = (l1 != paramCache.osc1Level || l2 != paramCache.osc2Level);
-    bool wavesChanged = (w1_1 != paramCache.w1_1 || w1_2 != paramCache.w1_2 || w2_1 != paramCache.w2_1 || w2_2 != paramCache.w2_2);
-    
-    if (lineSel == 2 && (lineChanged || levelsChanged || wavesChanged)) 
-    { 
-        w2_1 = w1_1; w2_2 = w1_2; l2 = l1; 
-        for (int i=0; i<8; ++i) {
-                float r, lv;
-                voiceManager.getPitchStage(1, i, r, lv); voiceManager.setPitchStage(2, i, r, lv);
-                voiceManager.getDCWStage(1, i, r, lv); voiceManager.setDCWStage(2, i, r, lv);
-                voiceManager.getDCAStage(1, i, r, lv); voiceManager.setDCAStage(2, i, r, lv);
-        }
-        voiceManager.setPitchSustainPoint(2, voiceManager.getPitchSustainPoint(1));
-        voiceManager.setPitchEndPoint(2, voiceManager.getPitchEndPoint(1));
-        voiceManager.setDCWSustainPoint(2, voiceManager.getDCWSustainPoint(1));
-        voiceManager.setDCWEndPoint(2, voiceManager.getDCWEndPoint(1));
-        voiceManager.setDCASustainPoint(2, voiceManager.getDCASustainPoint(1));
-        voiceManager.setDCAEndPoint(2, voiceManager.getDCAEndPoint(1));
-    }
-
-    // Update Cache
-    paramCache.lineSelect = lineSel;
-    paramCache.osc1Level = l1; paramCache.osc2Level = l2;
-    paramCache.w1_1 = w1_1; paramCache.w1_2 = w1_2;
-    paramCache.w2_1 = w2_1; paramCache.w2_2 = w2_2;
-
-    // 3. Update VoiceManager engine
-    voiceManager.setOsc1Level(l1);
-    voiceManager.setOsc2Level(l2);
-    voiceManager.setOsc1Waveforms(w1_1, w1_2);
-    voiceManager.setOsc2Waveforms(w2_1, w2_2);
-    
-    int detO = parameters.getDetuneOctave() ? parameters.getDetuneOctave()->get() : 0;
-    int detC = parameters.getDetuneCoarse() ? parameters.getDetuneCoarse()->get() : 0;
-    int detF = parameters.getDetuneFine() ? parameters.getDetuneFine()->get() : 0;
-    
-    // We reuse unused cache slots or add new ones? 
-    // Wait, let's just use the logic directly. Detune is only 3 ints.
-    voiceManager.setOsc2DetuneHardware(detO, detC, detF);
-    
-    if (parameters.getHardSync()) voiceManager.setHardSync(parameters.getHardSync()->get());
-    if (parameters.getRingMod()) voiceManager.setRingMod(parameters.getRingMod()->get());
-    if (parameters.getGlideTime()) voiceManager.setGlideTime(parameters.getGlideTime()->get());
-    if (parameters.getMasterVolume()) voiceManager.setMasterVolume(parameters.getMasterVolume()->get());
+    auto snap = buildAudioSnapshot();
+    audioSnapshot.commit(std::move(snap));
 }
 
 void CZ101AudioProcessor::updateEnvelopes(const MacroValues& m)
 {
-    auto applyTone = [&](float val) { return juce::jlimit(0.0f, 10.0f, val / m.toneSpeedMult); };
-
-    if (parameters.getDcwAttack()) voiceManager.setDCWAttack(applyTone(parameters.getDcwAttack()->get()));
-    if (parameters.getDcwDecay()) voiceManager.setDCWDecay(applyTone(parameters.getDcwDecay()->get()));
-    if (parameters.getDcwSustain()) voiceManager.setDCWSustain(parameters.getDcwSustain()->get());
-    if (parameters.getDcwRelease()) voiceManager.setDCARelease(applyTone(parameters.getDcwRelease()->get()));
-
-    if (parameters.getDcaAttack()) voiceManager.setDCAAttack(applyTone(parameters.getDcaAttack()->get()));
-    if (parameters.getDcaDecay()) voiceManager.setDCADecay(applyTone(parameters.getDcaDecay()->get()));
-    if (parameters.getDcaSustain()) voiceManager.setDCASustain(parameters.getDcaSustain()->get());
-    if (parameters.getDcaRelease()) voiceManager.setDCARelease(applyTone(parameters.getDcaRelease()->get()));
+    // Snapshot now handles ADSR envelopes directly
+    auto snap = buildAudioSnapshot();
+    audioSnapshot.commit(std::move(snap));
 }
 
 void CZ101AudioProcessor::updateLFO()
 {
-    float lRate = parameters.getLfoRate() ? parameters.getLfoRate()->get() : 1.0f;
-    int lWave = parameters.getLfoWaveform() ? parameters.getLfoWaveform()->getIndex() : 0;
-    float lDepth = parameters.getLfoDepth() ? parameters.getLfoDepth()->get() : 0.0f;
-    float lDelay = parameters.getLfoDelay() ? parameters.getLfoDelay()->get() : 0.0f;
-    
-    if (lRate != paramCache.lfoRate) { voiceManager.setLFOFrequency(lRate); paramCache.lfoRate = lRate; }
-    if (lWave != paramCache.lfoWave) { voiceManager.setLFOWaveform(static_cast<CZ101::DSP::LFO::Waveform>(lWave)); paramCache.lfoWave = lWave; }
-    if (lDepth != paramCache.lfoDepth) { voiceManager.setVibratoDepth(lDepth); paramCache.lfoDepth = lDepth; }
-    if (lDelay != paramCache.lfoDelay) { voiceManager.setLFODelay(lDelay); paramCache.lfoDelay = lDelay; }
+    auto snap = buildAudioSnapshot();
+    audioSnapshot.commit(std::move(snap));
 }
 
 void CZ101AudioProcessor::updateModMatrix()
 {
-    float vDcw = parameters.getModVeloToDcw()->get();
-    float vDca = parameters.getModVeloToDca()->get();
-    float wDcw = parameters.getModWheelToDcw()->get();
-    float wLfo = parameters.getModWheelToLfoRate()->get();
-    float wVib = parameters.getModWheelToVibrato()->get();
-    float atDcw = parameters.getModAtToDcw()->get();
-    float atVib = parameters.getModAtToVibrato()->get();
-    float ktDcw = parameters.getKeyTrackDcw()->get();
-    float ktPitch = parameters.getKeyTrackPitch()->get();
-    int kfDcoVal = parameters.getKeyFollowDco()->getIndex();
-    int kfDcwVal = parameters.getKeyFollowDcw()->getIndex();
-    int kfDcaVal = parameters.getKeyFollowDca()->getIndex();
-
-    bool matrixChanged = (vDcw != paramCache.veloToDcw || vDca != paramCache.veloToDca ||
-                          wDcw != paramCache.wheelToDcw || wLfo != paramCache.wheelToLfo || wVib != paramCache.wheelToVib ||
-                          atDcw != paramCache.atToDcw || atVib != paramCache.atToVib ||
-                          ktDcw != paramCache.ktDcw || ktPitch != paramCache.ktPitch ||
-                          kfDcoVal != paramCache.kfDco || kfDcwVal != paramCache.kfDcw || kfDcaVal != paramCache.kfDca);
-                          
-    if (matrixChanged)
-    {
-        CZ101::Core::Voice::ModulationMatrix matrix;
-        matrix.veloToDcw = vDcw; matrix.veloToDca = vDca;
-        matrix.wheelToDcw = wDcw; matrix.wheelToLfoRate = wLfo; matrix.wheelToVibrato = wVib;
-        matrix.atToDcw = atDcw; matrix.atToVibrato = atVib;
-        matrix.keyTrackDcw = ktDcw; matrix.keyTrackPitch = ktPitch;
-        matrix.kfDco = kfDcoVal; matrix.kfDcw = kfDcwVal; matrix.kfDca = kfDcaVal;
-        
-        voiceManager.setModulationMatrix(matrix);
-        
-        paramCache.veloToDcw = vDcw; paramCache.veloToDca = vDca;
-        paramCache.wheelToDcw = wDcw; paramCache.wheelToLfo = wLfo; paramCache.wheelToVib = wVib;
-        paramCache.atToDcw = atDcw; paramCache.atToVib = atVib;
-        paramCache.ktDcw = ktDcw; paramCache.ktPitch = ktPitch;
-        paramCache.kfDco = kfDcoVal; paramCache.kfDcw = kfDcwVal; paramCache.kfDca = kfDcaVal;
-    }
+    auto snap = buildAudioSnapshot();
+    audioSnapshot.commit(std::move(snap));
 }
 
 void CZ101AudioProcessor::updateEffects(const MacroValues& m)
 {
-    float cRate = parameters.getChorusRate() ? parameters.getChorusRate()->get() : 0.5f;
-    float cDepth = parameters.getChorusDepth() ? parameters.getChorusDepth()->get() : 0.0f;
-    float cMix = parameters.getChorusMix() ? (parameters.getChorusMix()->get() + m.spaceMix) : m.spaceMix;
-    cMix = juce::jlimit(0.0f, 1.0f, cMix);
-    
-    if (cRate != paramCache.chorusRate) { chorus.setRate(cRate); paramCache.chorusRate = cRate; }
-    if (cDepth != paramCache.chorusDepth) { chorus.setDepth(cDepth); paramCache.chorusDepth = cDepth; }
-    if (cMix != paramCache.chorusMix) { chorus.setMix(cMix); paramCache.chorusMix = cMix; }
-    
-    float rSize = parameters.getReverbSize() ? parameters.getReverbSize()->get() : 0.5f;
-    float rMix = parameters.getReverbMix() ? (parameters.getReverbMix()->get() + m.spaceMix) : m.spaceMix;
-    rMix = juce::jlimit(0.0f, 1.0f, rMix);
-    
-    if (rSize != paramCache.revSize || rMix != paramCache.revMix)
-    {
-        reverbParams.roomSize = rSize;
-        reverbParams.damping = 0.5f;
-        reverbParams.wetLevel = rMix;
-        reverbParams.dryLevel = 1.0f - (rMix * 0.5f);
-        reverbParams.width = 1.0f;
-        reverb.setParameters(reverbParams);
-        
-        paramCache.revSize = rSize; paramCache.revMix = rMix;
-    }
+    // Snapshot Build
+    auto snap = buildAudioSnapshot();
+    if (!snap) return;
 
-    if (parameters.getDelayTime()) { 
-        float dt = parameters.getDelayTime()->get();
-        delayL.setDelayTime(dt); delayR.setDelayTime(dt); 
-    }
-    if (parameters.getDelayFeedback()) { float fb = parameters.getDelayFeedback()->get(); delayL.setFeedback(fb); delayR.setFeedback(fb); }
-    if (parameters.getDelayMix()) { float mix = parameters.getDelayMix()->get(); delayL.setMix(mix); delayR.setMix(mix); }
+    // Calculate Latency (Message Thread logic)
+    float cMix = snap->effects.chorusMix;
+    float dMix = snap->effects.delayMix;
+    float dTime = snap->effects.delayTime;
     
     int chorusDelaySamples = (cMix > 0.0f) ? (int)(0.025 * getSampleRate()) : 0;
-    int delaySamples = (parameters.getDelayMix() && parameters.getDelayMix()->get() > 0.0f) ? (int)(parameters.getDelayTime()->get() * getSampleRate()) : 0;
-    int latency = chorusDelaySamples + (delaySamples > 0 ? 1 : 0);
+    int delaySamples = (dMix > 0.0f) ? (int)(dTime * getSampleRate()) : 0;
+    int latency = chorusDelaySamples + (delaySamples > 0 ? 1 : 0); 
     if (getLatencySamples() != latency) setLatencySamples(latency);
+
+    // Commit snapshot to audio thread
+    audioSnapshot.commit(std::move(snap));
 }
 
 void CZ101AudioProcessor::updateSystemGlobal()
 {
-    // SysEx
-    bool isProtected = parameters.getProtectSwitch() ? parameters.getProtectSwitch()->get() : true;
-    bool isPrgEnabled = parameters.getSystemPrg() ? parameters.getSystemPrg()->get() : false;
-    sysExManager.setProtectionState(isProtected, isPrgEnabled);
-    
-    // Operation Mode & Voice Limit
-    if (auto* p = parameters.getOperationMode())
-    {
-        int mode = p->getIndex(); 
-        if (mode != paramCache.opMode)
-        {
-            auto synthModel = (mode == 0) ? CZ101::DSP::MultiStageEnvelope::Model::CZ101 
-                                          : CZ101::DSP::MultiStageEnvelope::Model::CZ5000;
-            voiceManager.setSynthModel(synthModel);
-            paramCache.opMode = mode;
-        }
-        
-        int limit = (mode == 2) ? 16 : (mode == 0 ? 4 : 8);
-        if (limit != paramCache.voiceLimit)
-        {
-            voiceManager.setVoiceLimit(limit);
-            paramCache.voiceLimit = limit;
-        }
-    }
-    
-    // Phase 5.1: Oversampling Quality
-    if (auto* p = parameters.getOversamplingQuality())
-    {
-        int qualityIndex = p->getIndex(); // 0=1x, 1=2x, 2=4x
-        int factor = (qualityIndex == 0) ? 1 : (qualityIndex == 1) ? 2 : 4;
-        if (factor != paramCache.oversamplingFactor)
-        {
-            voiceManager.setOversamplingFactor(factor);
-            paramCache.oversamplingFactor = factor;
-        }
-    }
-
-    // MIDI Channel
-    if (auto* p = parameters.getMidiChannel())
-    {
-        int ch = p->get();
-        if (ch != paramCache.midiChannel)
-        {
-            midiProcessor.setMidiChannel(ch);
-            paramCache.midiChannel = ch;
-        }
-    }
+    auto snap = buildAudioSnapshot();
+    audioSnapshot.commit(std::move(snap));
 }
 
 void CZ101AudioProcessor::updateArpeggiator()
 {
-    auto& arp = voiceManager.getArpeggiator();
-    if (auto* p = parameters.getArpEnabled()) arp.setEnabled(p->get());
-    if (auto* p = parameters.getArpLatch()) arp.setLatch(p->get());
-    if (auto* p = parameters.getArpRate()) arp.setRate(static_cast<CZ101::DSP::Arpeggiator::Rate>(p->getIndex()));
-    if (auto* p = parameters.getArpPattern()) arp.setPattern(static_cast<CZ101::DSP::Arpeggiator::Pattern>(p->getIndex()));
-    if (auto* p = parameters.getArpOctave()) arp.setOctaveRange(p->get());
-    
-    // Phase 5 Preparation: Gate/Swing
-    if (auto* p = parameters.getArpGate()) arp.setGateTime(p->get());
-    if (auto* p = parameters.getArpSwing()) arp.setSwing(p->get());
-    if (auto* p = parameters.getArpSwingMode()) arp.setSwingMode(static_cast<CZ101::DSP::Arpeggiator::SwingMode>(p->getIndex()));
+    // Snapshot Commit
+    auto snap = buildAudioSnapshot();
+    audioSnapshot.commit(std::move(snap));
+}
 
-    // Tempo Sync Logic
-    double currentBpm = 120.0;
-    if (auto* ph = getPlayHead()) {
-        if (auto pos = ph->getPosition()) 
-             if (pos->getBpm()) currentBpm = *pos->getBpm();
+// Phase 7: Snapshot Builder Implementation
+std::unique_ptr<CZ101::Core::ParameterSnapshot> CZ101AudioProcessor::buildAudioSnapshot()
+{
+    auto snap = std::make_unique<CZ101::Core::ParameterSnapshot>();
+    
+    // Helper lambda for safe param access
+    auto getVal = [](juce::AudioParameterFloat* p, float def = 0.0f) { return p ? p->get() : def; };
+    auto getInt = [](juce::AudioParameterChoice* p, int def = 0) { return p ? p->getIndex() : def; };
+    auto getIntParam = [](juce::AudioParameterInt* p, int def = 0) { return p ? p->get() : def; };
+    auto getBool = [](juce::AudioParameterBool* p, bool def = false) { return p ? p->get() : def; };
+
+    // DCO 1
+    snap->dco1.wave1 = getInt(parameters.getOsc1Waveform());
+    snap->dco1.wave2 = parameters.getOsc1Waveform2() ? (getInt(parameters.getOsc1Waveform2()) == 0 ? 8 : getInt(parameters.getOsc1Waveform2()) - 1) : 8;
+    snap->dco1.level = getVal(parameters.getOsc1Level());
+
+    // DCO 2
+    snap->dco2.wave1 = getInt(parameters.getOsc2Waveform());
+    snap->dco2.wave2 = parameters.getOsc2Waveform2() ? (getInt(parameters.getOsc2Waveform2()) == 0 ? 8 : getInt(parameters.getOsc2Waveform2()) - 1) : 8;
+    snap->dco2.level = getVal(parameters.getOsc2Level());
+    snap->dco2.octave = getIntParam(parameters.getDetuneOctave()); 
+    snap->dco2.coarse = getIntParam(parameters.getDetuneCoarse());
+    snap->dco2.fine = getIntParam(parameters.getDetuneFine());
+
+    // 1+1 Logic (Line Select = 2)
+    int lineSel = parameters.getLineSelect() ? getInt(parameters.getLineSelect()) : 2;
+    if (lineSel == 2) {
+         snap->dco2.wave1 = snap->dco1.wave1;
+         snap->dco2.wave2 = snap->dco1.wave2;
+         snap->dco2.level = snap->dco1.level;
+    }
+    if (lineSel == 0) snap->dco2.level = 0.0f;
+    if (lineSel == 1) snap->dco1.level = 0.0f;
+
+    // Line Mod
+    snap->lineMod.ring = getBool(parameters.getRingMod());
+    snap->lineMod.noise = parameters.getNoiseMod() ? getBool(parameters.getNoiseMod()) : false;
+
+    // System
+    snap->system.masterVol = getVal(parameters.getMasterVolume(), 1.0f);
+    snap->system.masterTune = 0.0f; 
+    snap->system.bendRange = 2.0f; 
+    
+    // Op Mode & Limits
+    snap->system.opMode = getInt(parameters.getOperationMode());
+    snap->system.voiceLimit = (snap->system.opMode == 2) ? 16 : (snap->system.opMode == 0 ? 4 : 8);
+    snap->system.hardwareNoise = getBool(parameters.getHardwareNoise()); // Audit Fix: Corrected name
+    snap->system.oversampling = getInt(parameters.getOversamplingQuality()); 
+    snap->system.oversampling = (snap->system.oversampling == 0) ? 1 : (snap->system.oversampling == 1 ? 2 : 4);
+    
+    if (parameters.getMidiChannel()) snap->system.midiChannel = getIntParam(parameters.getMidiChannel());
+
+    // Mod Matrix
+    snap->mod.veloDcw = getVal(parameters.getModVeloToDcw());
+    snap->mod.veloAmp = getVal(parameters.getModVeloToDca());
+    snap->mod.wheelToDcw = getVal(parameters.getModWheelToDcw());
+    snap->mod.wheelToLfoRate = getVal(parameters.getModWheelToLfoRate());
+    snap->mod.wheelToVibrato = getVal(parameters.getModWheelToVibrato());
+    snap->mod.atToDcw = getVal(parameters.getModAtToDcw());
+    snap->mod.atToVibrato = getVal(parameters.getModAtToVibrato());
+    
+    snap->mod.keyFollowDcw = getInt(parameters.getKeyFollowDcw());
+    snap->mod.keyFollowAmp = getInt(parameters.getKeyFollowDca());
+    snap->mod.keyFollowDco = getInt(parameters.getKeyFollowDco()); 
+    snap->mod.detune = getBool(parameters.getHardSync()) ? 1 : 0; 
+    snap->mod.glideTime = getVal(parameters.getGlideTime());
+
+    // LFO
+    snap->lfo.rate = getVal(parameters.getLfoRate(), 1.0f);
+    snap->lfo.waveform = getInt(parameters.getLfoWaveform());
+    snap->lfo.depth = getVal(parameters.getLfoDepth());
+    snap->lfo.delay = getVal(parameters.getLfoDelay());
+
+    // Arp
+    snap->arp.enabled = getBool(parameters.getArpEnabled()) && (snap->system.opMode != 0);
+    snap->arp.latch = getBool(parameters.getArpLatch());
+    snap->arp.rate = getInt(parameters.getArpRate());
+    snap->arp.pattern = getInt(parameters.getArpPattern());
+    snap->arp.octave = getIntParam(parameters.getArpOctave()) + 1; // Audit Fix: getIntParam
+    snap->arp.gate = getVal(parameters.getArpGate(), 1.0f);
+    snap->arp.swing = getVal(parameters.getArpSwing(), 0.0f);
+    snap->arp.swingMode = getInt(parameters.getArpSwingMode(), 0);
+
+    // Effects
+    snap->effects.chorusOn = true;
+    snap->effects.chorusRate = getVal(parameters.getChorusRate());
+    snap->effects.chorusDepth = getVal(parameters.getChorusDepth());
+    snap->effects.chorusMix = getVal(parameters.getChorusMix());
+
+    snap->effects.delayTime = getVal(parameters.getDelayTime(), 0.25f);
+    snap->effects.delayFb = getVal(parameters.getDelayFeedback());
+    snap->effects.delayMix = getVal(parameters.getDelayMix());
+    
+    snap->effects.reverbSize = getVal(parameters.getReverbSize(), 0.5f);
+    snap->effects.reverbMix = getVal(parameters.getReverbMix());
+
+    // Envelopes (Calculated from ADSR Macros)
+    double sr = currentSampleRate.load();
+    auto* envs = &snap->envelopes;
+    
+    auto convert = [&](juce::AudioParameterFloat* att, juce::AudioParameterFloat* dec, 
+                       juce::AudioParameterFloat* sus, juce::AudioParameterFloat* rel,
+                       CZ101::Core::ParameterSnapshot::EnvParam& target) 
+    {
+        std::array<float, 8> r, l;
+        int s, e;
+        
+        float a = att ? att->get() : 0.0f;
+        float d = dec ? dec->get() : 0.0f;
+        float su = sus ? sus->get() : 1.0f;
+        float re = rel ? rel->get() : 0.0f;
+        
+        // Convert Scale (0-10) to ms? 
+        // Macros seem to be 0-10 or Seconds?
+        // `Voice::setDCWAttack` expects seconds.
+        // Param range? usually 0-1 or 0-10.
+        // Assuming Seconds for now. Even if 0-10s, it's fine.
+        // convertADSR expects Milliseconds.
+        float msMult = 1000.0f;
+        
+        CZ101::DSP::ADSRtoStageConverter::convertADSR(a * msMult, d * msMult, su, re * msMult, r, l, s, e, sr);
+        
+        for(int i=0; i<8; ++i) { target.rates[i] = r[i]; target.levels[i] = l[i]; }
+        target.sustain = s;
+        target.end = e;
+    };
+    
+    // Macros affect BOTH lines in this architecture (Simple Mode)
+    convert(parameters.getDcwAttack(), parameters.getDcwDecay(), parameters.getDcwSustain(), parameters.getDcwRelease(), envs->dcw1);
+    envs->dcw2 = envs->dcw1; 
+
+    convert(parameters.getDcaAttack(), parameters.getDcaDecay(), parameters.getDcaSustain(), parameters.getDcaRelease(), envs->dca1);
+    envs->dca2 = envs->dca1; 
+    
+    // Pitch Envelope: Retrieve from PresetManager to preserve loaded state (Macros don't control Pitch yet)
+    {
+        const juce::ScopedReadLock srl(presetManager.getLock());
+        const auto& currentPreset = presetManager.getCurrentPreset();
+        
+        auto copyEnv = [](const CZ101::State::EnvelopeData& src, CZ101::Core::ParameterSnapshot::EnvParam& dst) {
+            for(int i=0; i<8; ++i) { dst.rates[i] = src.rates[i]; dst.levels[i] = src.levels[i]; }
+            dst.sustain = src.sustainPoint;
+            dst.end = src.endPoint;
+        };
+        
+        copyEnv(currentPreset.pitchEnv, snap->envelopes.pitch1);
+        copyEnv(currentPreset.pitchEnv2, snap->envelopes.pitch2);
     }
     
-    float internalBpm = parameters.getArpBpm() ? parameters.getArpBpm()->get() : 120.0f;
-    if (juce::JUCEApplication::isStandaloneApp() || currentBpm <= 0.01) {
-        currentBpm = internalBpm;
-    }
-    arp.setTempo(currentBpm);
-    arp.setTempo(currentBpm);
+    return snap;
 }

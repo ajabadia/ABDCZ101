@@ -106,22 +106,13 @@ void MIDIProcessor::handleControlChange(int cc, int value) noexcept
     }
     
     // 2. Mapped Parameter Control
-    if (apvts && ccMapping.count(cc))
+    if (ccMapping.count(cc))
     {
         auto paramId = ccMapping[cc];
-        // Must find parameter and set value.
-        // NOTE: setParameterNotifyingHost needs normalized value usually, 
-        // but APVTS params range might differ. 
-        // Best way: getRawParameterValue gives primitive, getParameter() gives RangedAudioParameter.
-        // We'll use the parameter object to convert.
-        auto* param = apvts->getParameter(juce::String(paramId));
-        if (param) 
+        if (onMidiParamChange)
         {
-             // We need to allow this to run on audio thread safely?
-             // beginChange/setValueNotifyingHost/endChange is standard but not RT safe if it locks.
-             // For now, we assume direct normalized set is acceptable or we use a queue.
-             // Actually, setValueNotifyingHost IS the standard way for automation.
-             param->setValueNotifyingHost(normValue);
+             // Audit Fix 10.1: Routing via Lock-Free FIFO
+             onMidiParamChange(paramId.c_str(), normValue);
         }
         return; // Override default behavior if mapped
     }
@@ -130,12 +121,12 @@ void MIDIProcessor::handleControlChange(int cc, int value) noexcept
     switch (cc)
     {
         case 1: // Vibrato Depth / Mod Wheel
-            if (apvts) if (auto* p = apvts->getParameter("LFO_DEPTH")) p->setValueNotifyingHost(normValue);
+            if (onMidiParamChange) onMidiParamChange("LFO_DEPTH", normValue);
             voiceManager.setModWheel(normValue);
             break;
 
         case 5: // Portamento Time
-            if (apvts) if (auto* p = apvts->getParameter("GLIDE")) p->setValueNotifyingHost(normValue);
+            if (onMidiParamChange) onMidiParamChange("GLIDE", normValue);
             break;
 
         case 6: // Master Tune (Data Entry)
@@ -143,7 +134,7 @@ void MIDIProcessor::handleControlChange(int cc, int value) noexcept
             break;
 
         case 7: // Volume
-            if (apvts) if (auto* p = apvts->getParameter("MASTER_VOLUME")) p->setValueNotifyingHost(normValue);
+            if (onMidiParamChange) onMidiParamChange("MASTER_VOLUME", normValue);
             break;
 
         case 10: // Pan
@@ -170,11 +161,11 @@ void MIDIProcessor::handleControlChange(int cc, int value) noexcept
             break;
 
         case 71: // "Resonance" -> Modern LPF Reso
-            if (apvts) if (auto* p = apvts->getParameter("MODERN_LPF_RESO")) p->setValueNotifyingHost(normValue);
+            if (onMidiParamChange) onMidiParamChange("MODERN_LPF_RESO", normValue);
             break;
 
         case 74: // "Cutoff" -> Modern LPF Cutoff
-            if (apvts) if (auto* p = apvts->getParameter("MODERN_LPF_CUTOFF")) p->setValueNotifyingHost(normValue);
+            if (onMidiParamChange) onMidiParamChange("MODERN_LPF_CUTOFF", normValue);
             break;
 
         case 120: // All Sound Off

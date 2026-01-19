@@ -120,8 +120,27 @@ void OscillatorSection::resized()
     // Add Mix Knob to shared area
     fs.items.add(juce::FlexItem(lineMixKnob).withFlex(1)); 
     fs.items.add(juce::FlexItem(hardSyncButton).withFlex(1).withHeight(24 * scale).withMargin(2 * scale));
-    fs.items.add(juce::FlexItem(ringModButton).withFlex(1).withHeight(24 * scale).withMargin(2 * scale));
     fs.performLayout(sharedArea);
+}
+
+void OscillatorSection::updateToggleStates()
+{
+    // Force refresh of combo boxes from parameters if needed (usually attachments handle this)
+    // But for toggles like HardSync/RingMod, we can ensure they match
+    auto& params = audioProcessor.getParameters();
+    
+    if (auto* p = params.getHardSync()) hardSyncButton.setToggleState(p->get(), juce::dontSendNotification);
+    if (auto* p = params.getRingMod()) ringModButton.setToggleState(p->get(), juce::dontSendNotification);
+    
+    // Refresh Combos too
+    if (auto* p = params.getOsc1Waveform()) osc1WaveSelector.setSelectedItemIndex(p->getIndex(), juce::dontSendNotification);
+    if (auto* p = params.getOsc2Waveform()) osc2WaveSelector.setSelectedItemIndex(p->getIndex(), juce::dontSendNotification);
+    
+    // Refresh Knobs
+    if (auto* p = params.getOsc1Level()) osc1LevelKnob.getSlider().setValue(p->get(), juce::dontSendNotification);
+    if (auto* p = params.getOsc2Level()) osc2LevelKnob.getSlider().setValue(p->get(), juce::dontSendNotification);
+    if (auto* p = params.getOsc2Detune()) osc2DetuneKnob.getSlider().setValue(p->get(), juce::dontSendNotification);
+    if (auto* p = params.getLineMix()) lineMixKnob.getSlider().setValue(p->get(), juce::dontSendNotification);
 }
 
 } // namespace UI

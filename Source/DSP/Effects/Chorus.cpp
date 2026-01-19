@@ -17,6 +17,7 @@ Chorus::Chorus()
 void Chorus::prepare(double sr)
 {
     sampleRate = sr;
+    bbd.prepare(sr); // [NEW]
     setRate(rate); // Recalc increment
     reset();
 }
@@ -27,11 +28,13 @@ void Chorus::reset()
     std::fill(delayBufferR.begin(), delayBufferR.end(), 0.0f);
     writeIndex = 0;
     lfoPhase = 0.0f;
+    bbd.reset(); // [NEW]
 }
 
 void Chorus::setRate(float rateHz)
 {
     rate = rateHz;
+    bbd.setRate(rateHz);
     // Inc per sample = Rate / SR
     // 2PI for sin? Or 0-1 phasor? Using 0-1
     lfoIncrement = rate / static_cast<float>(sampleRate);
@@ -40,11 +43,15 @@ void Chorus::setRate(float rateHz)
 void Chorus::setDepth(float depthMs)
 {
     depth = depthMs;
+    // Convert ms to 0-1 range for BBD if needed or pass as is? BBD uses 0-1 depth.
+    // Assuming simple mapping for now.
+    bbd.setDepth(std::clamp(depthMs / 5.0f, 0.0f, 1.0f));
 }
 
 void Chorus::setMix(float mix0to1)
 {
     mix = std::clamp(mix0to1, 0.0f, 1.0f);
+    bbd.setMix(mix);
 }
 
 float Chorus::getInterpolatedSample(const std::vector<float>& buffer, float readIndex) const
@@ -73,8 +80,16 @@ float Chorus::getInterpolatedSample(const std::vector<float>& buffer, float read
 
 void Chorus::process(float* leftChannel, float* rightChannel, int numSamples)
 {
+    // Phase 8: BBD Authentic Simulation
+    if (!isModern)
+    {
+        bbd.process(leftChannel, rightChannel, numSamples);
+        return;
+    }
+
     if (mix < 0.01f) return; // Bypass efficiency
     
+    // ... Modern Digital Chorus Code ...
     const float depthSamples = (depth / 1000.0f) * static_cast<float>(sampleRate);
     // Base delay for Chorus usually slightly more than depth excursion
     const float baseDelay = depthSamples * 1.5f + 100.0f; // Offset to avoid crossing write pointer

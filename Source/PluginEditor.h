@@ -16,8 +16,8 @@
 #include "UI/Components/PresetBrowser.h"
 #include "UI/Components/MIDIActivityIndicator.h"
 #include "UI/Overlays/NameEditorOverlay.h"
-#include "UI/Components/ArpeggiatorPanel.h"
-#include "UI/Components/ModulationMatrixComponent.h"
+#include "UI/Sections/ArpeggiatorSection.h"
+#include "UI/Sections/ModulationMatrixSection.h"
 #include "UI/Components/AboutDialog.h"
 #include "UI/UIManager.h"
 
@@ -98,8 +98,9 @@ private:
     CZ101::UI::LCDDisplay lcdDisplay;
     CZ101::UI::PresetBrowser presetBrowser;
     CZ101::UI::MIDIActivityIndicator midiIndicator;
-    juce::TextButton randomButton { "RANDOM" };
+    juce::TextButton randomButton { "RNDM" };
     juce::TextButton panicButton { "ALL OFF" };
+    juce::TextButton compareButton { "COMPR" }; // Audit Fix 10.6
     
     std::unique_ptr<juce::MidiOutput> activeMidiOutput;
     std::unique_ptr<juce::FileChooser> fileChooser;
@@ -111,9 +112,9 @@ private:
     CZ101::UI::OscillatorSection oscSection;
     CZ101::UI::EffectsSection effectsSection;
     CZ101::UI::FilterLfoSection filterLfoSection;
-    CZ101::UI::ModulationMatrixComponent modMatrixSection;
+    CZ101::UI::ModulationMatrixSection modMatrixSection;
     CZ101::UI::GeneralSection generalSection;
-    CZ101::UI::ArpeggiatorPanel arpPanel;
+    CZ101::UI::ArpeggiatorSection arpPanel;
     CZ101::UI::WaveformDisplay waveformDisplay;
     
     // Line Zoning (Visual only now)

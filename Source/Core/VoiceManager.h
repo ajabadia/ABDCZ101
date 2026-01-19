@@ -11,11 +11,18 @@ namespace CZ101 {
 
 namespace DSP { class LFO; } // Forward declaration of LFO
 
+// Phase 7: Snapshot System
+struct ParameterSnapshot;
+
 namespace Core {
 
 class VoiceManager
 {
 public:
+    VoiceManager();
+    
+    // Phase 7: Snapshot System
+    void applySnapshot(const ParameterSnapshot* snapshot) noexcept;
     static constexpr int MAX_VOICES = 16; // 8 notes * 2 lines (or 16 notes single line mode?)
     
     enum VoiceStealingMode
@@ -26,7 +33,8 @@ public:
         RELEASE_PHASE
     };
     
-    VoiceManager();
+    // Constructor handled above at line 22
+    // VoiceManager(); // removed duplicate
     
     // Audit Fix [2.2]
     void setSynthModel(DSP::MultiStageEnvelope::Model model) noexcept;

@@ -17,37 +17,65 @@ public:
         juce::Random rng;
         
         // 1. Oscillators
-        p.parameters["LINE_SELECT"] = (float)rng.nextInt(4) / 3.0f; // 0, 0.33, 0.66, 1
-        p.parameters["OSC1_WAVEFORM"] = rng.nextFloat();
-        p.parameters["OSC1_WAVEFORM2"] = (rng.nextFloat() > 0.7f) ? rng.nextFloat() : 0.0f; // 30% chance of 2nd wave
-        p.parameters["OSC1_LEVEL"] = 1.0f; // Always full for line 1?
+        // LINE_SELECT: 0-3 (Choice Index)
+        p.parameters["LINE_SELECT"] = (float)rng.nextInt(4); 
         
-        p.parameters["OSC2_WAVEFORM"] = rng.nextFloat();
-        p.parameters["OSC2_WAVEFORM2"] = (rng.nextFloat() > 0.7f) ? rng.nextFloat() : 0.0f;
-        p.parameters["OSC2_DETUNE"] = 0.5f + (rng.nextFloat() - 0.5f) * 0.1f; // Slight detune (0.5 is center)
-
+        // WAVEFORM: 0-7 (Choice Index)
+        p.parameters["OSC1_WAVEFORM"] = (float)rng.nextInt(8);
+        p.parameters["OSC1_WAVEFORM2"] = (rng.nextFloat() > 0.7f) ? (float)rng.nextInt(8) : 0.0f;
+        p.parameters["OSC1_LEVEL"] = 0.8f + rng.nextFloat() * 0.2f; // High level
+        
+        p.parameters["OSC2_WAVEFORM"] = (float)rng.nextInt(8);
+        p.parameters["OSC2_WAVEFORM2"] = (rng.nextFloat() > 0.7f) ? (float)rng.nextInt(8) : 0.0f;
+        p.parameters["OSC2_LEVEL"] = rng.nextFloat(); 
+        p.parameters["OSC2_DETUNE"] = (rng.nextFloat() - 0.5f) * 10.0f; // +/- 5 cents approx (Detune parameter is +/- 12 semitones? No, wait.)
+        // OSC2_DETUNE in Parameters.cpp is -12.0 to 12.0 semitones.
+        // We want subtle detune. 
+        p.parameters["OSC2_DETUNE"] = (rng.nextFloat() - 0.5f) * 0.2f; // +/- 0.1 semitones
+        
         p.parameters["RING_MOD"] = (rng.nextFloat() > 0.8f) ? 1.0f : 0.0f;
-        p.parameters["NOISE_MOD"] = (rng.nextFloat() > 0.9f) ? 1.0f : 0.0f; // If exists
-
-        // 2. Envelopes
-        randomizeEnvelope(p.dcaEnv, rng, true); // DCA needs 0 at end
-        randomizeEnvelope(p.dcwEnv, rng, false);
-        randomizeEnvelope(p.pitchEnv, rng, false);
+        // NOISE_MOD? Not in Parameters.cpp. Check HARDWARE_NOISE? That's global.
         
-        randomizeEnvelope(p.dcaEnv2, rng, true);
-        randomizeEnvelope(p.dcwEnv2, rng, false);
-        randomizeEnvelope(p.pitchEnv2, rng, false);
+        // 2. Envelopes
+        randomizeEnvelope(p.dcaEnv, rng, true); 
+        randomizeEnvelope(p.dcwEnv, rng, false);
+        // Randomize pitch? Maybe Keep it simple
+        if (rng.nextFloat() > 0.8f) randomizeEnvelope(p.pitchEnv, rng, false);
+        else {
+             // Flat Pitch
+             for (int i=0; i<8; ++i) { p.pitchEnv.rates[i]=0.5f; p.pitchEnv.levels[i]=0.5f; }
+             p.pitchEnv.sustainPoint = 0; p.pitchEnv.endPoint = 1;
+        }
+        
+        // Copy to Line 2 for consistency if select is 1+2
+        p.dcaEnv2 = p.dcaEnv;
+        p.dcwEnv2 = p.dcwEnv;
+        p.pitchEnv2 = p.pitchEnv;
         
         // 3. LFO
-        p.parameters["LFO_WAVE"] = rng.nextFloat();
-        p.parameters["LFO_RATE"] = rng.nextFloat();
-        p.parameters["LFO_DEPTH"] = rng.nextFloat() * 0.5f; // Don't go too crazy
-        p.parameters["LFO_DELAY"] = rng.nextFloat() * 0.5f;
+        p.parameters["LFO_WAVE"] = (float)rng.nextInt(4); // 0-3
+        p.parameters["LFO_RATE"] = 0.5f + rng.nextFloat() * 8.0f; // 0.5Hz to 8.5Hz
+        p.parameters["LFO_DEPTH"] = rng.nextFloat() * 0.3f; // Subtle
+        p.parameters["LFO_DELAY"] = rng.nextFloat() * 0.5f; // 0-0.5s
         
         // 4. Effects
-        p.parameters["CHORUS_MIX"] = (rng.nextFloat() > 0.5f) ? rng.nextFloat() * 0.5f : 0.0f;
-        p.parameters["DELAY_MIX"] = (rng.nextFloat() > 0.7f) ? rng.nextFloat() * 0.4f : 0.0f;
+        p.parameters["CHORUS_MIX"] = (rng.nextFloat() > 0.7f) ? rng.nextFloat() * 0.5f : 0.0f;
+        p.parameters["DELAY_MIX"] = (rng.nextFloat() > 0.8f) ? rng.nextFloat() * 0.4f : 0.0f;
+        p.parameters["DELAY_TIME"] = 0.2f + rng.nextFloat() * 0.5f;
+        p.parameters["DELAY_FEEDBACK"] = 0.3f;
 
+        // 5. Arpeggiator (Audit Fix)
+        // Enable with low probability to not annoy user immediately, but randomize settings
+        p.parameters["ARP_ENABLED"] = (rng.nextFloat() > 0.8f) ? 1.0f : 0.0f; 
+        p.parameters["ARP_LATCH"] = (rng.nextFloat() > 0.7f) ? 1.0f : 0.0f;
+        p.parameters["ARP_RATE"] = (float)rng.nextInt(4); // 0-3
+        p.parameters["ARP_BPM"] = 80.0f + rng.nextFloat() * 60.0f; // 80-140 Practical range
+        p.parameters["ARP_GATE"] = 0.3f + rng.nextFloat() * 0.7f; // Usable gate
+        p.parameters["ARP_SWING"] = (rng.nextFloat() > 0.7f) ? rng.nextFloat() * 0.5f : 0.0f;
+        p.parameters["ARP_SWING_MODE"] = (float)rng.nextInt(3);
+        p.parameters["ARP_PATTERN"] = (float)rng.nextInt(5);
+        p.parameters["ARP_OCTAVE"] = (float)(1 + rng.nextInt(3)); // 1-3 useful range
+        
         return p;
     }
     

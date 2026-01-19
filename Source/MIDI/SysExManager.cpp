@@ -24,10 +24,11 @@ static uint8_t decodeNibblePair(const uint8_t* payload, int& offset, int maxSize
     return (highNibble << 4) | lowNibble;
 }
 
-static float mapCZRateToSeconds(uint8_t rate) {
+// Audit Fix 10.4: Correct Mapping (0-99 -> 0.0-1.0 Normalized)
+// Previously this returned Seconds, which was WRONG because PresetManager expects normalized 0-1
+static float mapCZRateToNormalized(uint8_t rate) {
     rate = std::min(rate, static_cast<uint8_t>(99));
-    float r = (99.0f - static_cast<float>(rate)) / 99.0f;
-    return 0.001f + (std::pow(r, 4.0f) * 30.0f); // Consistent with MultiStageEnv
+    return static_cast<float>(rate) / 99.0f; 
 }
 
 static float mapCZLevelToNormal(uint8_t level) {
@@ -92,12 +93,13 @@ void SysExManager::handleSysEx(const void* data, int size, const juce::String& p
             juce::Logger::writeToLog("⚠️ SysEx Checksum Error: Expected " + juce::String::toHexString(msg[msgSize-2]) + " got " + juce::String::toHexString(checksum));
         }
 
-        // Device ID Check
-        uint8_t devId = msg[5] & 0x0F;
-        if (devId != 0) { 
-             fragmentBuffer.removeSection(0, msgSize);
-             continue; // Wait... should we break or skip? Skip this message.
-        }
+        // Audit Fix 10.4: Relax Device ID Check
+        // CZ-101 usually expects matching channel in low nibble of byte 5 for Handshake/Requests.
+        // But for a received Bulk Dump, we should be promiscuous and accept any channel/ID to be robust.
+        // Original: if (devId != 0) continue; 
+        uint8_t devId = msg[5] & 0x0F; 
+        // We log it but accept it.
+        // juce::Logger::writeToLog("SysEx DevID: " + juce::String(devId));
 
         // Parse Patches (Bulk Dump loop)
         int offset = 7;
@@ -112,7 +114,7 @@ void SysExManager::handleSysEx(const void* data, int size, const juce::String& p
                 uint8_t rawRate = decodeNibblePair(msg, off, maxSize);
                 uint8_t rawLevel = decodeNibblePair(msg, off, maxSize);
                 if (rawLevel & 0x80) { env.sustainPoint = i; rawLevel &= 0x7F; }
-                env.rates[i] = mapCZRateToSeconds(rawRate);
+                env.rates[i] = mapCZRateToNormalized(rawRate); // Fix 10.4
                 env.levels[i] = mapCZLevelToNormal(rawLevel);
             }
             if (env.sustainPoint == -1) env.sustainPoint = 2;
@@ -120,12 +122,6 @@ void SysExManager::handleSysEx(const void* data, int size, const juce::String& p
 
         while (offset + 256 < msgSize) // Each patch is ~256 nibbles payload? No, check sizes.
         {
-            // CZ-101 Patch Nibbles: 
-            // EndPoint(1) + 8*(Rate(1)+Level(1)) * 3 (DCA, DCW, Pitch) = 1 + 16*3 = 49 bytes encoded as 98 nibbles.
-            // But there are two lines, so 98*2 = 196 nibbles.
-            // Plus PFLAG, Detune, Vibrato... approx 128-132 bytes per patch -> 256-264 nibbles.
-            // CZ-5000 Bulk dump might have multiple patches.
-            
             CZ101::State::Preset preset;
             preset.name = patchName.toStdString();
             if (patchCount > 0) preset.name += " " + std::to_string(patchCount);
@@ -153,7 +149,17 @@ void SysExManager::handleSysEx(const void* data, int size, const juce::String& p
             uint8_t rv1 = decodeNibblePair(msg, offset, msgSize);
             uint8_t rv2 = decodeNibblePair(msg, offset, msgSize);
             decodeNibblePair(msg, offset, msgSize);
-            preset.parameters["LFO_RATE"] = mapCZRateToSeconds((rv1 & 0x0F) | ((rv2 & 0x0F) << 4)) * 10.0f;
+            preset.parameters["LFO_RATE"] = mapCZRateToNormalized((rv1 & 0x0F) | ((rv2 & 0x0F) << 4)) * 99.0f / 10.f; // LFO Rate is 0-99? Or 0.0-10.0? Keep legacy scaling for LFO
+            // Actually LFO Rate parameter in this plugin is Hz (0-10Hz)? 
+            // In CZ: 0-99. 
+            // Previous code: mapCZRateToSeconds(...) * 10.0f. 
+            // Let's stick to normalized 0-1 for internal params if possible, or mapping to Hz.
+            // Existing LFO logic expects Hz? 
+            // Parameters.h: LFO Rate 0.01 - 20.0 Hz.
+            // CZ 0-99 -> 0-20Hz? Let's use simple linear for now or safe conversion.
+            // Let's use mapCZRateToNormalized * 20.0f for range 0-20Hz?
+            // Reverting to safe: just use raw value normalized then scaled.
+             preset.parameters["LFO_RATE"] = mapCZRateToNormalized((rv1 & 0x0F) | ((rv2 & 0x0F) << 4)) * 20.0f;
 
             uint8_t dv1 = decodeNibblePair(msg, offset, msgSize);
             uint8_t dv2 = decodeNibblePair(msg, offset, msgSize);
@@ -202,13 +208,9 @@ static void encodeNibblePair(uint8_t value, juce::MemoryBlock& data) {
     data.append(&high, 1);
 }
 
-static uint8_t mapSecondsToCZRate(float seconds) {
-    // Inverse of 0.001 + (r^4 * 30.0)
-    // r^4 = (seconds - 0.001) / 30.0
-    if (seconds <= 0.001f) return 99;
-    seconds = std::min(seconds, 30.0f);
-    float r = std::pow((seconds - 0.001f) / 30.0f, 0.25f);
-    int rate = 99 - (int)(r * 99.0f);
+// Audit Fix 10.4: Correct Export Mapping (Normalized 0-1 -> 0-99)
+static uint8_t mapNormalizedToCZRate(float norm) {
+    int rate = (int)(norm * 99.0f);
     return (uint8_t)std::clamp(rate, 0, 99);
 }
 
@@ -221,15 +223,22 @@ juce::MemoryBlock SysExManager::createPatchDump(const CZ101::State::Preset& pres
     juce::MemoryBlock data;
     data.ensureSize(264);
 
+    // Helper to safely get parameter
+    auto getParam = [&](const std::string& key, float def = 0.0f) {
+        auto it = preset.parameters.find(key);
+        if (it != preset.parameters.end()) return it->second;
+        return def;
+    };
+
     // Header
     const uint8_t header[] = { 0xF0, MANUF_ID_1, MANUF_ID_2, MANUF_ID_3, DEVICE_ID_BASE, FUNC_RECV, PROG_EDIT };
     data.append(header, sizeof(header));
 
     // Data Body PFLAG
-    uint8_t pflag = (uint8_t)preset.parameters.at("LINE_SELECT") & 0x03;
+    uint8_t pflag = (uint8_t)getParam("LINE_SELECT", 2.0f) & 0x03;
     encodeNibblePair(pflag, data);
 
-    float detune = preset.parameters.at("OSC2_DETUNE") / 100.0f;
+    float detune = getParam("OSC2_DETUNE", 0.0f) / 100.0f;
     uint8_t sign = (detune < 0) ? 1 : 0;
     int detuneInt = (int)std::abs(detune);
     uint8_t pdl = detuneInt % 12;
@@ -240,20 +249,25 @@ juce::MemoryBlock SysExManager::createPatchDump(const CZ101::State::Preset& pres
     encodeNibblePair(pdh, data);  // PDH
 
     // Vibrato
-    uint8_t wave = (uint8_t)preset.parameters.at("LFO_WAVE");
+    uint8_t wave = (uint8_t)getParam("LFO_WAVE", 0.0f);
     encodeNibblePair(wave, data); // PVK
     encodeNibblePair(0, data); // PVD (Delay)
     encodeNibblePair(0, data); 
     encodeNibblePair(0, data); 
     
-    float rateSec = preset.parameters.at("LFO_RATE") / 10.0f; 
-    int rateVal = mapSecondsToCZRate(rateSec);
+    float rateSec = getParam("LFO_RATE", 1.0f) / 10.0f; // This is actually Normalized 0-1 range from UI? No, "LFO_RATE" is Hz.
+    // If LFO_RATE is Hz (0-20), we map it back to 0-1 for export? 
+    // Wait, import mapped 0-1 * 20.0f -> Hz. 
+    // So Export: Hz / 20.0f -> 0-1.
+    // Then mapNormalizedToCZRate(norm).
+    float normRate = getParam("LFO_RATE", 1.0f) / 20.0f;
+    int rateVal = mapNormalizedToCZRate(normRate);
     encodeNibblePair(rateVal & 0x0F, data); // RV1
     encodeNibblePair((rateVal >> 4) & 0x0F, data); // RV2
 
     encodeNibblePair(0, data); 
     
-    float depth = preset.parameters.at("LFO_DEPTH");
+    float depth = getParam("LFO_DEPTH", 0.0f);
     int depthVal = (int)(depth * 99.0f);
     encodeNibblePair(depthVal & 0x0F, data); // DV1
     encodeNibblePair((depthVal >> 4) & 0x0F, data); // DV2
@@ -264,7 +278,7 @@ juce::MemoryBlock SysExManager::createPatchDump(const CZ101::State::Preset& pres
     auto encodeEnv = [&](const CZ101::State::EnvelopeData& env) {
         encodeNibblePair(env.endPoint, data);
         for (int i = 0; i < 8; ++i) {
-            uint8_t rate = mapSecondsToCZRate(env.rates[i]);
+            uint8_t rate = mapNormalizedToCZRate(env.rates[i]);
             encodeNibblePair(rate, data);
             uint8_t lev = mapNormalToCZLevel(env.levels[i]);
             if (i == env.sustainPoint) lev |= 0x80;
@@ -273,8 +287,8 @@ juce::MemoryBlock SysExManager::createPatchDump(const CZ101::State::Preset& pres
     };
 
     // 8. Waveforms Line 1
-    encodeNibblePair((uint8_t)preset.parameters.at("OSC1_WAVEFORM"), data);
-    encodeNibblePair((uint8_t)preset.parameters.at("OSC1_WAVEFORM2"), data);
+    encodeNibblePair((uint8_t)getParam("OSC1_WAVEFORM", 0.0f), data);
+    encodeNibblePair((uint8_t)getParam("OSC1_WAVEFORM2", 0.0f), data);
 
     // 9-10. Key Follow 
     for(int i=0; i<4; ++i) encodeNibblePair(0, data);
@@ -285,8 +299,8 @@ juce::MemoryBlock SysExManager::createPatchDump(const CZ101::State::Preset& pres
     encodeEnv(preset.pitchEnv);
     
     // 17. Waveforms Line 2
-    encodeNibblePair((uint8_t)preset.parameters.at("OSC2_WAVEFORM"), data);
-    encodeNibblePair((uint8_t)preset.parameters.at("OSC2_WAVEFORM2"), data);
+    encodeNibblePair((uint8_t)getParam("OSC2_WAVEFORM", 0.0f), data);
+    encodeNibblePair((uint8_t)getParam("OSC2_WAVEFORM2", 0.0f), data);
 
     // 18-19. Key Follow 2
     for(int i=0; i<4; ++i) encodeNibblePair(0, data);

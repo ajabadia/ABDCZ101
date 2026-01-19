@@ -25,6 +25,7 @@ public:
         RESONANCE_1,
         RESONANCE_2,
         RESONANCE_3,
+        NONE, // Explicit "Off" state
         NUM_CZ_WAVEFORMS
     };
     
