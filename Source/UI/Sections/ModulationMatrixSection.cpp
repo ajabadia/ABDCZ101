@@ -1,6 +1,7 @@
 #include "ModulationMatrixSection.h"
 #include "../SkinManager.h"
 #include "../DesignTokens.h"
+#include "../../State/ParameterIDs.h"
 
 namespace CZ101 {
 namespace UI {
@@ -25,23 +26,23 @@ ModulationMatrixSection::ModulationMatrixSection(CZ101AudioProcessor& p)
         knob.getSlider().getProperties().set("paramId", paramId);
     };
 
-    setupKnob(veloToDcwKnob, "MOD_VELO_DCW");
-    setupKnob(veloToDcaKnob, "MOD_VELO_DCA");
-    setupKnob(wheelToDcwKnob, "MOD_WHEEL_DCW");
-    setupKnob(wheelToLfoRateKnob, "MOD_WHEEL_LFORATE");
-    setupKnob(wheelToVibKnob, "MOD_WHEEL_VIB");
-    setupKnob(atToDcwKnob, "MOD_AT_DCW");
-    setupKnob(atToVibKnob, "MOD_AT_VIB");
-    setupKnob(ktDcwKnob, "KEY_TRACK_DCW");
-    setupKnob(ktPitchKnob, "KEY_TRACK_PITCH");
+    setupKnob(veloToDcwKnob, ParameterIDs::modVeloDcw);
+    setupKnob(veloToDcaKnob, ParameterIDs::modVeloDca);
+    setupKnob(wheelToDcwKnob, ParameterIDs::modWheelDcw);
+    setupKnob(wheelToLfoRateKnob, ParameterIDs::modWheelLfoRate);
+    setupKnob(wheelToVibKnob, ParameterIDs::modWheelVib);
+    setupKnob(atToDcwKnob, ParameterIDs::modAtDcw);
+    setupKnob(atToVibKnob, ParameterIDs::modAtVib);
+    setupKnob(ktDcwKnob, ParameterIDs::keyTrackDcw);
+    setupKnob(ktPitchKnob, ParameterIDs::keyTrackPitch);
 
-    audioProcessor.getParameters().getAPVTS().addParameterListener("OPERATION_MODE", this);
+    audioProcessor.getParameters().getAPVTS().addParameterListener(ParameterIDs::operationMode, this);
     updateVisibility();
 }
 
 ModulationMatrixSection::~ModulationMatrixSection()
 {
-    audioProcessor.getParameters().getAPVTS().removeParameterListener("OPERATION_MODE", this);
+    audioProcessor.getParameters().getAPVTS().removeParameterListener(ParameterIDs::operationMode, this);
 }
 
 void ModulationMatrixSection::parameterChanged(const juce::String&, float)

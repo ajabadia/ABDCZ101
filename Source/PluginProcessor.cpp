@@ -184,6 +184,7 @@ void CZ101AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     // Audit Fix 1.2: Reset Effects RNG/Phase
     chorus.prepare(sampleRate);
     stereoDelay.prepare(sampleRate); // Audit Fix 10.5
+    driveEffect.prepare(spec); // [NEW] Phase 12
     modernLpf.reset();
     modernHpf.reset();
     reverb.reset(); // Added missing reverb reset
@@ -279,39 +280,51 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     {
         auto& eff = snapshot->effects;
         
-        // Apply Modern Filters first if in Modern mode
+        // Apply Modern Filters AND Drive first if in Modern mode
         if (isModern)
         {
             juce::dsp::AudioBlock<float> block(buffer);
             juce::dsp::ProcessContextReplacing<float> context(block);
             modernLpf.process(context);
             modernHpf.process(context);
+            
+            // [NEW] Post-Filter Drive (Phase 12)
+            driveEffect.setAmount(eff.driveAmount);
+            driveEffect.setColor(eff.driveColor);
+            driveEffect.setMix(eff.driveMix);
+            driveEffect.process(context);
         }
         
-        // Apply effects chain (available in all modes, but parameters may differ)
-        // Chorus
+        // Apply effects chain
+        // Chorus (Always active availability, but parameters sets mix)
         chorus.setRate(eff.chorusRate);
         chorus.setDepth(eff.chorusDepth); 
         chorus.setMix(eff.chorusMix);
         chorus.process(channelDataL, channelDataR, buffer.getNumSamples());
         
-        // Stereo Delay
-        float dt = eff.delayTime;
-        float fb = eff.delayFb;
-        float mix = eff.delayMix;
-        bool pingPong = false;
-        float spread = 0.0f;
-        stereoDelay.setParameters(dt, fb, mix, pingPong, spread); 
-        stereoDelay.process(channelDataL, channelDataR, buffer.getNumSamples());
-        
-        // Reverb
-        reverbParams.roomSize = eff.reverbSize;
-        reverbParams.wetLevel = eff.reverbMix;
-        reverbParams.dryLevel = 1.0f - (eff.reverbMix * 0.5f);
-        reverbParams.damping = 0.5f;
-        reverbParams.width = 1.0f;
-        reverb.setParameters(reverbParams);
-        reverb.processStereo(channelDataL, channelDataR, buffer.getNumSamples());
+        // [PHASE 12 FIX] Mode Fidelity: Delay and Reverb ONLY in Modern Mode
+        if (isModern)
+        {
+            // Stereo Delay
+            float dt = eff.delayTime;
+            float fb = eff.delayFb;
+            float mix = eff.delayMix;
+            bool pingPong = false;
+            float spread = 0.0f;
+            stereoDelay.setParameters(dt, fb, mix, pingPong, spread); 
+            stereoDelay.process(channelDataL, channelDataR, buffer.getNumSamples());
+            
+            // Reverb
+            reverbParams.roomSize = eff.reverbSize;
+            reverbParams.wetLevel = eff.reverbMix;
+            reverbParams.dryLevel = 1.0f - (eff.reverbMix * 0.5f);
+            reverbParams.damping = 0.5f;
+            reverbParams.width = 1.0f;
+            reverb.setParameters(reverbParams);
+            reverb.processStereo(channelDataL, channelDataR, buffer.getNumSamples());
+        }
+        // Classic Modes: Bypass Delay/Reverb logic implicitly by not running them.
+        // Chorus remains available to simulate the hardware Chorus.
     }
     
     // Visualization logic - Triple Buffer Producer
@@ -786,6 +799,11 @@ std::unique_ptr<CZ101::Core::ParameterSnapshot> CZ101AudioProcessor::buildAudioS
     
     snap->effects.reverbSize = getVal(parameters.getReverbSize(), 0.5f);
     snap->effects.reverbMix = getVal(parameters.getReverbMix());
+
+    // [NEW] Drive
+    snap->effects.driveAmount = getVal(parameters.getDriveAmount());
+    snap->effects.driveColor = getVal(parameters.getDriveColor(), 0.5f);
+    snap->effects.driveMix = getVal(parameters.getDriveMix());
 
     // Envelopes (Calculated from ADSR Macros)
     double sr = currentSampleRate.load();

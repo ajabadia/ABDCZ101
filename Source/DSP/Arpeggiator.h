@@ -69,7 +69,16 @@ public:
 
     void process(int numSamples, std::vector<ArpEvent>& outEvents)
     {
-        if (!enabled || (activeNotes.empty() && heldNotes.empty())) return;
+        if (!enabled) return;
+
+        // Audit Fix: Ensure stuck notes are killed if Arp has no active notes
+        if (activeNotes.empty() && heldNotes.empty()) {
+            if (currentPlayingNote != -1) {
+                outEvents.push_back({ currentPlayingNote, 0.0f, false });
+                currentPlayingNote = -1;
+            }
+            return;
+        }
 
         // Tempo sync logic
         float samplesPerBeat = (60.0f / currentBpm) * sampleRate;

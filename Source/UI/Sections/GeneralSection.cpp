@@ -1,5 +1,6 @@
 #include "GeneralSection.h"
 #include "../SkinManager.h"
+#include "../../State/ParameterIDs.h"
 
 namespace CZ101 {
 namespace UI {
@@ -34,12 +35,12 @@ GeneralSection::GeneralSection(CZ101AudioProcessor& p)
     int currentMode = params.getOperationMode() ? params.getOperationMode()->getIndex() : 0;
     macroPanel.setVisible(currentMode == 2);
 
-    apvts.addParameterListener("OPERATION_MODE", this);
+    apvts.addParameterListener(ParameterIDs::operationMode, this);
 }
 
 GeneralSection::~GeneralSection() 
 {
-    audioProcessor.getParameters().getAPVTS().removeParameterListener("OPERATION_MODE", this);
+    audioProcessor.getParameters().getAPVTS().removeParameterListener(ParameterIDs::operationMode, this);
 }
 
 void GeneralSection::paint(juce::Graphics& g) {
@@ -56,7 +57,7 @@ void GeneralSection::paint(juce::Graphics& g) {
 
 void GeneralSection::parameterChanged(const juce::String& parameterID, float newValue)
 {
-    if (parameterID == "OPERATION_MODE")
+    if (parameterID == ParameterIDs::operationMode)
     {
         // 0: 101, 1: 5000, 2: Modern
         // newValue from APVTS is normalized 0.0-1.0 for choices? 

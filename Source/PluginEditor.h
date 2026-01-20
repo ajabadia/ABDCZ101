@@ -19,6 +19,8 @@
 #include "UI/Sections/ArpeggiatorSection.h"
 #include "UI/Sections/ModulationMatrixSection.h"
 #include "UI/Components/AboutDialog.h"
+#include "UI/Components/DualEnvelopeContainer.h"
+#include "UI/Overlays/BankManagerOverlay.h"
 #include "UI/UIManager.h"
 
 class CZ101AudioProcessorEditor : public juce::AudioProcessorEditor,
@@ -128,32 +130,6 @@ private:
     juce::TextButton cursorUp    { "^" };
     juce::TextButton cursorDown  { "v" };
     
-    // Helper Class for Dual View
-    struct DualEnvelopeContainer : public juce::Component {
-        CZ101::UI::EnvelopeEditor& l1;
-        CZ101::UI::EnvelopeEditor& l2;
-        juce::Label label1 { {}, "LINE 1" };
-        juce::Label label2 { {}, "LINE 2" };
-        
-        DualEnvelopeContainer(CZ101::UI::EnvelopeEditor& e1, CZ101::UI::EnvelopeEditor& e2) : l1(e1), l2(e2) {
-            addAndMakeVisible(l1); addAndMakeVisible(l2);
-            addAndMakeVisible(label1); addAndMakeVisible(label2);
-            label1.setJustificationType(juce::Justification::centred);
-            label2.setJustificationType(juce::Justification::centred);
-            label1.setColour(juce::Label::textColourId, juce::Colours::cyan);
-            // label2 is default
-        }
-        void resized() override {
-            auto area = getLocalBounds();
-            auto h = area.getHeight() / 2;
-            auto area1 = area.removeFromTop(h);
-            label1.setBounds(area1.removeFromTop(20));
-            l1.setBounds(area1);
-            
-            label2.setBounds(area.removeFromTop(20));
-            l2.setBounds(area);
-        }
-    };
 
     // Envolventes (Split View)
     juce::TabbedComponent envelopeTabs { juce::TabbedButtonBar::TabsAtTop };
@@ -167,133 +143,15 @@ private:
     CZ101::UI::EnvelopeEditor dcaEditorL1, dcaEditorL2;
     
     // Containers
-    std::unique_ptr<DualEnvelopeContainer> pitchContainer;
-    std::unique_ptr<DualEnvelopeContainer> dcwContainer;
-    std::unique_ptr<DualEnvelopeContainer> dcaContainer;
+    std::unique_ptr<CZ101::UI::DualEnvelopeContainer> pitchContainer;
+    std::unique_ptr<CZ101::UI::DualEnvelopeContainer> dcwContainer;
+    std::unique_ptr<CZ101::UI::DualEnvelopeContainer> dcaContainer;
 
     // Overlays
     CZ101::UI::NameEditorOverlay nameOverlay;
     CZ101::UI::AboutDialog aboutDialog;
     
-    struct BankManagerOverlay : public juce::Component, public juce::ListBoxModel {
-        CZ101::State::PresetManager* pm = nullptr;
-        juce::ListBox listBox { "BankList", this };
-        juce::TextButton closeButton { "CLOSE" };
-        std::function<void()> onUpdate;
-        
-        BankManagerOverlay() {
-            addAndMakeVisible(listBox);
-            addAndMakeVisible(closeButton);
-            closeButton.onClick = [this]() { setVisible(false); };
-            listBox.setRowHeight(30);
-        }
-        
-        void paint(juce::Graphics& g) override {
-            g.fillAll(juce::Colours::black.withAlpha(0.85f));
-            g.setColour(juce::Colours::white);
-            g.setFont(20.0f);
-            g.drawText("BANK MANAGER", getLocalBounds().removeFromTop(40), juce::Justification::centred);
-        }
-        
-        void resized() override {
-            auto area = getLocalBounds().reduced(40);
-            area.removeFromTop(40); // Title space
-            closeButton.setBounds(area.removeFromBottom(40).reduced(100, 5));
-            listBox.setBounds(area);
-        }
-        
-        int getNumRows() override { 
-            // Audit Fix: Thread safety against Host access
-            if (!pm) return 0;
-            const ScopedReadLock sl(pm->getLock());
-            return (int)pm->getPresets().size(); 
-        }
-        
-        void paintListBoxItem(int row, juce::Graphics& g, int w, int h, bool selected) override {
-            if (!pm) return;
-            // Audit Fix: Thread safety
-            const ScopedReadLock sl(pm->getLock());
-            
-            if (row < (int)pm->getPresets().size()) {
-                if (selected) g.fillAll(juce::Colours::cyan.withAlpha(0.3f));
-                g.setColour(juce::Colours::white);
-                g.drawText(juce::String(row + 1) + ": " + pm->getPresets()[row].name, 5, 0, w - 80, h, juce::Justification::centredLeft);
-            }
-        }
-        
-        void listBoxItemClicked(int row, const juce::MouseEvent& e) override {
-            if (e.mods.isRightButtonDown()) {
-                juce::PopupMenu m;
-                m.addItem(1, "Move Up");
-                m.addItem(2, "Move Down");
-                m.addItem(4, "Move to Position...");
-                m.addSeparator();
-                m.addItem(5, "Rename...");
-                m.addSeparator();
-                m.addItem(3, "Delete");
-                
-                // Audit Fix 1.6: Use SafePointer to prevent crash if editor closed while menu open
-                juce::Component::SafePointer<BankManagerOverlay> safeThis(this);
-                
-                m.showMenuAsync(juce::PopupMenu::Options(), [safeThis, row](int result) {
-                    if (safeThis == nullptr || safeThis->pm == nullptr) return;
-                    
-                    auto* overlay = safeThis.getComponent();
-                    auto* pm = overlay->pm;
-                    
-                    if (result == 1) pm->movePreset(row, row - 1);
-                    else if (result == 2) pm->movePreset(row, row + 1);
-                    else if (result == 4) {
-                        auto* dw = new juce::AlertWindow("Move Preset", "Enter new position (1-" + juce::String(pm->getPresets().size()) + "):", juce::AlertWindow::QuestionIcon);
-                        dw->addTextEditor("pos", juce::String(row + 1));
-                        dw->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
-                        dw->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
-                        
-                        dw->enterModalState(true, juce::ModalCallbackFunction::create([safeThis, dw, row](int r) {
-                            if (safeThis == nullptr || safeThis->pm == nullptr) return; // dw is managed by ModalCallback
-                            
-                            if (r == 1) {
-                                int newPos = dw->getTextEditorContents("pos").getIntValue() - 1;
-                                int maxPos = (int)safeThis->pm->getPresets().size() - 1;
-                                if (newPos >= 0 && newPos <= maxPos) {
-                                    safeThis->pm->movePreset(row, newPos);
-                                    safeThis->listBox.updateContent();
-                                    if (safeThis->onUpdate) safeThis->onUpdate();
-                                }
-                            }
-                        }));
-                    }
-                    else if (result == 5) {
-                        auto* dw = new juce::AlertWindow("Rename Preset", "Enter new name:", juce::AlertWindow::QuestionIcon);
-                        const ScopedReadLock sl(pm->getLock());
-                        dw->addTextEditor("name", pm->getPresets()[row].name);
-                        
-                        dw->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
-                        dw->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
-                        dw->enterModalState(true, juce::ModalCallbackFunction::create([safeThis, dw, row](int r) {
-                            if (safeThis == nullptr || safeThis->pm == nullptr) return;
-                            
-                            if (r == 1) {
-                                safeThis->pm->renamePreset(row, dw->getTextEditorContents("name").toStdString());
-                                safeThis->listBox.updateContent();
-                                if (safeThis->onUpdate) safeThis->onUpdate();
-                            }
-                        }));
-                    }
-                    else if (result == 3) {
-                         pm->deletePreset(row);
-                         safeThis->listBox.updateContent();
-                         if (safeThis->onUpdate) safeThis->onUpdate();
-                    }
-                    
-                    if (result > 0 && result != 4 && result != 5 && result != 3) {
-                        safeThis->listBox.updateContent();
-                        if (safeThis->onUpdate) safeThis->onUpdate();
-                    }
-                });
-            }
-        }
-    } bankManagerOverlay;
+    CZ101::UI::BankManagerOverlay bankManagerOverlay;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CZ101AudioProcessorEditor)
 };

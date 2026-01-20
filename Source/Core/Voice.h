@@ -3,11 +3,8 @@
 #include "../DSP/Oscillators/PhaseDistOsc.h"
 #include "../DSP/Envelopes/MultiStageEnv.h"
 #include "../DSP/Modulation/LFO.h"
-#include "../DSP/Envelopes/MultiStageEnv.h"
-#include "../DSP/Modulation/LFO.h"
 #include "../DSP/VelocitySensitivityCurves.h" // [NEW]
 #include "../DSP/Filters/ResonantFilter.h" // [NEW]
-#include <array>
 #include <array>
 #include <cstdint>
 

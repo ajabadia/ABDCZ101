@@ -76,6 +76,11 @@ struct ParameterSnapshot {
         // [NEW] Reverb
         float reverbSize = 0.5f;
         float reverbMix = 0.0f;
+
+        // [NEW] Drive
+        float driveAmount = 0.0f;
+        float driveColor = 0.5f;
+        float driveMix = 0.0f;
     } effects;
     
     // We include basic envelope settings for snapshot restoration

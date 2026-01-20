@@ -64,6 +64,12 @@ public:
     juce::AudioParameterFloat*  getLfoRate() const { return lfoRate; }
     juce::AudioParameterFloat*  getLfoDepth() const { return lfoDepth; }
     juce::AudioParameterFloat*  getLfoDelay() const { return lfoDelay; }
+    
+    // Drive
+    juce::AudioParameterFloat*  getDriveAmount() const { return driveAmount; }
+    juce::AudioParameterFloat*  getDriveColor() const { return driveColor; }
+    juce::AudioParameterFloat*  getDriveMix() const { return driveMix; }
+
     juce::AudioParameterFloat*  getChorusRate() const { return chorusRate; }
     juce::AudioParameterFloat*  getChorusDepth() const { return chorusDepth; }
     juce::AudioParameterFloat*  getChorusMix() const { return chorusMix; }
@@ -124,6 +130,10 @@ private:
     juce::AudioParameterFloat* lfoRate = nullptr;
     juce::AudioParameterFloat* lfoDepth = nullptr;
     juce::AudioParameterFloat* lfoDelay = nullptr;
+
+    juce::AudioParameterFloat* driveAmount = nullptr;
+    juce::AudioParameterFloat* driveColor = nullptr;
+    juce::AudioParameterFloat* driveMix = nullptr;
 
     juce::AudioParameterFloat* chorusRate = nullptr;
     juce::AudioParameterFloat* chorusDepth = nullptr;

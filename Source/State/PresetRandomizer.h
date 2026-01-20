@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PresetManager.h"
+#include "ParameterIDs.h"
 #include <juce_core/juce_core.h>
 
 namespace CZ101 {
@@ -18,22 +19,22 @@ public:
         
         // 1. Oscillators
         // LINE_SELECT: 0-3 (Choice Index)
-        p.parameters["LINE_SELECT"] = (float)rng.nextInt(4); 
+        p.parameters[ParameterIDs::lineSelect.toStdString()] = (float)rng.nextInt(4); 
         
         // WAVEFORM: 0-7 (Choice Index)
-        p.parameters["OSC1_WAVEFORM"] = (float)rng.nextInt(8);
-        p.parameters["OSC1_WAVEFORM2"] = (rng.nextFloat() > 0.7f) ? (float)rng.nextInt(8) : 0.0f;
-        p.parameters["OSC1_LEVEL"] = 0.8f + rng.nextFloat() * 0.2f; // High level
+        p.parameters[ParameterIDs::osc1Waveform.toStdString()] = (float)rng.nextInt(8);
+        p.parameters[ParameterIDs::osc1Waveform2.toStdString()] = (rng.nextFloat() > 0.7f) ? (float)rng.nextInt(8) : 0.0f;
+        p.parameters[ParameterIDs::osc1Level.toStdString()] = 0.8f + rng.nextFloat() * 0.2f; // High level
         
-        p.parameters["OSC2_WAVEFORM"] = (float)rng.nextInt(8);
-        p.parameters["OSC2_WAVEFORM2"] = (rng.nextFloat() > 0.7f) ? (float)rng.nextInt(8) : 0.0f;
-        p.parameters["OSC2_LEVEL"] = rng.nextFloat(); 
-        p.parameters["OSC2_DETUNE"] = (rng.nextFloat() - 0.5f) * 10.0f; // +/- 5 cents approx (Detune parameter is +/- 12 semitones? No, wait.)
+        p.parameters[ParameterIDs::osc2Waveform.toStdString()] = (float)rng.nextInt(8);
+        p.parameters[ParameterIDs::osc2Waveform2.toStdString()] = (rng.nextFloat() > 0.7f) ? (float)rng.nextInt(8) : 0.0f;
+        p.parameters[ParameterIDs::osc2Level.toStdString()] = rng.nextFloat(); 
+        p.parameters[ParameterIDs::osc2Detune.toStdString()] = (rng.nextFloat() - 0.5f) * 10.0f; // +/- 5 cents approx (Detune parameter is +/- 12 semitones? No, wait.)
         // OSC2_DETUNE in Parameters.cpp is -12.0 to 12.0 semitones.
         // We want subtle detune. 
-        p.parameters["OSC2_DETUNE"] = (rng.nextFloat() - 0.5f) * 0.2f; // +/- 0.1 semitones
+        p.parameters[ParameterIDs::osc2Detune.toStdString()] = (rng.nextFloat() - 0.5f) * 0.2f; // +/- 0.1 semitones
         
-        p.parameters["RING_MOD"] = (rng.nextFloat() > 0.8f) ? 1.0f : 0.0f;
+        p.parameters[ParameterIDs::ringMod.toStdString()] = (rng.nextFloat() > 0.8f) ? 1.0f : 0.0f;
         // NOISE_MOD? Not in Parameters.cpp. Check HARDWARE_NOISE? That's global.
         
         // 2. Envelopes
@@ -53,28 +54,40 @@ public:
         p.pitchEnv2 = p.pitchEnv;
         
         // 3. LFO
-        p.parameters["LFO_WAVE"] = (float)rng.nextInt(4); // 0-3
-        p.parameters["LFO_RATE"] = 0.5f + rng.nextFloat() * 8.0f; // 0.5Hz to 8.5Hz
-        p.parameters["LFO_DEPTH"] = rng.nextFloat() * 0.3f; // Subtle
-        p.parameters["LFO_DELAY"] = rng.nextFloat() * 0.5f; // 0-0.5s
+        p.parameters[ParameterIDs::lfoWaveform.toStdString()] = (float)rng.nextInt(4); // 0-3
+        p.parameters[ParameterIDs::lfoRate.toStdString()] = 0.5f + rng.nextFloat() * 8.0f; // 0.5Hz to 8.5Hz
+        p.parameters[ParameterIDs::lfoDepth.toStdString()] = rng.nextFloat() * 0.3f; // Subtle
+        p.parameters[ParameterIDs::lfoDelay.toStdString()] = rng.nextFloat() * 0.5f; // 0-0.5s
         
         // 4. Effects
-        p.parameters["CHORUS_MIX"] = (rng.nextFloat() > 0.7f) ? rng.nextFloat() * 0.5f : 0.0f;
-        p.parameters["DELAY_MIX"] = (rng.nextFloat() > 0.8f) ? rng.nextFloat() * 0.4f : 0.0f;
-        p.parameters["DELAY_TIME"] = 0.2f + rng.nextFloat() * 0.5f;
-        p.parameters["DELAY_FEEDBACK"] = 0.3f;
+        p.parameters[ParameterIDs::chorusMix.toStdString()] = (rng.nextFloat() > 0.7f) ? rng.nextFloat() * 0.5f : 0.0f;
+        p.parameters[ParameterIDs::delayMix.toStdString()] = (rng.nextFloat() > 0.8f) ? rng.nextFloat() * 0.4f : 0.0f;
+        p.parameters[ParameterIDs::delayTime.toStdString()] = 0.2f + rng.nextFloat() * 0.5f;
+        p.parameters[ParameterIDs::delayFeedback.toStdString()] = 0.3f;
+        
+        // [NEW] Drive (Phase 12)
+        // 20% chance of being active
+        if (rng.nextFloat() > 0.8f) {
+            p.parameters[ParameterIDs::driveAmount.toStdString()] = 0.2f + rng.nextFloat() * 0.6f;
+            p.parameters[ParameterIDs::driveColor.toStdString()] = rng.nextFloat();
+            p.parameters[ParameterIDs::driveMix.toStdString()] = 0.3f + rng.nextFloat() * 0.7f; // Wet mix
+        } else {
+             p.parameters[ParameterIDs::driveAmount.toStdString()] = 0.0f;
+             p.parameters[ParameterIDs::driveColor.toStdString()] = 0.5f;
+             p.parameters[ParameterIDs::driveMix.toStdString()] = 0.0f;
+        }
 
         // 5. Arpeggiator (Audit Fix)
         // Enable with low probability to not annoy user immediately, but randomize settings
-        p.parameters["ARP_ENABLED"] = (rng.nextFloat() > 0.8f) ? 1.0f : 0.0f; 
-        p.parameters["ARP_LATCH"] = (rng.nextFloat() > 0.7f) ? 1.0f : 0.0f;
-        p.parameters["ARP_RATE"] = (float)rng.nextInt(4); // 0-3
-        p.parameters["ARP_BPM"] = 80.0f + rng.nextFloat() * 60.0f; // 80-140 Practical range
-        p.parameters["ARP_GATE"] = 0.3f + rng.nextFloat() * 0.7f; // Usable gate
-        p.parameters["ARP_SWING"] = (rng.nextFloat() > 0.7f) ? rng.nextFloat() * 0.5f : 0.0f;
-        p.parameters["ARP_SWING_MODE"] = (float)rng.nextInt(3);
-        p.parameters["ARP_PATTERN"] = (float)rng.nextInt(5);
-        p.parameters["ARP_OCTAVE"] = (float)(1 + rng.nextInt(3)); // 1-3 useful range
+        p.parameters[ParameterIDs::arpEnabled.toStdString()] = (rng.nextFloat() > 0.8f) ? 1.0f : 0.0f; 
+        p.parameters[ParameterIDs::arpLatch.toStdString()] = (rng.nextFloat() > 0.7f) ? 1.0f : 0.0f;
+        p.parameters[ParameterIDs::arpRate.toStdString()] = (float)rng.nextInt(4); // 0-3
+        p.parameters[ParameterIDs::arpBpm.toStdString()] = 80.0f + rng.nextFloat() * 60.0f; // 80-140 Practical range
+        p.parameters[ParameterIDs::arpGate.toStdString()] = 0.3f + rng.nextFloat() * 0.7f; // Usable gate
+        p.parameters[ParameterIDs::arpSwing.toStdString()] = (rng.nextFloat() > 0.7f) ? rng.nextFloat() * 0.5f : 0.0f;
+        p.parameters[ParameterIDs::arpSwingMode.toStdString()] = (float)rng.nextInt(3);
+        p.parameters[ParameterIDs::arpPattern.toStdString()] = (float)rng.nextInt(5);
+        p.parameters[ParameterIDs::arpOctave.toStdString()] = (float)(1 + rng.nextInt(3)); // 1-3 useful range
         
         return p;
     }

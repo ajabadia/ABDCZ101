@@ -157,7 +157,6 @@ void Voice::setOsc2Waveforms(DSP::PhaseDistOscillator::CzWaveform f, DSP::PhaseD
 void Voice::setOsc2Level(float level) noexcept { osc2Level.setTargetValue(level); }
 void Voice::setOsc2Detune(float semitones) noexcept 
 { 
-    #include "HardwareConstants.h"
     // This is legacy, the processor now calls setModulationMatrix or specific setters
     osc2Detune.setTargetValue(semitones); 
     currentDetuneFactor.setTargetValue(std::exp2(semitones / 12.0f)); 

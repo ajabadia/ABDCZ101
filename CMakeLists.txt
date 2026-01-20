@@ -51,6 +51,11 @@ list(APPEND SOURCES
     "Source/UI/Sections/ArpeggiatorSection.cpp"
     "Source/UI/Sections/ModulationMatrixSection.h"
     "Source/UI/Sections/ModulationMatrixSection.cpp"
+    "Source/UI/Components/DualEnvelopeContainer.h"
+    "Source/UI/Components/DualEnvelopeContainer.cpp"
+    "Source/UI/Overlays/BankManagerOverlay.h"
+    "Source/UI/Overlays/BankManagerOverlay.cpp"
+    "Source/State/ParameterIDs.h"
 )
 target_sources(CZ101Emulator PRIVATE ${SOURCES})
 

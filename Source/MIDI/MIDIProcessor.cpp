@@ -1,4 +1,5 @@
 #include "MIDIProcessor.h"
+#include "../State/ParameterIDs.h"
 #include <algorithm>
 
 namespace CZ101 {
@@ -121,12 +122,12 @@ void MIDIProcessor::handleControlChange(int cc, int value) noexcept
     switch (cc)
     {
         case 1: // Vibrato Depth / Mod Wheel
-            if (onMidiParamChange) onMidiParamChange("LFO_DEPTH", normValue);
+            if (onMidiParamChange) onMidiParamChange(ParameterIDs::lfoDepth.toRawUTF8(), normValue);
             voiceManager.setModWheel(normValue);
             break;
 
         case 5: // Portamento Time
-            if (onMidiParamChange) onMidiParamChange("GLIDE", normValue);
+            if (onMidiParamChange) onMidiParamChange(ParameterIDs::glideTime.toRawUTF8(), normValue);
             break;
 
         case 6: // Master Tune (Data Entry)
@@ -134,11 +135,23 @@ void MIDIProcessor::handleControlChange(int cc, int value) noexcept
             break;
 
         case 7: // Volume
-            if (onMidiParamChange) onMidiParamChange("MASTER_VOLUME", normValue);
+            if (onMidiParamChange) onMidiParamChange(ParameterIDs::masterVolume.toRawUTF8(), normValue);
             break;
 
         case 10: // Pan
             // Not mapped to APVTS yet
+            break;
+
+        case 16: // Drive Amount (Phase 12)
+            if (onMidiParamChange) onMidiParamChange(ParameterIDs::driveAmount.toRawUTF8(), normValue);
+            break;
+            
+        case 17: // Drive Color (Phase 12)
+            if (onMidiParamChange) onMidiParamChange(ParameterIDs::driveColor.toRawUTF8(), normValue);
+            break;
+        
+        case 18: // Drive Mix (Phase 12)
+            if (onMidiParamChange) onMidiParamChange(ParameterIDs::driveMix.toRawUTF8(), normValue);
             break;
 
         case 64: // Sustain Pedal
@@ -161,11 +174,11 @@ void MIDIProcessor::handleControlChange(int cc, int value) noexcept
             break;
 
         case 71: // "Resonance" -> Modern LPF Reso
-            if (onMidiParamChange) onMidiParamChange("MODERN_LPF_RESO", normValue);
+            if (onMidiParamChange) onMidiParamChange(ParameterIDs::lpfReso.toRawUTF8(), normValue);
             break;
 
         case 74: // "Cutoff" -> Modern LPF Cutoff
-            if (onMidiParamChange) onMidiParamChange("MODERN_LPF_CUTOFF", normValue);
+            if (onMidiParamChange) onMidiParamChange(ParameterIDs::lpfCutoff.toRawUTF8(), normValue);
             break;
 
         case 120: // All Sound Off

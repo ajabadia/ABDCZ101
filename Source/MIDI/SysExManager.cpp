@@ -3,6 +3,7 @@
  */
 
 #include "SysExManager.h"
+#include "../State/ParameterIDs.h"
 #include <juce_core/juce_core.h>
 #include <cmath>
 #include <array>
@@ -131,17 +132,17 @@ void SysExManager::handleSysEx(const void* data, int size, const juce::String& p
             int patchStartOffset = offset;
             
             uint8_t pflag = decodeNibblePair(msg, offset, msgSize);
-            preset.parameters["LINE_SELECT"] = (float)(pflag & 0x03);
+            preset.parameters[ParameterIDs::lineSelect.toStdString()] = (float)(pflag & 0x03);
             
             uint8_t pds = decodeNibblePair(msg, offset, msgSize);
             uint8_t pdl = decodeNibblePair(msg, offset, msgSize);
             uint8_t pdh = decodeNibblePair(msg, offset, msgSize);
             float detune = (float)((pdl & 0x0F) + ((pdh & 0x03) * 12)) * 100.0f;
             if ((pds & 0x01)) detune = -detune;
-            preset.parameters["OSC2_DETUNE"] = detune;
+            preset.parameters[ParameterIDs::osc2Detune.toStdString()] = detune;
 
             uint8_t pvk = decodeNibblePair(msg, offset, msgSize);
-            preset.parameters["LFO_WAVE"] = (float)(pvk & 0x03);
+            preset.parameters[ParameterIDs::lfoWaveform.toStdString()] = (float)(pvk & 0x03);
             decodeNibblePair(msg, offset, msgSize); 
             decodeNibblePair(msg, offset, msgSize);
             decodeNibblePair(msg, offset, msgSize);
@@ -149,27 +150,17 @@ void SysExManager::handleSysEx(const void* data, int size, const juce::String& p
             uint8_t rv1 = decodeNibblePair(msg, offset, msgSize);
             uint8_t rv2 = decodeNibblePair(msg, offset, msgSize);
             decodeNibblePair(msg, offset, msgSize);
-            preset.parameters["LFO_RATE"] = mapCZRateToNormalized((rv1 & 0x0F) | ((rv2 & 0x0F) << 4)) * 99.0f / 10.f; // LFO Rate is 0-99? Or 0.0-10.0? Keep legacy scaling for LFO
-            // Actually LFO Rate parameter in this plugin is Hz (0-10Hz)? 
-            // In CZ: 0-99. 
-            // Previous code: mapCZRateToSeconds(...) * 10.0f. 
-            // Let's stick to normalized 0-1 for internal params if possible, or mapping to Hz.
-            // Existing LFO logic expects Hz? 
-            // Parameters.h: LFO Rate 0.01 - 20.0 Hz.
-            // CZ 0-99 -> 0-20Hz? Let's use simple linear for now or safe conversion.
-            // Let's use mapCZRateToNormalized * 20.0f for range 0-20Hz?
-            // Reverting to safe: just use raw value normalized then scaled.
-             preset.parameters["LFO_RATE"] = mapCZRateToNormalized((rv1 & 0x0F) | ((rv2 & 0x0F) << 4)) * 20.0f;
+            preset.parameters[ParameterIDs::lfoRate.toStdString()] = mapCZRateToNormalized((rv1 & 0x0F) | ((rv2 & 0x0F) << 4)) * 20.0f;
 
             uint8_t dv1 = decodeNibblePair(msg, offset, msgSize);
             uint8_t dv2 = decodeNibblePair(msg, offset, msgSize);
             decodeNibblePair(msg, offset, msgSize);
-            preset.parameters["LFO_DEPTH"] = mapCZDepth((dv1 & 0x0F) | ((dv2 & 0x0F) << 4));
+            preset.parameters[ParameterIDs::lfoDepth.toStdString()] = mapCZDepth((dv1 & 0x0F) | ((dv2 & 0x0F) << 4));
 
             uint8_t mfw1 = decodeNibblePair(msg, offset, msgSize);
             uint8_t mfw1_2 = decodeNibblePair(msg, offset, msgSize);
-            preset.parameters["OSC1_WAVEFORM"] = (float)(mfw1 & 0x07);
-            preset.parameters["OSC1_WAVEFORM2"] = (float)(mfw1_2 & 0x07);
+            preset.parameters[ParameterIDs::osc1Waveform.toStdString()] = (float)(mfw1 & 0x07);
+            preset.parameters[ParameterIDs::osc1Waveform2.toStdString()] = (float)(mfw1_2 & 0x07);
 
             decodeNibblePair(msg, offset, msgSize); decodeNibblePair(msg, offset, msgSize);
             decodeNibblePair(msg, offset, msgSize); decodeNibblePair(msg, offset, msgSize);
@@ -180,8 +171,8 @@ void SysExManager::handleSysEx(const void* data, int size, const juce::String& p
 
             uint8_t mfw2 = decodeNibblePair(msg, offset, msgSize);
             uint8_t mfw2_2 = decodeNibblePair(msg, offset, msgSize);
-            preset.parameters["OSC2_WAVEFORM"] = (float)(mfw2 & 0x07);
-            preset.parameters["OSC2_WAVEFORM2"] = (float)(mfw2_2 & 0x07);
+            preset.parameters[ParameterIDs::osc2Waveform.toStdString()] = (float)(mfw2 & 0x07);
+            preset.parameters[ParameterIDs::osc2Waveform2.toStdString()] = (float)(mfw2_2 & 0x07);
 
             decodeNibblePair(msg, offset, msgSize); decodeNibblePair(msg, offset, msgSize);
             decodeNibblePair(msg, offset, msgSize); decodeNibblePair(msg, offset, msgSize);
@@ -235,10 +226,10 @@ juce::MemoryBlock SysExManager::createPatchDump(const CZ101::State::Preset& pres
     data.append(header, sizeof(header));
 
     // Data Body PFLAG
-    uint8_t pflag = (uint8_t)getParam("LINE_SELECT", 2.0f) & 0x03;
+    uint8_t pflag = (uint8_t)getParam(ParameterIDs::lineSelect.toStdString(), 2.0f) & 0x03;
     encodeNibblePair(pflag, data);
 
-    float detune = getParam("OSC2_DETUNE", 0.0f) / 100.0f;
+    float detune = getParam(ParameterIDs::osc2Detune.toStdString(), 0.0f) / 100.0f;
     uint8_t sign = (detune < 0) ? 1 : 0;
     int detuneInt = (int)std::abs(detune);
     uint8_t pdl = detuneInt % 12;
@@ -249,25 +240,20 @@ juce::MemoryBlock SysExManager::createPatchDump(const CZ101::State::Preset& pres
     encodeNibblePair(pdh, data);  // PDH
 
     // Vibrato
-    uint8_t wave = (uint8_t)getParam("LFO_WAVE", 0.0f);
+    uint8_t wave = (uint8_t)getParam(ParameterIDs::lfoWaveform.toStdString(), 0.0f);
     encodeNibblePair(wave, data); // PVK
     encodeNibblePair(0, data); // PVD (Delay)
     encodeNibblePair(0, data); 
     encodeNibblePair(0, data); 
     
-    float rateSec = getParam("LFO_RATE", 1.0f) / 10.0f; // This is actually Normalized 0-1 range from UI? No, "LFO_RATE" is Hz.
-    // If LFO_RATE is Hz (0-20), we map it back to 0-1 for export? 
-    // Wait, import mapped 0-1 * 20.0f -> Hz. 
-    // So Export: Hz / 20.0f -> 0-1.
-    // Then mapNormalizedToCZRate(norm).
-    float normRate = getParam("LFO_RATE", 1.0f) / 20.0f;
+    float normRate = getParam(ParameterIDs::lfoRate.toStdString(), 1.0f) / 20.0f;
     int rateVal = mapNormalizedToCZRate(normRate);
     encodeNibblePair(rateVal & 0x0F, data); // RV1
     encodeNibblePair((rateVal >> 4) & 0x0F, data); // RV2
 
     encodeNibblePair(0, data); 
     
-    float depth = getParam("LFO_DEPTH", 0.0f);
+    float depth = getParam(ParameterIDs::lfoDepth.toStdString(), 0.0f);
     int depthVal = (int)(depth * 99.0f);
     encodeNibblePair(depthVal & 0x0F, data); // DV1
     encodeNibblePair((depthVal >> 4) & 0x0F, data); // DV2
@@ -287,8 +273,8 @@ juce::MemoryBlock SysExManager::createPatchDump(const CZ101::State::Preset& pres
     };
 
     // 8. Waveforms Line 1
-    encodeNibblePair((uint8_t)getParam("OSC1_WAVEFORM", 0.0f), data);
-    encodeNibblePair((uint8_t)getParam("OSC1_WAVEFORM2", 0.0f), data);
+    encodeNibblePair((uint8_t)getParam(ParameterIDs::osc1Waveform.toStdString(), 0.0f), data);
+    encodeNibblePair((uint8_t)getParam(ParameterIDs::osc1Waveform2.toStdString(), 0.0f), data);
 
     // 9-10. Key Follow 
     for(int i=0; i<4; ++i) encodeNibblePair(0, data);
@@ -299,8 +285,8 @@ juce::MemoryBlock SysExManager::createPatchDump(const CZ101::State::Preset& pres
     encodeEnv(preset.pitchEnv);
     
     // 17. Waveforms Line 2
-    encodeNibblePair((uint8_t)getParam("OSC2_WAVEFORM", 0.0f), data);
-    encodeNibblePair((uint8_t)getParam("OSC2_WAVEFORM2", 0.0f), data);
+    encodeNibblePair((uint8_t)getParam(ParameterIDs::osc2Waveform.toStdString(), 0.0f), data);
+    encodeNibblePair((uint8_t)getParam(ParameterIDs::osc2Waveform2.toStdString(), 0.0f), data);
 
     // 18-19. Key Follow 2
     for(int i=0; i<4; ++i) encodeNibblePair(0, data);

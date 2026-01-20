@@ -2,6 +2,7 @@
 #include "SkinManager.h"
 #include "LCDStateManager.h"
 #include "CZ101LookAndFeel.h"
+#include "../State/ParameterIDs.h"
 
 namespace CZ101 {
 namespace UI {
@@ -63,7 +64,7 @@ void LCDDisplay::updateSkin()
 
 void LCDDisplay::parameterChanged(const juce::String& parameterID, float newValue)
 {
-    if (parameterID == "OPERATION_MODE")
+    if (parameterID == ParameterIDs::operationMode)
     {
         // 0: 101, 1: 5000, 2: Modern
         juce::MessageManager::callAsync([this, newValue]() {

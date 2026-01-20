@@ -80,9 +80,9 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
     dcwEditorL1.setLine(1);   dcwEditorL2.setLine(2);
     dcaEditorL1.setLine(1);   dcaEditorL2.setLine(2);
 
-    pitchContainer = std::make_unique<DualEnvelopeContainer>(pitchEditorL1, pitchEditorL2);
-    dcwContainer   = std::make_unique<DualEnvelopeContainer>(dcwEditorL1, dcwEditorL2);
-    dcaContainer   = std::make_unique<DualEnvelopeContainer>(dcaEditorL1, dcaEditorL2);
+    pitchContainer = std::make_unique<CZ101::UI::DualEnvelopeContainer>(pitchEditorL1, pitchEditorL2);
+    dcwContainer   = std::make_unique<CZ101::UI::DualEnvelopeContainer>(dcwEditorL1, dcwEditorL2);
+    dcaContainer   = std::make_unique<CZ101::UI::DualEnvelopeContainer>(dcaEditorL1, dcaEditorL2);
 
     // 3. Tab Architecture
     juce::Logger::writeToLog("CZ101 Editor: Setting up Tabs");
@@ -198,10 +198,10 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
     addChildComponent(aboutDialog);
     addChildComponent(bankManagerOverlay);
     
-    bankManagerOverlay.pm = &audioProcessor.getPresetManager();
-    bankManagerOverlay.onUpdate = [this]() {
+    bankManagerOverlay.setPresetManager(audioProcessor.getPresetManager());
+    bankManagerOverlay.setOnUpdate([this]() {
         presetBrowser.updatePresetList();
-    };
+    });
 
     // Random button is always helpful
     randomButton.setVisible(true);
@@ -218,7 +218,7 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
 
 CZ101AudioProcessorEditor::~CZ101AudioProcessorEditor()
 {
-    bankManagerOverlay.listBox.setModel(nullptr); // Audit Fix: Prevent use-after-free
+    bankManagerOverlay.getListBox().setModel(nullptr); // Audit Fix: Prevent use-after-free
     stopTimer();
     tooltipWindow.setVisible(false); // Audit Fix: Hide tooltip on destruction to prevent race
     audioProcessor.getParameters().getAPVTS().removeParameterListener("OPERATION_MODE", &lcdDisplay);
@@ -640,7 +640,7 @@ void CZ101AudioProcessorEditor::openBankManager()
 {
     bankManagerOverlay.setVisible(true);
     bankManagerOverlay.toFront(true);
-    bankManagerOverlay.listBox.updateContent();
+    bankManagerOverlay.getListBox().updateContent();
 }
 
 void CZ101AudioProcessorEditor::renameCurrentPatch()

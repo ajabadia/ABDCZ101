@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cmath>
 #include "../../PluginProcessor.h" // Added include
+#include "../../State/ParameterIDs.h"
 // Rebuild trigger
 
 namespace CZ101 {
@@ -113,10 +114,10 @@ void WaveformDisplay::mouseDown(const juce::MouseEvent& e)
         auto* czProcessor = dynamic_cast<CZ101AudioProcessor*>(processor);
         if (czProcessor)
         {
-            if (auto* p = czProcessor->getParameters().getAPVTS().getParameter("DCW_SUSTAIN"))
+            if (auto* p = czProcessor->getParameters().getAPVTS().getParameter(ParameterIDs::dcwSustain))
                 startValX = p->getValue();
                 
-            if (auto* p = czProcessor->getParameters().getAPVTS().getParameter("OSC1_LEVEL"))
+            if (auto* p = czProcessor->getParameters().getAPVTS().getParameter(ParameterIDs::osc1Level))
                 startValY = p->getValue();
         }
     }
@@ -131,7 +132,7 @@ void WaveformDisplay::mouseDrag(const juce::MouseEvent& e)
 
         // X -> DCW Sustain (Timbre)
         float deltaX = (e.getPosition().x - e.getMouseDownX()) / (float)getWidth();
-        if (auto* p = czProcessor->getParameters().getAPVTS().getParameter("DCW_SUSTAIN"))
+        if (auto* p = czProcessor->getParameters().getAPVTS().getParameter(ParameterIDs::dcwSustain))
         {
             float newVal = juce::jlimit(0.0f, 1.0f, startValX + deltaX);
             p->setValueNotifyingHost(newVal);
@@ -139,7 +140,7 @@ void WaveformDisplay::mouseDrag(const juce::MouseEvent& e)
         
         // Y -> Osc 1 Level (Volume) - Inverted Y (Up is more level)
         float deltaY = (e.getMouseDownY() - e.getPosition().y) / (float)getHeight();
-        if (auto* p = czProcessor->getParameters().getAPVTS().getParameter("OSC1_LEVEL"))
+        if (auto* p = czProcessor->getParameters().getAPVTS().getParameter(ParameterIDs::osc1Level))
         {
             float newVal = juce::jlimit(0.0f, 1.0f, startValY + deltaY);
             p->setValueNotifyingHost(newVal);

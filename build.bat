@@ -87,7 +87,7 @@ if exist "C:\Program Files\CMake\bin\cmake.exe" (
 
 echo Error: CMake no encontrado
 echo Instala CMake o ejecuta desde Developer Command Prompt for VS 2022
-pause
+REM pause
 exit /b 1
 
 :FoundCMake
@@ -99,7 +99,7 @@ echo 2. Verificando JUCE...
 
 if not exist "C:\JUCE\CMakeLists.txt" (
     echo Error: JUCE no encontrado en C:\JUCE\
-    pause
+    REM pause
     exit /b 1
 )
 echo    JUCE encontrado en C:\JUCE\
@@ -129,7 +129,7 @@ echo    (Esto puede tardar la primera vez...)
 "%CMAKE_PATH%" -B build %CMAKE_GEN%
 if %errorlevel% neq 0 (
     echo Error: Configuracion fallida
-    pause
+    REM pause
     exit /b 1
 )
 
@@ -144,7 +144,7 @@ echo    (Esto puede tardar varios minutos...)
 if %errorlevel% neq 0 (
     echo Error: Compilacion fallida
     echo Log guardado en: compilation_error.log
-    pause
+    REM pause
     exit /b 1
 )
 
@@ -172,4 +172,4 @@ echo   - Standalone: CZ101Emulator.exe
 echo   - VST3: build\CZ101Emulator_artefacts\Release\VST3\
 echo.
 
-REM pause
+REM REM pause

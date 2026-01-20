@@ -7,6 +7,7 @@
 #include "../Components/ChorusPanel.h"
 #include "../Components/DelayPanel.h"
 #include "../Components/ReverbPanel.h"
+#include "../Components/DrivePanel.h" // [NEW] Phase 12
 
 namespace CZ101 {
 namespace UI {
@@ -29,6 +30,7 @@ private:
     CZ101AudioProcessor& audioProcessor;
 
     FilterPanel filterPanel;
+    DrivePanel drivePanel; // [NEW] Phase 12
     ChorusPanel chorusPanel;
     DelayPanel delayPanel;
     ReverbPanel reverbPanel;

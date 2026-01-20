@@ -2,6 +2,7 @@
 #include "LCDStateManager.h"
 #include "../../PluginProcessor.h"
 #include "../../State/PresetManager.h"
+#include "../../State/ParameterIDs.h"
 
 namespace CZ101 {
 namespace UI {
@@ -12,7 +13,7 @@ LCDStateManager::LCDStateManager(juce::AudioProcessorValueTreeState& apvtsToUse)
     lastActivityTime = juce::Time::getMillisecondCounter();
     startTimer(100); // 10Hz check for inactivity
     buildParameterList();
-    apvts.addParameterListener("AUTHENTIC_MODE", this); // Listen for mode changes specifically
+    apvts.addParameterListener(ParameterIDs::operationMode, this); // Listen for mode changes specifically
     
     // Register efficient full-listener to avoid N-listeners overhead if possible, 
     // but JUCE APVTS listener is per-parameter.
@@ -46,7 +47,7 @@ void LCDStateManager::parameterChanged(const juce::String& parameterID, float ne
 {
     // Ensure thread safety for UI updates
     juce::MessageManager::callAsync([this, parameterID, newValue]() {
-        if (parameterID == "AUTHENTIC_MODE")
+        if (parameterID == ParameterIDs::operationMode)
         {
             buildParameterList();
             updateDisplay();
@@ -88,42 +89,42 @@ void LCDStateManager::buildParameterList()
 
     if (currentMode == Mode::SYSTEM)
     {
-        addParam("MIDI_CH", Section::SYSTEM, "MIDI CHANNEL");
-        addParam("SYSTEM_PRG", Section::SYSTEM, "MIDI PGM");
-        addParam("PITCH_BEND_RANGE", Section::SYSTEM, "BEND RANGE");
-        addParam("KEY_TRANSPOSE", Section::SYSTEM, "TRANSPOSE");
-        addParam("MASTER_TUNE", Section::SYSTEM, "MASTER TUNE");
-        addParam("PROTECT_SWITCH", Section::SYSTEM, "PROTECT");
-        addParam("AUTHENTIC_MODE", Section::SYSTEM, "AUTH MODE");
+        addParam(ParameterIDs::midiChannel, Section::SYSTEM, "MIDI CHANNEL");
+        addParam(ParameterIDs::systemPrg, Section::SYSTEM, "MIDI PGM");
+        addParam(ParameterIDs::benderRange, Section::SYSTEM, "BEND RANGE");
+        addParam(ParameterIDs::transpose, Section::SYSTEM, "TRANSPOSE");
+        addParam(ParameterIDs::masterTune, Section::SYSTEM, "MASTER TUNE");
+        addParam(ParameterIDs::protectSwitch, Section::SYSTEM, "PROTECT");
+        addParam(ParameterIDs::operationMode, Section::SYSTEM, "AUTH MODE");
     }
     else
     {
         // === DCO Section ===
-        addParam("LINE_SELECT", Section::DCO, "LINE SELECT");
-        addParam("OSC1_WAVEFORM", Section::DCO, "OSC1 WAVE 1");
-        addParam("OSC1_WAVEFORM2", Section::DCO, "OSC1 WAVE 2");
-        addParam("OSC1_LEVEL", Section::DCO, "OSC1 LEVEL");
-        addParam("OSC2_WAVEFORM", Section::DCO, "OSC2 WAVE 1");
-        addParam("OSC2_WAVEFORM2", Section::DCO, "OSC2 WAVE 2");
-        addParam("OSC2_LEVEL", Section::DCO, "OSC2 LEVEL");
-        addParam("DETUNE_OCT", Section::DCO, "DETUNE OCT");
-        addParam("DETUNE_COARSE", Section::DCO, "DETUNE COARSE");
-        addParam("DETUNE_FINE", Section::DCO, "DETUNE FINE");
-        addParam("HARD_SYNC", Section::DCO, "HARD SYNC");
-        addParam("RING_MOD", Section::DCO, "RING MOD");
-        addParam("GLIDE", Section::DCO, "PORTAMENTO");
+        addParam(ParameterIDs::lineSelect, Section::DCO, "LINE SELECT");
+        addParam(ParameterIDs::osc1Waveform, Section::DCO, "OSC1 WAVE 1");
+        addParam(ParameterIDs::osc1Waveform2, Section::DCO, "OSC1 WAVE 2");
+        addParam(ParameterIDs::osc1Level, Section::DCO, "OSC1 LEVEL");
+        addParam(ParameterIDs::osc2Waveform, Section::DCO, "OSC2 WAVE 1");
+        addParam(ParameterIDs::osc2Waveform2, Section::DCO, "OSC2 WAVE 2");
+        addParam(ParameterIDs::osc2Level, Section::DCO, "OSC2 LEVEL");
+        addParam(ParameterIDs::detuneOct, Section::DCO, "DETUNE OCT");
+        addParam(ParameterIDs::detuneCoarse, Section::DCO, "DETUNE COARSE");
+        addParam(ParameterIDs::detuneFine, Section::DCO, "DETUNE FINE");
+        addParam(ParameterIDs::hardSync, Section::DCO, "HARD SYNC");
+        addParam(ParameterIDs::ringMod, Section::DCO, "RING MOD");
+        addParam(ParameterIDs::glideTime, Section::DCO, "PORTAMENTO");
 
         // === VIB (LFO) Section ===
-        addParam("LFO_WAVE", Section::LFO, "LFO WAVE");
-        addParam("LFO_RATE", Section::LFO, "LFO SPEED");
-        addParam("LFO_DEPTH", Section::LFO, "LFO DEPTH");
-        addParam("LFO_DELAY", Section::LFO, "LFO DELAY");
+        addParam(ParameterIDs::lfoWaveform, Section::LFO, "LFO WAVE");
+        addParam(ParameterIDs::lfoRate, Section::LFO, "LFO SPEED");
+        addParam(ParameterIDs::lfoDepth, Section::LFO, "LFO DEPTH");
+        addParam(ParameterIDs::lfoDelay, Section::LFO, "LFO DELAY");
 
         // === DCW Section (ADSR + Virtual Stages) ===
-        addParam("DCW_ATTACK", Section::DCW, "DCW ATTACK");
-        addParam("DCW_DECAY", Section::DCW, "DCW DECAY");
-        addParam("DCW_SUSTAIN", Section::DCW, "DCW SUSTAIN");
-        addParam("DCW_RELEASE", Section::DCW, "DCW RELEASE");
+        addParam(ParameterIDs::dcwAttack, Section::DCW, "DCW ATTACK");
+        addParam(ParameterIDs::dcwDecay, Section::DCW, "DCW DECAY");
+        addParam(ParameterIDs::dcwSustain, Section::DCW, "DCW SUSTAIN");
+        addParam(ParameterIDs::dcwRelease, Section::DCW, "DCW RELEASE");
         
         // Virtual Envelope Stages for DCW
         for (int l = 1; l <= 2; ++l) {
@@ -134,10 +135,10 @@ void LCDStateManager::buildParameterList()
         }
 
         // === DCA Section (ADSR + Virtual Stages) ===
-        addParam("DCA_ATTACK", Section::DCA, "DCA ATTACK");
-        addParam("DCA_DECAY", Section::DCA, "DCA DECAY");
-        addParam("DCA_SUSTAIN", Section::DCA, "DCA SUSTAIN");
-        addParam("DCA_RELEASE", Section::DCA, "DCA RELEASE");
+        addParam(ParameterIDs::dcaAttack, Section::DCA, "DCA ATTACK");
+        addParam(ParameterIDs::dcaDecay, Section::DCA, "DCA DECAY");
+        addParam(ParameterIDs::dcaSustain, Section::DCA, "DCA SUSTAIN");
+        addParam(ParameterIDs::dcaRelease, Section::DCA, "DCA RELEASE");
         
         // Virtual Envelope Stages for DCA
         for (int l = 1; l <= 2; ++l) {
@@ -156,25 +157,34 @@ void LCDStateManager::buildParameterList()
         }
 
         // === KEY FOLLOW Section ===
-        addParam("KEY_FOLLOW_DCO", Section::MOD, "KF DCO");
-        addParam("KEY_FOLLOW_DCW", Section::MOD, "KF DCW");
-        addParam("KEY_FOLLOW_DCA", Section::MOD, "KF DCA");
-        addParam("KEY_TRACK_DCW", Section::MOD, "K-TRACK DCW");
-        addParam("KEY_TRACK_PITCH", Section::MOD, "K-TRACK PIT");
+        addParam(ParameterIDs::keyFollowDco, Section::MOD, "KF DCO");
+        addParam(ParameterIDs::keyFollowDcw, Section::MOD, "KF DCW");
+        addParam(ParameterIDs::keyFollowDca, Section::MOD, "KF DCA");
+        addParam(ParameterIDs::keyTrackDcw, Section::MOD, "K-TRACK DCW");
+        addParam(ParameterIDs::keyTrackPitch, Section::MOD, "K-TRACK PIT");
 
         // === MOD Section ===
-        addParam("MOD_VELO_DCW", Section::MOD, "VELO->DCW");
-        addParam("MOD_VELO_DCA", Section::MOD, "VELO->DCA");
-        addParam("MOD_WHEEL_VIB", Section::MOD, "WHEEL->VIB");
-        addParam("MOD_WHEEL_DCW", Section::MOD, "WHEEL->DCW");
-        addParam("MOD_AT_VIB", Section::MOD, "AT->VIB");
+        addParam(ParameterIDs::modVeloDcw, Section::MOD, "VELO->DCW");
+        addParam(ParameterIDs::modVeloDca, Section::MOD, "VELO->DCA");
+        addParam(ParameterIDs::modWheelVib, Section::MOD, "WHEEL->VIB");
+        addParam(ParameterIDs::modWheelDcw, Section::MOD, "WHEEL->DCW");
+        addParam(ParameterIDs::modAtVib, Section::MOD, "AT->VIB");
 
         // === EFFECTS Section ===
-        addParam("CHORUS_RATE", Section::MOD, "CHORUS RATE");
-        addParam("CHORUS_DEPTH", Section::MOD, "CHORUS DEPTH");
-        addParam("CHORUS_MIX", Section::MOD, "CHORUS MIX");
-        addParam("DELAY_TIME", Section::MOD, "DELAY TIME");
-        addParam("DELAY_MIX", Section::MOD, "DELAY MIX");
+        addParam(ParameterIDs::chorusRate, Section::MOD, "CHORUS RATE");
+        addParam(ParameterIDs::chorusDepth, Section::MOD, "CHORUS DEPTH");
+        addParam(ParameterIDs::chorusMix, Section::MOD, "CHORUS MIX");
+        addParam(ParameterIDs::delayTime, Section::MOD, "DELAY TIME");
+        addParam(ParameterIDs::delayMix, Section::MOD, "DELAY MIX");
+        
+        // Reverb
+        addParam(ParameterIDs::reverbSize, Section::MOD, "REVERB SIZE");
+        addParam(ParameterIDs::reverbMix, Section::MOD, "REVERB MIX");
+
+        // Drive (Phase 12)
+        addParam(ParameterIDs::driveAmount, Section::MOD, "DRIVE AMT");
+        addParam(ParameterIDs::driveColor, Section::MOD, "DRIVE TONE");
+        addParam(ParameterIDs::driveMix, Section::MOD, "DRIVE MIX");
     }
     
     if (currentParameterIndex >= (int)parameterList.size())
@@ -462,11 +472,11 @@ void LCDStateManager::updateDisplay()
                     int val07 = std::round(param->getValue() * 7.0f);
                     valueStr = juce::String(val07);
                 }
-                else if (targetId == "ARP_PATTERN" || targetId == "ARP_RATE")
+                else if (targetId == ParameterIDs::arpPattern || targetId == ParameterIDs::arpRate)
                 {
                     valueStr = param->getCurrentValueAsText();
                 }
-                else if (targetId == "ARP_GATE" || targetId == "ARP_SWING")
+                else if (targetId == ParameterIDs::arpGate || targetId == ParameterIDs::arpSwing)
                 {
                     int valPer = std::round(param->getValue() * 100.0f);
                     valueStr = (valPer < 10 ? "0" : "") + juce::String(valPer);
@@ -514,7 +524,7 @@ juce::String LCDStateManager::getBottomLineText() const { return bottomLine; }
 
 bool LCDStateManager::isAuthentic() const
 {
-    if (auto* p = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter("AUTHENTIC_MODE")))
+    if (auto* p = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(ParameterIDs::operationMode)))
         return p->get();
     return false;
 }
@@ -553,18 +563,18 @@ bool LCDStateManager::isAuthenticParameter(const juce::String& id) const
 {
     // Authentic CZ-101 Parameter Set
     static const juce::StringArray authenticIds = {
-        "LINE_SELECT", "OSC1_WAVEFORM", "OSC1_WAVEFORM2", "OSC1_LEVEL",
-        "OSC2_WAVEFORM", "OSC2_WAVEFORM2", "OSC2_LEVEL", "OSC2_DETUNE",
-        "DETUNE_OCT", "DETUNE_COARSE", "DETUNE_FINE", "HARD_SYNC", "RING_MOD", "GLIDE",
-        "LFO_WAVE", "LFO_RATE", "LFO_DEPTH", "LFO_DELAY",
-        "DCA_ATTACK", "DCA_DECAY", "DCA_SUSTAIN", "DCA_RELEASE",
-        "DCW_ATTACK", "DCW_DECAY", "DCW_SUSTAIN", "DCW_RELEASE",
-        "MOD_VELO_DCW", "MOD_VELO_DCA", "MOD_WHEEL_VIB", "MOD_WHEEL_DCW",
-        "CHORUS_RATE", "CHORUS_DEPTH", "CHORUS_MIX",
-        "KEY_FOLLOW_DCO", "KEY_FOLLOW_DCW", "KEY_FOLLOW_DCA",
-        "KEY_TRACK_DCW", "KEY_TRACK_PITCH",
-        "MIDI_CH", "SYSTEM_PRG", "PITCH_BEND_RANGE", "KEY_TRANSPOSE", 
-        "MASTER_TUNE", "PROTECT_SWITCH", "AUTHENTIC_MODE"
+        ParameterIDs::lineSelect, ParameterIDs::osc1Waveform, ParameterIDs::osc1Waveform2, ParameterIDs::osc1Level,
+        ParameterIDs::osc2Waveform, ParameterIDs::osc2Waveform2, ParameterIDs::osc2Level, ParameterIDs::osc2Detune,
+        ParameterIDs::detuneOct, ParameterIDs::detuneCoarse, ParameterIDs::detuneFine, ParameterIDs::hardSync, ParameterIDs::ringMod, ParameterIDs::glideTime,
+        ParameterIDs::lfoWaveform, ParameterIDs::lfoRate, ParameterIDs::lfoDepth, ParameterIDs::lfoDelay,
+        ParameterIDs::dcaAttack, ParameterIDs::dcaDecay, ParameterIDs::dcaSustain, ParameterIDs::dcaRelease,
+        ParameterIDs::dcwAttack, ParameterIDs::dcwDecay, ParameterIDs::dcwSustain, ParameterIDs::dcwRelease,
+        ParameterIDs::modVeloDcw, ParameterIDs::modVeloDca, ParameterIDs::modWheelVib, ParameterIDs::modWheelDcw,
+        ParameterIDs::chorusRate, ParameterIDs::chorusDepth, ParameterIDs::chorusMix,
+        ParameterIDs::keyFollowDco, ParameterIDs::keyFollowDcw, ParameterIDs::keyFollowDca,
+        ParameterIDs::keyTrackDcw, ParameterIDs::keyTrackPitch,
+        ParameterIDs::midiChannel, ParameterIDs::systemPrg, ParameterIDs::benderRange, ParameterIDs::transpose, 
+        ParameterIDs::masterTune, ParameterIDs::protectSwitch, ParameterIDs::operationMode
     };
 
     return authenticIds.contains(id) || id.startsWith("VIRT_");

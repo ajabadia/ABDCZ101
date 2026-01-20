@@ -13,6 +13,7 @@
 #include "DSP/Effects/Chorus.h"
 #include "DSP/Effects/StereoDelay.h" // Audit Fix 10.5
 #include "DSP/Effects/Reverb.h"
+#include "DSP/Effects/DriveEffect.h"
 #include <juce_dsp/juce_dsp.h> // Required for LadderFilter
 #include "DSP/Modulation/LFO.h"
 #include "Core/AudioThreadSnapshot.h"
@@ -139,7 +140,11 @@ private:
     // Phase 7: Snapshot Builder
     std::unique_ptr<CZ101::Core::ParameterSnapshot> buildAudioSnapshot();
     
+
+
+
     CZ101::DSP::Effects::StereoDelay stereoDelay; // Added Audit Fix 10.5
+    CZ101::DSP::Effects::DriveEffect driveEffect; // [NEW] Phase 12
     
     juce::Reverb reverb;
     juce::Reverb::Parameters reverbParams;

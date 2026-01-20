@@ -1,5 +1,6 @@
 #include "ArpeggiatorSection.h"
 #include "../SkinManager.h"
+#include "../../State/ParameterIDs.h"
 
 namespace CZ101 {
 namespace UI {
@@ -92,13 +93,13 @@ ArpeggiatorSection::ArpeggiatorSection(CZ101AudioProcessor& p)
     classicWarningLabel.setColour(juce::Label::textColourId, DesignTokens::Colors::czRed);
 
     // Register Listener
-    params.getAPVTS().addParameterListener("OPERATION_MODE", this);
+    params.getAPVTS().addParameterListener(ParameterIDs::operationMode, this);
     updateVisibility();
 }
 
 ArpeggiatorSection::~ArpeggiatorSection()
 {
-    audioProcessor.getParameters().getAPVTS().removeParameterListener("OPERATION_MODE", this);
+    audioProcessor.getParameters().getAPVTS().removeParameterListener(ParameterIDs::operationMode, this);
 }
 
 void ArpeggiatorSection::paint(juce::Graphics& g)
@@ -114,11 +115,10 @@ void ArpeggiatorSection::paint(juce::Graphics& g)
 
 void ArpeggiatorSection::parameterChanged(const juce::String& parameterID, float newValue)
 {
-    if (parameterID == "OPERATION_MODE")
+    if (parameterID == ParameterIDs::operationMode)
     {
         juce::MessageManager::callAsync([this]() {
             updateVisibility();
-            resized(); // CRITICAL: Recalculate layout when visibility changes
             repaint();
         });
     }
