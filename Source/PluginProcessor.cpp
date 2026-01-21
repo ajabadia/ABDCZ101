@@ -1,6 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "State/PresetManager.h"
+#include "State/EnvelopeSerializer.h"
 #include "DSP/Envelopes/ADSRtoStage.h" // [NEW] for Snapshot Builder // Required for unique_ptr destructor
 #include "UI/LCDStateManager.h"
 
@@ -59,11 +60,26 @@ CZ101AudioProcessor::CZ101AudioProcessor()
     // Initialize LCD State Manager here to ensure it persists and avoids dangling references
     juce::Logger::writeToLog("CZ101 Processor: Initializing LCD State Manager");
     lcdStateManager = std::make_unique<CZ101::UI::LCDStateManager>(parameters.getAPVTS());
+
+    // Audit Fix [D]: Reconnect UI and DSP
+    // Register this processor as a listener for all parameters to trigger snapshot updates
+    for (auto* p : juce::AudioProcessor::getParameters()) {
+        if (auto* rp = dynamic_cast<juce::RangedAudioParameter*>(p)) {
+            parameters.getAPVTS().addParameterListener(rp->getParameterID(), this);
+        }
+    }
+
     juce::Logger::writeToLog("CZ101 Processor: Constructor End");
 }
 
 CZ101AudioProcessor::~CZ101AudioProcessor() 
 { 
+    // Unregister listeners
+    for (auto* p : juce::AudioProcessor::getParameters()) {
+        if (auto* rp = dynamic_cast<juce::RangedAudioParameter*>(p)) {
+            parameters.getAPVTS().removeParameterListener(rp->getParameterID(), this);
+        }
+    }
     juce::Logger::setCurrentLogger(nullptr); 
 }
 
@@ -142,8 +158,7 @@ void CZ101AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     
     // Audit Fix 4.1: FIFO resizing
     voiceManager.setSampleRate(sampleRate);
-    reverb.setSampleRate(sampleRate);
-    chorus.prepare(sampleRate); 
+ 
     // Audit Fix: Initialize Vis Buffer (Triple Buffer is std::array, no resize needed)
     // visBuffer.setSize(1, VIS_FIFO_SIZE);
     // visBuffer.clear();
@@ -175,19 +190,7 @@ void CZ101AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     spec.maximumBlockSize = samplesPerBlock;
     spec.numChannels = 2; // Stereo
     
-    modernLpf.prepare(spec);
-    modernLpf.setMode(juce::dsp::LadderFilterMode::LPF24);
-    
-    modernHpf.prepare(spec);
-    modernHpf.setType(juce::dsp::StateVariableTPTFilterType::highpass);
-
-    // Audit Fix 1.2: Reset Effects RNG/Phase
-    chorus.prepare(sampleRate);
-    stereoDelay.prepare(sampleRate); // Audit Fix 10.5
-    driveEffect.prepare(spec); // [NEW] Phase 12
-    modernLpf.reset();
-    modernHpf.reset();
-    reverb.reset(); // Added missing reverb reset
+    effectsChain.prepare(spec);
     
     // Audit Fix 3.1: Initialize Latency
     updateParameters();
@@ -261,70 +264,10 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     // Render synth audio ONCE
     voiceManager.renderNextBlock(channelDataL, channelDataR, buffer.getNumSamples());
 
-    // Determine operation mode for effects routing
-    int opMode = parameters.getOperationMode() ? parameters.getOperationMode()->getIndex() : 0;
-    bool isModern = (opMode == 2);
-    
-    // Sync Chorus Mode
-    chorus.setModernMode(isModern); 
-    
-    // Audit Fix: Ensure Control Rate parameters (Arp, LFO) are updated every block
-    updateArpeggiator();
-    updateLFO();
-    
-    // Legacy effects update (calculates macro values for effects)
-    updateEffects(calculateMacros()); 
-    
-    // 5. Effects Processing (ONCE, based on snapshot and mode)
+    // 5. Effects Processing
     if (snapshot)
     {
-        auto& eff = snapshot->effects;
-        
-        // Apply Modern Filters AND Drive first if in Modern mode
-        if (isModern)
-        {
-            juce::dsp::AudioBlock<float> block(buffer);
-            juce::dsp::ProcessContextReplacing<float> context(block);
-            modernLpf.process(context);
-            modernHpf.process(context);
-            
-            // [NEW] Post-Filter Drive (Phase 12)
-            driveEffect.setAmount(eff.driveAmount);
-            driveEffect.setColor(eff.driveColor);
-            driveEffect.setMix(eff.driveMix);
-            driveEffect.process(context);
-        }
-        
-        // Apply effects chain
-        // Chorus (Always active availability, but parameters sets mix)
-        chorus.setRate(eff.chorusRate);
-        chorus.setDepth(eff.chorusDepth); 
-        chorus.setMix(eff.chorusMix);
-        chorus.process(channelDataL, channelDataR, buffer.getNumSamples());
-        
-        // [PHASE 12 FIX] Mode Fidelity: Delay and Reverb ONLY in Modern Mode
-        if (isModern)
-        {
-            // Stereo Delay
-            float dt = eff.delayTime;
-            float fb = eff.delayFb;
-            float mix = eff.delayMix;
-            bool pingPong = false;
-            float spread = 0.0f;
-            stereoDelay.setParameters(dt, fb, mix, pingPong, spread); 
-            stereoDelay.process(channelDataL, channelDataR, buffer.getNumSamples());
-            
-            // Reverb
-            reverbParams.roomSize = eff.reverbSize;
-            reverbParams.wetLevel = eff.reverbMix;
-            reverbParams.dryLevel = 1.0f - (eff.reverbMix * 0.5f);
-            reverbParams.damping = 0.5f;
-            reverbParams.width = 1.0f;
-            reverb.setParameters(reverbParams);
-            reverb.processStereo(channelDataL, channelDataR, buffer.getNumSamples());
-        }
-        // Classic Modes: Bypass Delay/Reverb logic implicitly by not running them.
-        // Chorus remains available to simulate the hardware Chorus.
+         effectsChain.process(buffer, *snapshot);
     }
     
     // Visualization logic - Triple Buffer Producer
@@ -360,6 +303,10 @@ void CZ101AudioProcessor::updateParameters()
     updateEffects(macros);
     updateSystemGlobal();
     updateArpeggiator();
+    
+    // Centralized Snapshot Creation (Optimization: One allocation per update)
+    auto snap = buildAudioSnapshot();
+    audioSnapshot.commit(std::move(snap));
 }
 
 // Audit Fix 2.1: Implement setNonRealtime to recalculate smoothing
@@ -570,6 +517,9 @@ void CZ101AudioProcessor::handleAsyncUpdate()
     if (mSize1 > 0) processMidiParams(mStart1, mSize1);
     if (mSize2 > 0) processMidiParams(mStart2, mSize2);
     midiParamFifo.finishedRead(mSize1 + mSize2);
+
+    // Audit Fix [D]: Rebuild Snapshot after any parameter change (SysEx, MIDI, or UI)
+    updateParameters();
 }
 
 // Audit Fix 10.1: Lock-Free MIDI Scheduler
@@ -587,6 +537,15 @@ void CZ101AudioProcessor::scheduleMidiParamUpdate(const char* id, float value)
         midiParamBuffer[start2].value = value;
     }
     midiParamFifo.finishedWrite(size1 + size2);
+    triggerAsyncUpdate();
+}
+
+// APVTS Listener Implementation
+void CZ101AudioProcessor::parameterChanged(const juce::String& parameterID, float newValue)
+{
+    // Any parameter change in the UI or host automation triggers a snapshot rebuild
+    // We use AsyncUpdater to avoid rebuilding the snapshot multiple times in a single block
+    // or when multiple parameters change almost simultaneously.
     triggerAsyncUpdate();
 }
 
@@ -627,81 +586,65 @@ void CZ101AudioProcessor::updateFilters(const MacroValues& m)
 {
     if (parameters.getModernLpfCutoff()) {
         float baseCutoff = parameters.getModernLpfCutoff()->get();
-        // Modern LPF (Output) uses base value
-        modernLpf.setCutoffFrequencyHz(baseCutoff); 
-        
-        // Voice Filters use Macro Brilliance
+        // Voice Filters use Macro Brilliance (Output LPF handled in EffectsChain via Snapshot)
         float finalCutoff = juce::jlimit(20.0f, 20000.0f, baseCutoff + m.brillianceOffset);
         voiceManager.setFilterCutoff(finalCutoff);
     }
     if (parameters.getModernLpfReso()) {
         float res = parameters.getModernLpfReso()->get();
         voiceManager.setFilterResonance(res);
-        modernLpf.setResonance(res);
     }
     if (parameters.getModernHpfCutoff()) {
         float hpf = parameters.getModernHpfCutoff()->get();
         voiceManager.setHPF(hpf);
-        modernHpf.setCutoffFrequency(hpf);
     }
 }
 
 void CZ101AudioProcessor::updateOscillators(const MacroValues& m)
 {
-    auto snap = buildAudioSnapshot();
-    audioSnapshot.commit(std::move(snap));
+    // Snapshot logic moved to updateParameters
 }
 
 void CZ101AudioProcessor::updateEnvelopes(const MacroValues& m)
 {
-    // Snapshot now handles ADSR envelopes directly
-    auto snap = buildAudioSnapshot();
-    audioSnapshot.commit(std::move(snap));
+    // Snapshot logic moved to updateParameters
 }
 
 void CZ101AudioProcessor::updateLFO()
 {
-    auto snap = buildAudioSnapshot();
-    audioSnapshot.commit(std::move(snap));
+    // Snapshot logic moved to updateParameters
 }
 
 void CZ101AudioProcessor::updateModMatrix()
 {
-    auto snap = buildAudioSnapshot();
-    audioSnapshot.commit(std::move(snap));
+    // Snapshot logic moved to updateParameters
 }
 
 void CZ101AudioProcessor::updateEffects(const MacroValues& m)
 {
-    // Snapshot Build
-    auto snap = buildAudioSnapshot();
-    if (!snap) return;
-
+    // Snapshot logic moved to updateParameters
+    // Latency calculation logic is now handled in updateParameters or via parameter lookup
+    
     // Calculate Latency (Message Thread logic)
-    float cMix = snap->effects.chorusMix;
-    float dMix = snap->effects.delayMix;
-    float dTime = snap->effects.delayTime;
+    // We can access parameters directly since we are on the Message Thread (or Async update)
+    float cMix = parameters.getChorusMix() ? parameters.getChorusMix()->get() : 0.0f;
+    float dMix = parameters.getDelayMix() ? parameters.getDelayMix()->get() : 0.0f;
+    float dTime = parameters.getDelayTime() ? parameters.getDelayTime()->get() : 0.25f;
     
     int chorusDelaySamples = (cMix > 0.0f) ? (int)(0.025 * getSampleRate()) : 0;
     int delaySamples = (dMix > 0.0f) ? (int)(dTime * getSampleRate()) : 0;
     int latency = chorusDelaySamples + (delaySamples > 0 ? 1 : 0); 
     if (getLatencySamples() != latency) setLatencySamples(latency);
-
-    // Commit snapshot to audio thread
-    audioSnapshot.commit(std::move(snap));
 }
 
 void CZ101AudioProcessor::updateSystemGlobal()
 {
-    auto snap = buildAudioSnapshot();
-    audioSnapshot.commit(std::move(snap));
+    // Snapshot logic moved to updateParameters
 }
 
 void CZ101AudioProcessor::updateArpeggiator()
 {
-    // Snapshot Commit
-    auto snap = buildAudioSnapshot();
-    audioSnapshot.commit(std::move(snap));
+    // Snapshot logic moved to updateParameters
 }
 
 // Phase 7: Snapshot Builder Implementation
@@ -805,57 +748,39 @@ std::unique_ptr<CZ101::Core::ParameterSnapshot> CZ101AudioProcessor::buildAudioS
     snap->effects.driveColor = getVal(parameters.getDriveColor(), 0.5f);
     snap->effects.driveMix = getVal(parameters.getDriveMix());
 
+    // [NEW] Modern Filters
+    // These only affect the output filter (EffectsChain). Voice filters are handled in updateFilters via setNonRealtime?
+    // No, voice filters are handled by AudioThread params? 
+    // Wait, updateFilters calls voiceManager.setFilterCutoff directly. 
+    // VoiceManager inside processBlock uses these values.
+    // So we just need to populate the snapshot for EffectsChain here.
+    snap->effects.lpfCutoff = getVal(parameters.getModernLpfCutoff(), 20000.0f);
+    snap->effects.lpfReso = getVal(parameters.getModernLpfReso(), 0.0f);
+    snap->effects.hpfCutoff = getVal(parameters.getModernHpfCutoff(), 20.0f);
+
     // Envelopes (Calculated from ADSR Macros)
     double sr = currentSampleRate.load();
     auto* envs = &snap->envelopes;
     
-    auto convert = [&](juce::AudioParameterFloat* att, juce::AudioParameterFloat* dec, 
-                       juce::AudioParameterFloat* sus, juce::AudioParameterFloat* rel,
-                       CZ101::Core::ParameterSnapshot::EnvParam& target) 
-    {
-        std::array<float, 8> r, l;
-        int s, e;
-        
-        float a = att ? att->get() : 0.0f;
-        float d = dec ? dec->get() : 0.0f;
-        float su = sus ? sus->get() : 1.0f;
-        float re = rel ? rel->get() : 0.0f;
-        
-        // Convert Scale (0-10) to ms? 
-        // Macros seem to be 0-10 or Seconds?
-        // `Voice::setDCWAttack` expects seconds.
-        // Param range? usually 0-1 or 0-10.
-        // Assuming Seconds for now. Even if 0-10s, it's fine.
-        // convertADSR expects Milliseconds.
-        float msMult = 1000.0f;
-        
-        CZ101::DSP::ADSRtoStageConverter::convertADSR(a * msMult, d * msMult, su, re * msMult, r, l, s, e, sr);
-        
-        for(int i=0; i<8; ++i) { target.rates[i] = r[i]; target.levels[i] = l[i]; }
-        target.sustain = s;
-        target.end = e;
-    };
-    
-    // Macros affect BOTH lines in this architecture (Simple Mode)
-    convert(parameters.getDcwAttack(), parameters.getDcwDecay(), parameters.getDcwSustain(), parameters.getDcwRelease(), envs->dcw1);
+    // Convert Macros directly to Snapshot format
+    ::CZ101::State::EnvelopeSerializer::convertADSRToSnapshot(
+        getVal(parameters.getDcwAttack()), getVal(parameters.getDcwDecay()),
+        getVal(parameters.getDcwSustain(), 1.0f), getVal(parameters.getDcwRelease()),
+        envs->dcw1, sr);
     envs->dcw2 = envs->dcw1; 
 
-    convert(parameters.getDcaAttack(), parameters.getDcaDecay(), parameters.getDcaSustain(), parameters.getDcaRelease(), envs->dca1);
+    ::CZ101::State::EnvelopeSerializer::convertADSRToSnapshot(
+        getVal(parameters.getDcaAttack()), getVal(parameters.getDcaDecay()),
+        getVal(parameters.getDcaSustain(), 1.0f), getVal(parameters.getDcaRelease()),
+        envs->dca1, sr);
     envs->dca2 = envs->dca1; 
     
     // Pitch Envelope: Retrieve from PresetManager to preserve loaded state (Macros don't control Pitch yet)
     {
         const juce::ScopedReadLock srl(presetManager.getLock());
         const auto& currentPreset = presetManager.getCurrentPreset();
-        
-        auto copyEnv = [](const CZ101::State::EnvelopeData& src, CZ101::Core::ParameterSnapshot::EnvParam& dst) {
-            for(int i=0; i<8; ++i) { dst.rates[i] = src.rates[i]; dst.levels[i] = src.levels[i]; }
-            dst.sustain = src.sustainPoint;
-            dst.end = src.endPoint;
-        };
-        
-        copyEnv(currentPreset.pitchEnv, snap->envelopes.pitch1);
-        copyEnv(currentPreset.pitchEnv2, snap->envelopes.pitch2);
+        ::CZ101::State::EnvelopeSerializer::copyToSnapshot(currentPreset.pitchEnv, snap->envelopes.pitch1);
+        ::CZ101::State::EnvelopeSerializer::copyToSnapshot(currentPreset.pitchEnv2, snap->envelopes.pitch2);
     }
     
     return snap;

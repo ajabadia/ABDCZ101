@@ -2,7 +2,6 @@
 
 #include <JuceHeader.h>
 
-
 namespace CZ101 {
 namespace DSP {
 namespace Effects {

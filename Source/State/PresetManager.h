@@ -6,10 +6,9 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <juce_core/juce_core.h> // Instead of JuceHeader.h
-// #include <JuceHeader.h> // Fallback if juce_core is not enough
-// Actually, let's include the full header to avoid 'not a member' weirdness
-#include <JuceHeader.h>
+#include <juce_core/juce_core.h>
+#include <juce_events/juce_events.h>
+#include <juce_data_structures/juce_data_structures.h>
 
 namespace CZ101 {
 namespace State {

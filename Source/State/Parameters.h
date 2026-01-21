@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "ParameterIDs.h"
 #include <map>
 #include <string>
 
@@ -17,209 +18,115 @@ public:
     juce::AudioProcessorValueTreeState& getAPVTS() { return *apvts; }
     
     // --- SAFER PARAMETER ACCESS ---
-    // Instead of raw pointers, we use getters that check for validity if ever needed,
-    // although in JUCE APVTS parameters are generally static after creation.
-    juce::AudioParameterChoice* getLineSelect() const { return lineSelect; }
-    juce::AudioParameterChoice* getOsc1Waveform() const { return osc1Waveform; }
-    juce::AudioParameterChoice* getOsc1Waveform2() const { return osc1Waveform2; }
-    juce::AudioParameterFloat* getOsc1Level() const { return osc1Level; }
-    juce::AudioParameterChoice* getOsc2Waveform() const { return osc2Waveform; }
-    juce::AudioParameterChoice* getOsc2Waveform2() const { return osc2Waveform2; }
-    juce::AudioParameterFloat* getOsc2Level() const { return osc2Level; }
-    juce::AudioParameterFloat* getOsc2Detune() const { return osc2Detune; }
-    juce::AudioParameterFloat* getLineMix() const { return lineMix; } // Audit Fix [2.4]
-    juce::AudioParameterInt*   getDetuneOctave() const { return detuneOct; }
-    juce::AudioParameterInt*   getDetuneCoarse() const { return detuneCoarse; }
-    juce::AudioParameterInt*   getDetuneFine() const { return detuneFine; }
-    juce::AudioParameterBool*  getHardSync() const { return hardSync; }
-    juce::AudioParameterBool*  getRingMod() const { return ringMod; }
-    juce::AudioParameterBool*  getNoiseMod() const { return noiseMod; } // Audit Fix
-    juce::AudioParameterFloat* getGlideTime() const { return glideTime; }
+    // Instead of raw pointers, we fetch directly from APVTS using ParameterIDs.
+    juce::AudioParameterChoice* getLineSelect() const        { return getParam<juce::AudioParameterChoice>(ParameterIDs::lineSelect); }
+    juce::AudioParameterChoice* getOsc1Waveform() const      { return getParam<juce::AudioParameterChoice>(ParameterIDs::osc1Waveform); }
+    juce::AudioParameterChoice* getOsc1Waveform2() const     { return getParam<juce::AudioParameterChoice>(ParameterIDs::osc1Waveform2); }
+    juce::AudioParameterFloat*  getOsc1Level() const          { return getParam<juce::AudioParameterFloat>(ParameterIDs::osc1Level); }
+    juce::AudioParameterChoice* getOsc2Waveform() const      { return getParam<juce::AudioParameterChoice>(ParameterIDs::osc2Waveform); }
+    juce::AudioParameterChoice* getOsc2Waveform2() const     { return getParam<juce::AudioParameterChoice>(ParameterIDs::osc2Waveform2); }
+    juce::AudioParameterFloat*  getOsc2Level() const          { return getParam<juce::AudioParameterFloat>(ParameterIDs::osc2Level); }
+    juce::AudioParameterFloat*  getOsc2Detune() const         { return getParam<juce::AudioParameterFloat>(ParameterIDs::osc2Detune); }
+    juce::AudioParameterFloat*  getLineMix() const            { return getParam<juce::AudioParameterFloat>(ParameterIDs::lineMix); }
+    juce::AudioParameterInt*    getDetuneOctave() const       { return getParam<juce::AudioParameterInt>(ParameterIDs::detuneOct); }
+    juce::AudioParameterInt*    getDetuneCoarse() const       { return getParam<juce::AudioParameterInt>(ParameterIDs::detuneCoarse); }
+    juce::AudioParameterInt*    getDetuneFine() const         { return getParam<juce::AudioParameterInt>(ParameterIDs::detuneFine); }
+    juce::AudioParameterBool*   getHardSync() const           { return getParam<juce::AudioParameterBool>(ParameterIDs::hardSync); }
+    juce::AudioParameterBool*   getRingMod() const            { return getParam<juce::AudioParameterBool>(ParameterIDs::ringMod); }
+    juce::AudioParameterBool*   getNoiseMod() const           { return getParam<juce::AudioParameterBool>(ParameterIDs::noiseMod); }
+    juce::AudioParameterFloat*  getGlideTime() const          { return getParam<juce::AudioParameterFloat>(ParameterIDs::glideTime); }
 
-    juce::AudioParameterFloat* getMasterVolume() const { return masterVolume; }
-    juce::AudioParameterBool*  getSystemPrg() const { return systemPrg; }
-    juce::AudioParameterBool*  getBypass() const { return bypass; }
-    juce::AudioParameterChoice* getOperationMode() const { return operationMode; } // Audit Fix [2.2a]
+    juce::AudioParameterFloat*  getMasterVolume() const       { return getParam<juce::AudioParameterFloat>(ParameterIDs::masterVolume); }
+    juce::AudioParameterBool*   getSystemPrg() const          { return getParam<juce::AudioParameterBool>(ParameterIDs::systemPrg); }
+    juce::AudioParameterBool*   getBypass() const             { return getParam<juce::AudioParameterBool>(ParameterIDs::bypass); }
+    juce::AudioParameterChoice* getOperationMode() const      { return getParam<juce::AudioParameterChoice>(ParameterIDs::operationMode); }
     
-    juce::AudioParameterInt*   getMidiChannel() const { return midiChannel; }
-    juce::AudioParameterFloat* getMasterTune() const { return masterTune; }
-    juce::AudioParameterInt*   getPitchBendRange() const { return pitchBendRange; }
-    juce::AudioParameterInt*   getKeyTranspose() const { return keyTranspose; }
+    juce::AudioParameterInt*    getMidiChannel() const        { return getParam<juce::AudioParameterInt>(ParameterIDs::midiChannel); }
+    juce::AudioParameterFloat*  getMasterTune() const         { return getParam<juce::AudioParameterFloat>(ParameterIDs::masterTune); }
+    juce::AudioParameterInt*    getPitchBendRange() const     { return getParam<juce::AudioParameterInt>(ParameterIDs::benderRange); }
+    juce::AudioParameterInt*    getKeyTranspose() const       { return getParam<juce::AudioParameterInt>(ParameterIDs::transpose); }
     
-    juce::AudioParameterBool*  getProtectSwitch() const { return protectSwitch; } // Audit Fix [2.5]
-    juce::AudioParameterBool*  getHardwareNoise() const { return hardwareNoise; }
+    juce::AudioParameterBool*   getProtectSwitch() const      { return getParam<juce::AudioParameterBool>(ParameterIDs::protectSwitch); }
+    juce::AudioParameterBool*   getHardwareNoise() const      { return getParam<juce::AudioParameterBool>(ParameterIDs::hardwareNoise); }
 
     // Envelopes
-    juce::AudioParameterFloat* getDcaAttack() const { return dcaAttack; }
-    juce::AudioParameterFloat* getDcaDecay() const { return dcaDecay; }
-    juce::AudioParameterFloat* getDcaSustain() const { return dcaSustain; }
-    juce::AudioParameterFloat* getDcaRelease() const { return dcaRelease; }
-    juce::AudioParameterFloat* getDcwAttack() const { return dcwAttack; }
-    juce::AudioParameterFloat* getDcwDecay() const { return dcwDecay; }
-    juce::AudioParameterFloat* getDcwSustain() const { return dcwSustain; }
-    juce::AudioParameterFloat* getDcwRelease() const { return dcwRelease; }
+    juce::AudioParameterFloat*  getDcaAttack() const          { return getParam<juce::AudioParameterFloat>(ParameterIDs::dcaAttack); }
+    juce::AudioParameterFloat*  getDcaDecay() const           { return getParam<juce::AudioParameterFloat>(ParameterIDs::dcaDecay); }
+    juce::AudioParameterFloat*  getDcaSustain() const         { return getParam<juce::AudioParameterFloat>(ParameterIDs::dcaSustain); }
+    juce::AudioParameterFloat*  getDcaRelease() const         { return getParam<juce::AudioParameterFloat>(ParameterIDs::dcaRelease); }
+    juce::AudioParameterFloat*  getDcwAttack() const          { return getParam<juce::AudioParameterFloat>(ParameterIDs::dcwAttack); }
+    juce::AudioParameterFloat*  getDcwDecay() const           { return getParam<juce::AudioParameterFloat>(ParameterIDs::dcwDecay); }
+    juce::AudioParameterFloat*  getDcwSustain() const         { return getParam<juce::AudioParameterFloat>(ParameterIDs::dcwSustain); }
+    juce::AudioParameterFloat*  getDcwRelease() const         { return getParam<juce::AudioParameterFloat>(ParameterIDs::dcwRelease); }
 
     // LFO / Effects
-    juce::AudioParameterChoice* getLfoWaveform() const { return lfoWaveform; }
-    juce::AudioParameterFloat*  getLfoRate() const { return lfoRate; }
-    juce::AudioParameterFloat*  getLfoDepth() const { return lfoDepth; }
-    juce::AudioParameterFloat*  getLfoDelay() const { return lfoDelay; }
+    juce::AudioParameterChoice* getLfoWaveform() const        { return getParam<juce::AudioParameterChoice>(ParameterIDs::lfoWaveform); }
+    juce::AudioParameterFloat*  getLfoRate() const            { return getParam<juce::AudioParameterFloat>(ParameterIDs::lfoRate); }
+    juce::AudioParameterFloat*  getLfoDepth() const           { return getParam<juce::AudioParameterFloat>(ParameterIDs::lfoDepth); }
+    juce::AudioParameterFloat*  getLfoDelay() const           { return getParam<juce::AudioParameterFloat>(ParameterIDs::lfoDelay); }
     
     // Drive
-    juce::AudioParameterFloat*  getDriveAmount() const { return driveAmount; }
-    juce::AudioParameterFloat*  getDriveColor() const { return driveColor; }
-    juce::AudioParameterFloat*  getDriveMix() const { return driveMix; }
+    juce::AudioParameterFloat*  getDriveAmount() const        { return getParam<juce::AudioParameterFloat>(ParameterIDs::driveAmount); }
+    juce::AudioParameterFloat*  getDriveColor() const         { return getParam<juce::AudioParameterFloat>(ParameterIDs::driveColor); }
+    juce::AudioParameterFloat*  getDriveMix() const           { return getParam<juce::AudioParameterFloat>(ParameterIDs::driveMix); }
 
-    juce::AudioParameterFloat*  getChorusRate() const { return chorusRate; }
-    juce::AudioParameterFloat*  getChorusDepth() const { return chorusDepth; }
-    juce::AudioParameterFloat*  getChorusMix() const { return chorusMix; }
-    juce::AudioParameterFloat*  getDelayTime() const { return delayTime; }
-    juce::AudioParameterFloat*  getDelayFeedback() const { return delayFeedback; }
-    juce::AudioParameterFloat*  getDelayMix() const { return delayMix; }
-    juce::AudioParameterFloat*  getReverbSize() const { return reverbSize; }
-    juce::AudioParameterFloat*  getReverbMix() const { return reverbMix; }
+    juce::AudioParameterFloat*  getChorusRate() const         { return getParam<juce::AudioParameterFloat>(ParameterIDs::chorusRate); }
+    juce::AudioParameterFloat*  getChorusDepth() const        { return getParam<juce::AudioParameterFloat>(ParameterIDs::chorusDepth); }
+    juce::AudioParameterFloat*  getChorusMix() const          { return getParam<juce::AudioParameterFloat>(ParameterIDs::chorusMix); }
+    juce::AudioParameterFloat*  getDelayTime() const          { return getParam<juce::AudioParameterFloat>(ParameterIDs::delayTime); }
+    juce::AudioParameterFloat*  getDelayFeedback() const      { return getParam<juce::AudioParameterFloat>(ParameterIDs::delayFeedback); }
+    juce::AudioParameterFloat*  getDelayMix() const           { return getParam<juce::AudioParameterFloat>(ParameterIDs::delayMix); }
+    juce::AudioParameterFloat*  getReverbSize() const         { return getParam<juce::AudioParameterFloat>(ParameterIDs::reverbSize); }
+    juce::AudioParameterFloat*  getReverbMix() const          { return getParam<juce::AudioParameterFloat>(ParameterIDs::reverbMix); }
 
     // Modern / Matrix
-    juce::AudioParameterFloat* getModernLpfCutoff() const { return modernLpfCutoff; }
-    juce::AudioParameterFloat* getModernLpfReso() const { return modernLpfReso; }
-    juce::AudioParameterFloat* getModernHpfCutoff() const { return modernHpfCutoff; }
-    juce::AudioParameterFloat* getModVeloToDcw() const { return modVeloToDcw; }
-    juce::AudioParameterFloat* getModVeloToDca() const { return modVeloToDca; }
-    juce::AudioParameterFloat* getModWheelToDcw() const { return modWheelToDcw; }
-    juce::AudioParameterFloat* getModWheelToLfoRate() const { return modWheelToLfoRate; }
-    juce::AudioParameterFloat* getModWheelToVibrato() const { return modWheelToVibrato; }
-    juce::AudioParameterFloat* getModAtToDcw() const { return modAtToDcw; }
-    juce::AudioParameterFloat* getModAtToVibrato() const { return modAtToVibrato; }
-    juce::AudioParameterFloat* getKeyTrackDcw() const { return keyTrackDcw; }
-    juce::AudioParameterFloat* getKeyTrackPitch() const { return keyTrackPitch; }
-    juce::AudioParameterChoice* getKeyFollowDco() const { return keyFollowDco; }
-    juce::AudioParameterChoice* getKeyFollowDcw() const { return keyFollowDcw; }
-    juce::AudioParameterChoice* getKeyFollowDca() const { return keyFollowDca; }
+    juce::AudioParameterFloat*  getModernLpfCutoff() const    { return getParam<juce::AudioParameterFloat>(ParameterIDs::lpfCutoff); }
+    juce::AudioParameterFloat*  getModernLpfReso() const      { return getParam<juce::AudioParameterFloat>(ParameterIDs::lpfReso); }
+    juce::AudioParameterFloat*  getModernHpfCutoff() const    { return getParam<juce::AudioParameterFloat>(ParameterIDs::hpfCutoff); }
+    juce::AudioParameterFloat*  getModVeloToDcw() const       { return getParam<juce::AudioParameterFloat>(ParameterIDs::modVeloDcw); }
+    juce::AudioParameterFloat*  getModVeloToDca() const       { return getParam<juce::AudioParameterFloat>(ParameterIDs::modVeloDca); }
+    juce::AudioParameterFloat*  getModWheelToDcw() const      { return getParam<juce::AudioParameterFloat>(ParameterIDs::modWheelDcw); }
+    juce::AudioParameterFloat*  getModWheelToLfoRate() const  { return getParam<juce::AudioParameterFloat>(ParameterIDs::modWheelLfoRate); }
+    juce::AudioParameterFloat*  getModWheelToVibrato() const  { return getParam<juce::AudioParameterFloat>(ParameterIDs::modWheelVib); }
+    juce::AudioParameterFloat*  getModAtToDcw() const         { return getParam<juce::AudioParameterFloat>(ParameterIDs::modAtDcw); }
+    juce::AudioParameterFloat*  getModAtToVibrato() const     { return getParam<juce::AudioParameterFloat>(ParameterIDs::modAtVib); }
+    juce::AudioParameterFloat*  getKeyTrackDcw() const        { return getParam<juce::AudioParameterFloat>(ParameterIDs::keyTrackDcw); }
+    juce::AudioParameterFloat*  getKeyTrackPitch() const      { return getParam<juce::AudioParameterFloat>(ParameterIDs::keyTrackPitch); }
+    juce::AudioParameterChoice* getKeyFollowDco() const       { return getParam<juce::AudioParameterChoice>(ParameterIDs::keyFollowDco); }
+    juce::AudioParameterChoice* getKeyFollowDcw() const       { return getParam<juce::AudioParameterChoice>(ParameterIDs::keyFollowDcw); }
+    juce::AudioParameterChoice* getKeyFollowDca() const       { return getParam<juce::AudioParameterChoice>(ParameterIDs::keyFollowDca); }
     
     // Phase 5.1: Oversampling Quality
-    juce::AudioParameterChoice* getOversamplingQuality() const { return oversamplingQuality; }
+    juce::AudioParameterChoice* getOversamplingQuality() const { return getParam<juce::AudioParameterChoice>(ParameterIDs::oversampling); }
+
+    // Arpeggiator getters
+    juce::AudioParameterBool*   getArpEnabled() const         { return getParam<juce::AudioParameterBool>(ParameterIDs::arpEnabled); }
+    juce::AudioParameterBool*   getArpLatch() const           { return getParam<juce::AudioParameterBool>(ParameterIDs::arpLatch); }
+    juce::AudioParameterChoice* getArpRate() const            { return getParam<juce::AudioParameterChoice>(ParameterIDs::arpRate); }
+    juce::AudioParameterFloat*  getArpBpm() const             { return getParam<juce::AudioParameterFloat>(ParameterIDs::arpBpm); }
+    juce::AudioParameterFloat*  getArpGate() const            { return getParam<juce::AudioParameterFloat>(ParameterIDs::arpGate); }
+    juce::AudioParameterFloat*  getArpSwing() const           { return getParam<juce::AudioParameterFloat>(ParameterIDs::arpSwing); }
+    juce::AudioParameterChoice* getArpSwingMode() const       { return getParam<juce::AudioParameterChoice>(ParameterIDs::arpSwingMode); }
+    juce::AudioParameterChoice* getArpPattern() const         { return getParam<juce::AudioParameterChoice>(ParameterIDs::arpPattern); }
+    juce::AudioParameterInt*    getArpOctave() const          { return getParam<juce::AudioParameterInt>(ParameterIDs::arpOctave); }
+
+    // Macro Controls
+    juce::AudioParameterFloat*  getMacroBrilliance() const    { return getParam<juce::AudioParameterFloat>(ParameterIDs::macroBrilliance); }
+    juce::AudioParameterFloat*  getMacroTone() const          { return getParam<juce::AudioParameterFloat>(ParameterIDs::macroTone); }
+    juce::AudioParameterFloat*  getMacroSpace() const         { return getParam<juce::AudioParameterFloat>(ParameterIDs::macroSpace); }
 
     juce::RangedAudioParameter* getParameter(const juce::String& paramId) const;
     const std::map<juce::String, juce::RangedAudioParameter*>& getParameterMap() const { return parameterMap; }
     
 private:
+    template <typename T>
+    T* getParam(const juce::String& id) const {
+        return dynamic_cast<T*>(apvts->getParameter(id));
+    }
+
     juce::AudioProcessor& audioProcessor;
     std::unique_ptr<juce::AudioProcessorValueTreeState> apvts;
     std::map<juce::String, juce::RangedAudioParameter*> parameterMap;
-
-    // Raw Pointers (Now private to encourage use of getters)
-    juce::AudioParameterChoice* lineSelect = nullptr;
-    juce::AudioParameterChoice* osc1Waveform = nullptr;
-    juce::AudioParameterChoice* osc1Waveform2 = nullptr;
-    juce::AudioParameterFloat* osc1Level = nullptr;
-    juce::AudioParameterChoice* osc2Waveform = nullptr;
-    juce::AudioParameterChoice* osc2Waveform2 = nullptr;
-    juce::AudioParameterFloat* osc2Level = nullptr;
-    juce::AudioParameterFloat* osc2Detune = nullptr;
-    // Audit Fix [2.4]: Tone Mix
-    juce::AudioParameterFloat* lineMix = nullptr;
-    juce::AudioParameterInt*   detuneOct = nullptr;
-    juce::AudioParameterInt*   detuneCoarse = nullptr;
-    juce::AudioParameterInt*   detuneFine = nullptr;
-    juce::AudioParameterBool* hardSync = nullptr;
-    juce::AudioParameterBool* ringMod = nullptr;
-    juce::AudioParameterBool* noiseMod = nullptr; // Audit Fix
-    juce::AudioParameterFloat* glideTime = nullptr;
-
-    juce::AudioParameterChoice* lfoWaveform = nullptr;
-    juce::AudioParameterFloat* lfoRate = nullptr;
-    juce::AudioParameterFloat* lfoDepth = nullptr;
-    juce::AudioParameterFloat* lfoDelay = nullptr;
-
-    juce::AudioParameterFloat* driveAmount = nullptr;
-    juce::AudioParameterFloat* driveColor = nullptr;
-    juce::AudioParameterFloat* driveMix = nullptr;
-
-    juce::AudioParameterFloat* chorusRate = nullptr;
-    juce::AudioParameterFloat* chorusDepth = nullptr;
-    juce::AudioParameterFloat* chorusMix = nullptr;
-    juce::AudioParameterFloat* delayTime = nullptr;
-    juce::AudioParameterFloat* delayFeedback = nullptr;
-    juce::AudioParameterFloat* delayMix = nullptr;
-    juce::AudioParameterFloat* reverbSize = nullptr;
-    juce::AudioParameterFloat* reverbMix = nullptr;
-
-    juce::AudioParameterFloat* dcaAttack = nullptr;
-    juce::AudioParameterFloat* dcaDecay = nullptr;
-    juce::AudioParameterFloat* dcaSustain = nullptr;
-    juce::AudioParameterFloat* dcaRelease = nullptr;
-
-    juce::AudioParameterFloat* dcwAttack = nullptr;
-    juce::AudioParameterFloat* dcwDecay = nullptr;
-    juce::AudioParameterFloat* dcwSustain = nullptr;
-    juce::AudioParameterFloat* dcwRelease = nullptr;
-
-    juce::AudioParameterBool* protectSwitch = nullptr;
-    juce::AudioParameterBool* systemPrg = nullptr;
-    juce::AudioParameterFloat* masterVolume = nullptr;
-    juce::AudioParameterBool*  hardwareNoise = nullptr;
-    juce::AudioParameterBool*  bypass = nullptr;
-
-    juce::AudioParameterChoice* operationMode = nullptr; // Audit Fix [2.2a]: Unified Mode
-
-    juce::AudioParameterFloat* modernLpfCutoff = nullptr;
-    juce::AudioParameterFloat* modernLpfReso = nullptr;
-    juce::AudioParameterFloat* modernHpfCutoff = nullptr;
-
-    juce::AudioParameterFloat* modVeloToDcw = nullptr;
-    juce::AudioParameterFloat* modVeloToDca = nullptr;
-    juce::AudioParameterFloat* modWheelToDcw = nullptr;
-    juce::AudioParameterFloat* modWheelToLfoRate = nullptr;
-    juce::AudioParameterFloat* modWheelToVibrato = nullptr;
-    juce::AudioParameterFloat* modAtToDcw = nullptr;
-    juce::AudioParameterFloat* modAtToVibrato = nullptr;
-
-    juce::AudioParameterFloat* keyTrackDcw = nullptr;
-    juce::AudioParameterFloat* keyTrackPitch = nullptr;
-    juce::AudioParameterChoice* keyFollowDco = nullptr;
-    juce::AudioParameterChoice* keyFollowDcw = nullptr;
-    juce::AudioParameterChoice* keyFollowDca = nullptr;
-    
-    // Phase 5.1: Oversampling
-    juce::AudioParameterChoice* oversamplingQuality = nullptr;
-
-    juce::AudioParameterInt*   midiChannel = nullptr;
-    juce::AudioParameterFloat* masterTune = nullptr;
-    juce::AudioParameterInt*   pitchBendRange = nullptr;
-    juce::AudioParameterInt*   keyTranspose = nullptr;
-
-    // Arpeggiator Pointers
-    juce::AudioParameterBool* arpEnabled = nullptr;
-    juce::AudioParameterBool* arpLatch = nullptr;
-    juce::AudioParameterChoice* arpRate = nullptr;
-    juce::AudioParameterFloat*  arpBpm = nullptr;
-    juce::AudioParameterFloat*  arpGate = nullptr;
-    juce::AudioParameterFloat*  arpSwing = nullptr;
-    juce::AudioParameterChoice* arpSwingMode = nullptr;
-    juce::AudioParameterChoice* arpPattern = nullptr;
-    juce::AudioParameterInt*   arpOctave = nullptr;
-
-    // Macro Pointers
-    juce::AudioParameterFloat* macroBrilliance = nullptr;
-    juce::AudioParameterFloat* macroTone = nullptr;
-    juce::AudioParameterFloat* macroSpace = nullptr;
-
-public:
-    // Arpeggiator getters
-    juce::AudioParameterBool*  getArpEnabled() const { return arpEnabled; }
-    juce::AudioParameterBool*  getArpLatch() const { return arpLatch; }
-    juce::AudioParameterChoice* getArpRate() const { return arpRate; }
-    juce::AudioParameterFloat* getArpBpm() const { return arpBpm; }
-    juce::AudioParameterFloat* getArpGate() const { return arpGate; }
-    juce::AudioParameterFloat* getArpSwing() const { return arpSwing; }
-    juce::AudioParameterChoice* getArpSwingMode() const { return arpSwingMode; }
-    juce::AudioParameterChoice* getArpPattern() const { return arpPattern; }
-    juce::AudioParameterInt*   getArpOctave() const { return arpOctave; }
-
-    // Macro Controls
-    juce::AudioParameterFloat* getMacroBrilliance() const { return macroBrilliance; }
-    juce::AudioParameterFloat* getMacroTone() const { return macroTone; }
-    juce::AudioParameterFloat* getMacroSpace() const { return macroSpace; }
 };
 
 } // namespace State

@@ -37,3 +37,10 @@ CONTROL_FILESCODE*.txt
 Calibration*.txt
 GoldenMaster*.txt
 *.syx
+Logs/
+bundle_code/
+*.txt
+!README.md
+!CMakeLists.txt
+!best_practices.md
+!THIRD_PARTY.md

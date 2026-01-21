@@ -31,7 +31,7 @@ void PresetManager::applyPresetToProcessor() {}
 void PresetManager::applyEnvelopeToVoice(const EnvelopeData&, int, int) {}
 
 // The critical method we are testing
-void PresetManager::loadPresetFromStruct(const Preset& p, bool) 
+void PresetManager::loadPresetFromStruct(const Preset& p, bool, bool) 
 {
     capturedPreset = p;
     presetWasLoaded = true;

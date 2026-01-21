@@ -151,6 +151,9 @@ void ArpeggiatorSection::updateVisibility()
     typeLabel.setVisible(controlsVisible);
     
     classicWarningLabel.setVisible(isClassic);
+    
+    // Force layout update when visibility changes
+    resized();
 }
 
 void ArpeggiatorSection::resized()

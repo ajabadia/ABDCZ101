@@ -81,6 +81,11 @@ struct ParameterSnapshot {
         float driveAmount = 0.0f;
         float driveColor = 0.5f;
         float driveMix = 0.0f;
+
+        // [NEW] Modern Filters
+        float lpfCutoff = 20000.0f;
+        float lpfReso = 0.0f;
+        float hpfCutoff = 20.0f;
     } effects;
     
     // We include basic envelope settings for snapshot restoration

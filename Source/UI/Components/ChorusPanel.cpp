@@ -1,41 +1,50 @@
 #include "ChorusPanel.h"
+#include "../../State/ParameterIDs.h"
 
 namespace CZ101 {
 namespace UI {
 
 ChorusPanel::ChorusPanel(CZ101AudioProcessor& p)
     : audioProcessor(p),
-      rateKnob("Rate"), depthKnob("Depth"), mixKnob("Mix")
+      titleLabel({}, "CHORUS"),
+      rateKnob("Rate"),
+      depthKnob("Depth"),
+      mixKnob("Mix")
 {
     auto& params = audioProcessor.getParameters();
 
     addAndMakeVisible(titleLabel);
-    titleLabel.setText("Chorus", juce::dontSendNotification);
     titleLabel.setJustificationType(juce::Justification::centred);
 
-    auto setupKnob = [&](Knob& k, juce::RangedAudioParameter* param) {
-        addAndMakeVisible(k);
-        if (param) {
-            attachments.emplace_back(std::make_unique<SliderAttachment>(*param, k.getSlider()));
-            k.getSlider().getProperties().set("paramId", param->paramID);
-        }
-    };
+    addAndMakeVisible(rateKnob);
+    addAndMakeVisible(depthKnob);
+    addAndMakeVisible(mixKnob);
 
-    setupKnob(rateKnob, params.getChorusRate());
-    setupKnob(depthKnob, params.getChorusDepth());
-    setupKnob(mixKnob, params.getChorusMix());
+    // Create attachments using named members
+    if (auto* pRate = params.getChorusRate()) {
+        rateAttachment = std::make_unique<SliderAttachment>(*pRate, rateKnob.getSlider());
+    }
+    if (auto* pDepth = params.getChorusDepth()) {
+        depthAttachment = std::make_unique<SliderAttachment>(*pDepth, depthKnob.getSlider());
+    }
+    if (auto* pMix = params.getChorusMix()) {
+        mixAttachment = std::make_unique<SliderAttachment>(*pMix, mixKnob.getSlider());
+    }
 }
 
 void ChorusPanel::resized()
 {
     auto area = getLocalBounds();
-    juce::FlexBox fb;
-    fb.flexDirection = juce::FlexBox::Direction::column;
+    titleLabel.setBounds(area.removeFromTop(20));
 
-    fb.items.add(juce::FlexItem(titleLabel).withFlex(0.5f));
-    fb.items.add(juce::FlexItem(rateKnob).withFlex(1.5f));
-    fb.items.add(juce::FlexItem(depthKnob).withFlex(1.5f));
-    fb.items.add(juce::FlexItem(mixKnob).withFlex(1.5f));
+    juce::FlexBox fb;
+    fb.flexDirection = juce::FlexBox::Direction::row;
+    fb.justifyContent = juce::FlexBox::JustifyContent::spaceAround;
+    fb.alignItems = juce::FlexBox::AlignItems::center;
+
+    fb.items.add(juce::FlexItem(rateKnob).withFlex(1));
+    fb.items.add(juce::FlexItem(depthKnob).withFlex(1));
+    fb.items.add(juce::FlexItem(mixKnob).withFlex(1));
 
     fb.performLayout(area);
 }

@@ -4,6 +4,7 @@
 
 #include "SysExManager.h"
 #include "../State/ParameterIDs.h"
+#include "../State/EnvelopeSerializer.h"
 #include <juce_core/juce_core.h>
 #include <cmath>
 #include <array>
@@ -106,20 +107,7 @@ void SysExManager::handleSysEx(const void* data, int size, const juce::String& p
         int offset = 7;
         int patchCount = 0;
         
-        auto decodeEnv = [&](CZ101::State::EnvelopeData& env, int& off, int maxSize) {
-            if (off + 2 > maxSize) return;
-            uint8_t endByte = decodeNibblePair(msg, off, maxSize);
-            env.endPoint = endByte & 0x07;
-            env.sustainPoint = -1;
-            for (int i = 0; i < 8; ++i) {
-                uint8_t rawRate = decodeNibblePair(msg, off, maxSize);
-                uint8_t rawLevel = decodeNibblePair(msg, off, maxSize);
-                if (rawLevel & 0x80) { env.sustainPoint = i; rawLevel &= 0x7F; }
-                env.rates[i] = mapCZRateToNormalized(rawRate); // Fix 10.4
-                env.levels[i] = mapCZLevelToNormal(rawLevel);
-            }
-            if (env.sustainPoint == -1) env.sustainPoint = 2;
-        };
+        // Lambda for envelope decoding replaced by EnvelopeSerializer::decodeFromSysEx
 
         while (offset + 256 < msgSize) // Each patch is ~256 nibbles payload? No, check sizes.
         {
@@ -165,9 +153,9 @@ void SysExManager::handleSysEx(const void* data, int size, const juce::String& p
             decodeNibblePair(msg, offset, msgSize); decodeNibblePair(msg, offset, msgSize);
             decodeNibblePair(msg, offset, msgSize); decodeNibblePair(msg, offset, msgSize);
 
-            decodeEnv(preset.dcaEnv, offset, msgSize);
-            decodeEnv(preset.dcwEnv, offset, msgSize);
-            decodeEnv(preset.pitchEnv, offset, msgSize);
+            State::EnvelopeSerializer::decodeFromSysEx(msg, offset, msgSize, preset.dcaEnv);
+            State::EnvelopeSerializer::decodeFromSysEx(msg, offset, msgSize, preset.dcwEnv);
+            State::EnvelopeSerializer::decodeFromSysEx(msg, offset, msgSize, preset.pitchEnv);
 
             uint8_t mfw2 = decodeNibblePair(msg, offset, msgSize);
             uint8_t mfw2_2 = decodeNibblePair(msg, offset, msgSize);
@@ -177,9 +165,9 @@ void SysExManager::handleSysEx(const void* data, int size, const juce::String& p
             decodeNibblePair(msg, offset, msgSize); decodeNibblePair(msg, offset, msgSize);
             decodeNibblePair(msg, offset, msgSize); decodeNibblePair(msg, offset, msgSize);
 
-            decodeEnv(preset.dcaEnv2, offset, msgSize);
-            decodeEnv(preset.dcwEnv2, offset, msgSize);
-            decodeEnv(preset.pitchEnv2, offset, msgSize);
+            State::EnvelopeSerializer::decodeFromSysEx(msg, offset, msgSize, preset.dcaEnv2);
+            State::EnvelopeSerializer::decodeFromSysEx(msg, offset, msgSize, preset.dcwEnv2);
+            State::EnvelopeSerializer::decodeFromSysEx(msg, offset, msgSize, preset.pitchEnv2);
 
             if (onPresetParsed) onPresetParsed(preset);
             patchCount++;
@@ -260,18 +248,6 @@ juce::MemoryBlock SysExManager::createPatchDump(const CZ101::State::Preset& pres
 
     encodeNibblePair(0, data); 
 
-    // Helper for Envelopes
-    auto encodeEnv = [&](const CZ101::State::EnvelopeData& env) {
-        encodeNibblePair(env.endPoint, data);
-        for (int i = 0; i < 8; ++i) {
-            uint8_t rate = mapNormalizedToCZRate(env.rates[i]);
-            encodeNibblePair(rate, data);
-            uint8_t lev = mapNormalToCZLevel(env.levels[i]);
-            if (i == env.sustainPoint) lev |= 0x80;
-            encodeNibblePair(lev, data);
-        }
-    };
-
     // 8. Waveforms Line 1
     encodeNibblePair((uint8_t)getParam(ParameterIDs::osc1Waveform.toStdString(), 0.0f), data);
     encodeNibblePair((uint8_t)getParam(ParameterIDs::osc1Waveform2.toStdString(), 0.0f), data);
@@ -280,9 +256,9 @@ juce::MemoryBlock SysExManager::createPatchDump(const CZ101::State::Preset& pres
     for(int i=0; i<4; ++i) encodeNibblePair(0, data);
 
     // 11-16. Envelopes Line 1
-    encodeEnv(preset.dcaEnv);
-    encodeEnv(preset.dcwEnv);
-    encodeEnv(preset.pitchEnv);
+    State::EnvelopeSerializer::encodeToSysEx(preset.dcaEnv, data);
+    State::EnvelopeSerializer::encodeToSysEx(preset.dcwEnv, data);
+    State::EnvelopeSerializer::encodeToSysEx(preset.pitchEnv, data);
     
     // 17. Waveforms Line 2
     encodeNibblePair((uint8_t)getParam(ParameterIDs::osc2Waveform.toStdString(), 0.0f), data);
@@ -292,9 +268,9 @@ juce::MemoryBlock SysExManager::createPatchDump(const CZ101::State::Preset& pres
     for(int i=0; i<4; ++i) encodeNibblePair(0, data);
 
     // 20-25. Envelopes Line 2
-    encodeEnv(preset.dcaEnv2);
-    encodeEnv(preset.dcwEnv2);
-    encodeEnv(preset.pitchEnv2);
+    State::EnvelopeSerializer::encodeToSysEx(preset.dcaEnv2, data);
+    State::EnvelopeSerializer::encodeToSysEx(preset.dcwEnv2, data);
+    State::EnvelopeSerializer::encodeToSysEx(preset.pitchEnv2, data);
 
     // Checksum
     uint8_t sum = 0;

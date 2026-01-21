@@ -56,6 +56,8 @@ list(APPEND SOURCES
     "Source/UI/Overlays/BankManagerOverlay.h"
     "Source/UI/Overlays/BankManagerOverlay.cpp"
     "Source/State/ParameterIDs.h"
+    "Source/State/EnvelopeSerializer.h"
+    "Source/State/EnvelopeSerializer.cpp"
 )
 target_sources(CZ101Emulator PRIVATE ${SOURCES})
 
@@ -132,6 +134,7 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
     add_executable(CZ101SysExTest
         Source/Tests/SysExTestMain.cpp
         Source/MIDI/SysExManager.cpp
+        Source/State/EnvelopeSerializer.cpp
     )
 
     target_include_directories(CZ101SysExTest PRIVATE Source)

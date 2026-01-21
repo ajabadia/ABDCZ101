@@ -14,6 +14,7 @@
 #include "DSP/Effects/StereoDelay.h" // Audit Fix 10.5
 #include "DSP/Effects/Reverb.h"
 #include "DSP/Effects/DriveEffect.h"
+#include "DSP/Effects/EffectsChain.h"
 #include <juce_dsp/juce_dsp.h> // Required for LadderFilter
 #include "DSP/Modulation/LFO.h"
 #include "Core/AudioThreadSnapshot.h"
@@ -46,7 +47,8 @@ static_assert(std::is_trivially_copyable<EnvelopeUpdateCommand>::value, "Envelop
 static_assert(std::is_trivially_copyable<EnvelopeStatePOD>::value, "EnvelopeStatePOD must be POD for thread-safe FIFO usage");
 
 class CZ101AudioProcessor : public juce::AudioProcessor, 
-                            public juce::AsyncUpdater
+                            public juce::AsyncUpdater,
+                            public juce::AudioProcessorValueTreeState::Listener
 {
 public:
     CZ101AudioProcessor();
@@ -143,16 +145,11 @@ private:
 
 
 
-    CZ101::DSP::Effects::StereoDelay stereoDelay; // Added Audit Fix 10.5
-    CZ101::DSP::Effects::DriveEffect driveEffect; // [NEW] Phase 12
-    
-    juce::Reverb reverb;
-    juce::Reverb::Parameters reverbParams;
-    CZ101::DSP::Effects::Chorus chorus;
-    
-    // Modern Filters
-    juce::dsp::LadderFilter<float> modernLpf;
-    juce::dsp::StateVariableTPTFilter<float> modernHpf;
+    // [REFAMCTOR] Centralized Effects Chain
+ 
+    CZ101::DSP::Effects::EffectsChain effectsChain;
+
+    // UI Update Tracking
     
     // UI Update Tracking
     CZ101::Utils::PerformanceMonitor performanceMonitor;
@@ -174,6 +171,9 @@ private:
     void scheduleMidiParamUpdate(const char* id, float value);
     
     void handleAsyncUpdate() override;
+    
+    // APVTS Listener
+    void parameterChanged (const juce::String& parameterID, float newValue) override;
     
     // Audit Fix [D]: Mutex ELIMINATED. Using lock-free patterns.
     

@@ -53,7 +53,11 @@ void EffectsSection::parameterChanged(const juce::String& parameterID, float new
 {
     if (parameterID == ParameterIDs::operationMode)
     {
-        juce::MessageManager::callAsync([this]() { updateVisibility(); });
+        juce::MessageManager::callAsync([this]() { 
+            updateVisibility(); 
+            resized(); 
+            repaint(); 
+        });
     }
 }
 
