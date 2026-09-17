@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 project(CZ101Emulator VERSION 1.0.0)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(JUCE_DIR "C:/JUCE")
@@ -17,6 +17,12 @@ juce_add_plugin(CZ101Emulator
     FORMATS Standalone VST3
     PRODUCT_NAME "CZ-5000_Emulator"
     IS_SYNTH TRUE
+    NEEDS_WEBVIEW2 TRUE
+)
+
+target_compile_definitions(CZ101Emulator PUBLIC 
+    JUCE_USE_WIN_WEBVIEW2=1 
+    JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1
 )
 
 # --- Auto-Versioning System ---
@@ -28,37 +34,38 @@ add_custom_command(TARGET CZ101Emulator PRE_BUILD
 
 juce_generate_juce_header(CZ101Emulator)
 
-# --- Source Files ---
-file(GLOB_RECURSE SOURCES "Source/*.h" "Source/*.cpp")
-# Robust Exclusion for Windows/Unix paths
-list(FILTER SOURCES EXCLUDE REGEX "SysExTestMain\\.cpp$") 
-list(FILTER SOURCES EXCLUDE REGEX "GoldenMasterMain\\.cpp$") 
-# Add new files explicitly to ensure CMake detects them if GLOB fails to refresh
-list(APPEND SOURCES 
-    "Source/UI/UIManager.h"
-    "Source/UI/UIManager.cpp"
-    "Source/UI/Components/FilterPanel.h"
-    "Source/UI/Components/FilterPanel.cpp"
-    "Source/UI/Components/ChorusPanel.h"
-    "Source/UI/Components/ChorusPanel.cpp"
-    "Source/UI/Components/DelayPanel.h"
-    "Source/UI/Components/DelayPanel.cpp"
-    "Source/UI/Components/ReverbPanel.h"
-    "Source/UI/Components/ReverbPanel.cpp"
-    "Source/UI/Components/MacroPanel.h"
-    "Source/UI/Components/MacroPanel.cpp"
-    "Source/UI/Sections/ArpeggiatorSection.h"
-    "Source/UI/Sections/ArpeggiatorSection.cpp"
-    "Source/UI/Sections/ModulationMatrixSection.h"
-    "Source/UI/Sections/ModulationMatrixSection.cpp"
-    "Source/UI/Components/DualEnvelopeContainer.h"
-    "Source/UI/Components/DualEnvelopeContainer.cpp"
-    "Source/UI/Overlays/BankManagerOverlay.h"
-    "Source/UI/Overlays/BankManagerOverlay.cpp"
-    "Source/State/ParameterIDs.h"
-    "Source/State/EnvelopeSerializer.h"
-    "Source/State/EnvelopeSerializer.cpp"
+# --- WebUI Binary Assets ---
+file(GLOB_RECURSE WEBUI_ASSETS 
+    "WebUI/src/*" 
+    "WebUI/icons/*" 
+    "WebUI/*.html" 
+    "WebUI/*.js" 
+    "WebUI/*.webmanifest" 
+    "WebUI/*.css" 
+    "WebUI/*.png" 
+    "WebUI/*.svg" 
+    "WebUI/*.json"
 )
+juce_add_binary_data(WebUIAssets 
+    HEADER_NAME "WebUIAssets.h" 
+    NAMESPACE "WebUIAssets" 
+    SOURCES ${WEBUI_ASSETS}
+)
+target_link_libraries(CZ101Emulator PRIVATE WebUIAssets)
+
+# --- Source Files ---
+# Lista DSP compartida con el build WASM (single-source, anti-drift):
+# DspSources.cmake define CZ101_DSP_SOURCES y CZ101_DSP_SOURCES_WASM.
+# Los tests de Source/Tests quedan fuera de la lista (llevan sus propios mains
+# y se anaden por target en cada test de abajo). Los .h van via GLOB (solo
+# afecta a la visibilidad en el IDE, no al enlazado).
+include("${CMAKE_CURRENT_SOURCE_DIR}/DspSources.cmake")
+
+file(GLOB_RECURSE SOURCES "Source/*.h")
+list(APPEND SOURCES ${CZ101_DSP_SOURCES})
+
+# UI legacy files removed (WebView2 is the sole interface)
+
 target_sources(CZ101Emulator PRIVATE ${SOURCES})
 
 if (MSVC)
@@ -67,6 +74,7 @@ endif()
 
 # --- Include Directories (ROBUST VERSION) ---
 target_include_directories(CZ101Emulator PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode
     Source
     Source/Core
     Source/DSP
@@ -77,10 +85,7 @@ target_include_directories(CZ101Emulator PRIVATE
     Source/DSP/Oscillators
     Source/MIDI
     Source/State
-    Source/UI
-    Source/UI/Components
-    Source/UI/Overlays
-    Source/UI/Sections
+
     Source/Utils
 )
 
@@ -148,8 +153,31 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
     
     target_compile_definitions(CZ101SysExTest PUBLIC JUCE_CONSOLE_APP=1)
     set_target_properties(CZ101SysExTest PROPERTIES CXX_STANDARD 17)
-    
+
     message(STATUS "Defined Test Target: CZ101SysExTest")
+
+    # SysEx encode/decode round-trip regression test Ã¢â‚¬â€ verifies that
+    # createPatchDump() Ã¢â€ â€™ decodePatch() preserves parameters, envelopes
+    # and extended modulation modes (incl. the gapped PDL formula).
+    add_executable(CZ101SysExRoundTripTest
+        Source/Tests/SysExRoundTripTest.cpp
+        Source/MIDI/SysExManager.cpp
+        Source/State/EnvelopeSerializer.cpp
+    )
+
+    target_include_directories(CZ101SysExRoundTripTest PRIVATE Source)
+
+    target_link_libraries(CZ101SysExRoundTripTest PRIVATE
+        juce::juce_core
+        juce::juce_data_structures
+        juce::juce_events
+    )
+
+    target_compile_definitions(CZ101SysExRoundTripTest PUBLIC JUCE_CONSOLE_APP=1)
+    set_target_properties(CZ101SysExRoundTripTest PROPERTIES CXX_STANDARD 17)
+
+    message(STATUS "Defined Test Target: CZ101SysExRoundTripTest")
+
 endif()
 
 # Audit Fix 1.5.2: Golden Master Regression Test Suite
@@ -157,6 +185,7 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
     # Prepare sources: Exclude Standalone wrapper (contains main)
     set(SOURCES_GM ${SOURCES})
     list(FILTER SOURCES_GM EXCLUDE REGEX "StandaloneApp\\.cpp$")
+    list(FILTER SOURCES_GM EXCLUDE REGEX "PluginEditor.*\\.cpp$")
     
     juce_add_console_app(CZ101GoldenMaster
         PRODUCT_NAME "CZ101GoldenMaster"
@@ -169,7 +198,8 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
     
     juce_generate_juce_header(CZ101GoldenMaster)
 
-    target_include_directories(CZ101GoldenMaster PRIVATE 
+    target_include_directories(CZ101GoldenMaster PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode 
         Source
         Source/Core
         Source/DSP
@@ -180,16 +210,13 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
         Source/DSP/Oscillators
         Source/MIDI
         Source/State
-        Source/UI
-        Source/UI/Components
-        Source/UI/Overlays
-        Source/UI/Sections
         Source/Utils
         .
     )
     
     # Link Full JUCE modules (needs Audio, Graphics for Editor classes)
     target_link_libraries(CZ101GoldenMaster PRIVATE
+        WebUIAssets
         juce::juce_audio_basics
         juce::juce_audio_devices
         juce::juce_audio_formats
@@ -209,6 +236,7 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
 
     target_compile_definitions(CZ101GoldenMaster PUBLIC 
         JUCE_CONSOLE_APP=1 
+        GOLDEN_MASTER_BUILD=1
         JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=0 # Ensure we don't trigger macros in headers
         JucePlugin_Name="ABD Z5001"
     )
@@ -220,4 +248,72 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
     endif()
 
     message(STATUS "Defined Test Target: CZ101GoldenMaster")
+
+    # ================================================================
+    # Snapshot Ã¢â€ â€™ DSP regression test
+    # ================================================================
+    set(SOURCES_SNAP ${SOURCES})
+    list(FILTER SOURCES_SNAP EXCLUDE REGEX "StandaloneApp\\.cpp$")
+    list(FILTER SOURCES_SNAP EXCLUDE REGEX "PluginEditor.*\\.cpp$")
+
+    juce_add_console_app(CZ101SnapshotDSPTest
+        PRODUCT_NAME "CZ101SnapshotDSPTest"
+    )
+
+    target_sources(CZ101SnapshotDSPTest PRIVATE
+        Source/Tests/SnapshotDSPTest.cpp
+        ${SOURCES_SNAP}
+    )
+
+    juce_generate_juce_header(CZ101SnapshotDSPTest)
+
+    target_include_directories(CZ101SnapshotDSPTest PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode
+        Source
+        Source/Core
+        Source/DSP
+        Source/DSP/Effects
+        Source/DSP/Envelopes
+        Source/DSP/Filters
+        Source/DSP/Modulation
+        Source/DSP/Oscillators
+        Source/MIDI
+        Source/State
+        Source/Utils
+        .
+    )
+
+    target_link_libraries(CZ101SnapshotDSPTest PRIVATE
+        WebUIAssets
+        juce::juce_audio_basics
+        juce::juce_audio_devices
+        juce::juce_audio_formats
+        juce::juce_audio_plugin_client
+        juce::juce_audio_processors
+        juce::juce_audio_utils
+        juce::juce_core
+        juce::juce_data_structures
+        juce::juce_dsp
+        juce::juce_events
+        juce::juce_graphics
+        juce::juce_gui_basics
+        juce::juce_gui_extra
+        juce::juce_opengl
+        juce::juce_cryptography
+    )
+
+    target_compile_definitions(CZ101SnapshotDSPTest PUBLIC
+        JUCE_CONSOLE_APP=1
+        SNAPSHOT_DSP_TEST_BUILD=1
+        JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=0
+        JucePlugin_Name="ABD Z5001"
+    )
+
+    set_target_properties(CZ101SnapshotDSPTest PROPERTIES CXX_STANDARD 17)
+
+    if(ENABLE_SANITIZERS AND MSVC)
+        target_compile_options(CZ101SnapshotDSPTest PRIVATE /fsanitize=address)
+    endif()
+
+    message(STATUS "Defined Test Target: CZ101SnapshotDSPTest")
 endif()
