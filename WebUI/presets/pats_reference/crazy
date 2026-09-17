@@ -1,0 +1,31 @@
+Name: "Crazy" 
+
+Line Select: 1 + 2'
+Modulation: None
+Detune: (-)    Oct: 01
+  Note: 00    Fine: 06
+Octave: +1
+Vibrato: Wave: 1    Delay: 62
+         Rate: 39   Depth: 06
+
+DCO 1:   Wave: 2  4               DCO 2:   Wave: 4  2
+         Env: 99  66 (S)                   Env: 00  00 (E)
+              00  65              
+              00  64
+              00  63
+              00  00 (E)
+
+DCW 1:   Key Follow: 2            DCW 2:   Key Follow: 8
+         Env: 99  81                       Env: 99  81
+              55  23 (S)                        55  23 (S)
+              37  00 (E)                        37  00 (E)
+
+DCA 1:   Key Follow: 0            DCA 2:   Key Follow: 0
+         Env: 99 99                        Env: 99  99
+              63 90 (S)                         63  90 (S)
+              40 00 (E)                         33  00 (E)
+
+         (If you play and hold a C Major chord, it sounds like the 
+         opening chord of Prince's song "Let's Go _Crazy_". You know:
+         "Dearly beloved, we are gathered here today to talk about this thing 
+          called life....")

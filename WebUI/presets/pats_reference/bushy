@@ -1,0 +1,50 @@
+
+Name: Bushy             
+
+line    mod     detune          vibrato         octave
+1+2             + 0 00 03       0 00 00 00      0
+
+DCO 1
+wave 
+5 0
+rate    level
+99      65
+38      66s
+00      00e
+
+DCW 1
+key 
+2
+rate    level
+99      99s
+40      00e
+
+DCA 1
+key 
+2
+rate    level
+72      92s
+45      00e
+
+DCO 2
+wave 
+1 0
+rate    level
+99      66
+00      00e
+
+DCW 2
+key 
+2
+rate    level
+99      99s
+40      00e
+
+DCA 2
+key 
+2
+rate    level
+72      92s
+45      00e
+
+Comments: Reminds me of Kate Bush.

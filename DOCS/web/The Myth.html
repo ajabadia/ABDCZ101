@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>The Myth</title>
+
+		<meta charset="utf-8">
+		<meta name="author" content="Michael Rickard">
+		<meta name="dcterms.dateCopyrighted" content="2005 to 2026">
+		<meta name="description" content="A discussion of envelope data in Casio CZ synthesizers. Looking at the myth that envelope data can be extended past 99 that a user sees on the screen.">
+		<meta name="DC.date" content="2012-06-30 01:05:23 utc">
+		<meta name="DC.date.created" content="2012-06-30 01:05:23 utc">
+		<meta name="DC.date.modified" content="2019-07-13 18:26:56 utc">
+		<meta name="generator" content="Text Editor">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<link rel="icon" href="https://media.kasploosh.com/img/favicons/kasploosh.ico">
+		<link rel="canonical" href="https://www.kasploosh.com/cz/13466-envelopes/3-the_myth/">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/main.css?v=20200729">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/pages/cz.css">
+	</head>
+
+	<body>
+
+		<div class="max_width">
+
+			<header class="main">
+<img src="https://media.kasploosh.com/img/logos/flag-15517.gif"> kasploosh.com
+			</header>
+
+			<nav class="main">
+
+<label for="toggle_nav" id="toggle_nav_label"><span></span><span class="text">Tap For Menu</span><span></span></label>
+<input type="checkbox" id="toggle_nav" name="toggle_nav" value="toggle_nav">
+
+<ul class="main_nav">
+<li><a href="https://www.kasploosh.com/">Home</a></li>
+<li><a href="https://www.kasploosh.com/art/">Art</a></li>
+<li><a href="https://www.kasploosh.com/stories/">Stories</a></li>
+<li><a href="https://www.kasploosh.com/cz/">CZ</a></li>
+<li><a href="https://www.kasploosh.com/make_stuff/">Make Stuff</a></li>
+<li><a href="https://www.kasploosh.com/software/">Software</a></li>
+<li><a href="https://www.kasploosh.com/music/">Music</a></li>
+<li><a href="https://www.kasploosh.com/videos/">Videos</a></li>
+<li><a href="https://www.kasploosh.com/mike_date/">By Mike Date</a></li>
+<li><a href="https://www.kasploosh.com/date/">By Date</a></li>
+<li><a href="https://www.kasploosh.com/tag/">By Tag</a></li>
+<li><a href="https://www.kasploosh.com/search/">By Search</a></li>
+</ul>
+
+			</nav>
+
+
+			<article class="main">
+				<header class="article">
+
+					<div class="breadcrumbs">
+
+
+					</div><!-- breadcrumbs -->
+
+				</header>
+
+
+				<section class="article">
+
+
+<h1>The Myth</h1>
+
+<p class="article_date">2012-06-30</p>
+
+
+
+<div class="photo right">
+	<a href="https://media.kasploosh.com/pdf/cz/13466-envelopes/Casio_CZ_MIDI_Specification-Envelope_Data.pdf" target="_blank">
+	<img
+		src="https://media.kasploosh.com/img/cz/13466-envelopes/Casio_CZ_MIDI_Specification-Envelope_Data.png"
+		alt="Casio_CZ_MIDI_Specification-Envelope_Data.png"
+	>
+	</a>
+	<p>Click to download the PDF</p>
+</div>
+
+<p>There is a particular persuasive myth that has been floating around
+Casio CZ communities for a long time. In a nutshell, the idea is that
+the limitations of the LCD display prevent envelope values greater
+than 99, but if you hack the sysex messages you can get values as high
+as 127! And furthermore, that all your sounds are deeper, more
+excellent, and richer when this happens.</p>
+
+<p>Most people in the world will not be interested in whether this is true
+or not. If you are one of the few who are interested in this myth, you owe
+it yourself to
+<a href="https://media.kasploosh.com/pdf/cz/13466-envelopes/Casio_CZ_MIDI_Specification-Envelope_Data.pdf" target="_blank">download this document</a>
+I have prepared. It is a PDF file that contains the tables and equations
+that translate between human and machine values. These are essential for understanding
+the truth of this myth.</p>
+
+<p>Before starting, please read up about <a href="../2-machine_values/">the difference between human values
+and machine values</a> for envelope data.</p>
+
+<h2>Why The Myth Is Persuasive</h2>
+
+<p>It is easy to observe that the maximum value for envelope data, both in the
+Casio documentation and when you program the machine from the front panel, is
+<strong>99</strong>. This number makes people suspicious.</p>
+
+<p>First, the number conveniently stops at the last two-digit number that
+exists in decimal integer counting.
+
+	<blockquote style="width: auto; white-space: normal">“Perhaps they
+	stopped at 99 solely because they didn't have room on the LCD to
+	put another number!”</blockquote>
+
+<p>Second, if you tinker around with system exclusive data at all, you
+will know it is a binary format, and you have to use a hex editor to
+work with it. Numbers that make sense in hexadecimal are 8, 16, 32,
+64, 128, 256, and so on.</p>
+
+	<blockquote style="width: auto; white-space: normal">“Perhaps the
+	true limit is a number that makes sense in hex, like
+	127!”</blockquote>
+
+<p>Those two ideas are the kernel of the myth, and it builds from there.
+It goes like this:</p>
+
+<div class="photo right">
+	<img
+		src="https://media.kasploosh.com/img/cz/13466-envelopes/turn_it_to_eleven.png"
+		alt="turn_it_to_eleven.png"
+	>
+</div>
+
+	<blockquote style="width: auto; white-space: normal">“Casio
+	capped the envelopes at 99, but only when you program using the
+	panel, because they were catering to a western audience and the
+	LCD display was limited. But if you know how to edit the sysex
+	files, you can take the values all the way to 127. And when you
+	do, everything sounds sweeter and sharper because you are finally
+	getting out of the muddy middle range and into SWEET CLARITY!”
+	</blockquote>
+
+<p style="clear: both">I am surely exaggerating the story, so I
+apologize for that. I don’t mean any insult by it. I agree the story
+is persuasive. To make it even more persuasive, there are other
+<a href="/cz/11800-spelunking/" target="_blank">confirmed easter eggs</a>
+in the sysex data.</p>
+
+<h2>Ways The Myth Is Not True</h2>
+
+<p>There are a number of important things to understand, to make sense
+of this idea.</p>
+
+<div class="photo right">
+	<img
+		src="https://media.kasploosh.com/img/cz/13466-envelopes/human_and_machine_values_wedded.png"
+		alt="human_and_machine_values_wedded.png"
+	>
+</div>
+
+<ol>
+	<li>The number you see on the front panel, for example 99, is the
+	human value, which is for display. The synthesizer really wants the
+	machine value when creating sounds.<br>
+	(<a href="../2-machine_values/#machine_vs_human">More info</a>.)</li>
+
+	<li>The machine value cannot be greater than <span class="hex">0x7F</span>,
+	or 127.<br>
+	(<a href="../2-machine_values/#machine_values">More info</a>.)</li>
+
+	<li>The human values are mapped to the machine values by discrete
+	functions.<br>
+	(<a href="https://media.kasploosh.com/pdf/cz/13466-envelopes/Casio_CZ_MIDI_Specification-Envelope_Data.pdf" target="_blank">More info</a>.)</li>
+
+	<li>In four out of six cases, the human value 99 is directly
+	mapped to the machine value <span class="hex">0x7F</span>. For
+	four out of six cases, therefore, there are no values beyond 99,
+	and you are already getting the full range from your synthesizer.</li>
+</ol>
+
+<p>If you want to see for yourself the fact that the majority of envelopes
+have the maximum human value (99) mapped to the maximum machine value
+(<span class="hex">0x7F</span>), then download the PDF that I prepared
+and linked above. It contains nicely formatted tables and equations that
+demonstrate the mapping of human values to machine values.</p>
+
+<p>If you don’t trust this document that I produced, you can still download
+the original Casio CZ-1 Midi Specification from somewhere. Compare its tables
+to the ones I have created. They will be very similar, but harder to read and
+with a few mistakes.</p>
+
+
+<h2>Ways The Myth Is True</h2>
+
+<p>There are two cases where there is some truth to the myth, where there
+are potential extra values beyond 99. It remains to be seen whether these
+extra values do anything useful.</p>
+
+<h3>Pitch (<span class="syx">DCO</span>) Envelope Level</h3>
+
+<p>Pitch envelope levels seem to be able to go up to a human value of
+about 123 before they reach the machine value max of
+<span class="hex">0x7F</span>.
+
+<p>That means the pitch envelope can potentially go to higher
+levels than previously possible. I have not done any tests to
+see if this is beneficial or even audible. Tests TBD.</p>
+
+<h3>Amplitude (<span class="syx">DCA</span>) Envelope Rate</h3>
+
+<p>Amplitude envelope rate can go up to about 106 before reaching
+the maximum machine value. This is not a very big extension
+beyond 99.</p>
+
+<p>An amplitude envelope rate of 99 is already a sharp attack
+or decay, perhaps the sharpest that is needed. If that value
+is extended to 106, that would mean there could be an even 
+sharper attack or decay.</p>
+
+<p>I have not tested if these values are usable. And if they are
+usable, is the difference in attack rates observable? Tests TBD.</p>
+
+<nav class="section"><h2>Section Navigation</h2><div><img src="https://media.kasploosh.com/img/cz/13466-envelopes/thumbnail.png" alt=""><ul><li><a href="/cz/13466-envelopes/">Casio CZ Envelopes</a><ul><li><a href="/cz/13466-envelopes/1-cz_envelopes/">About Casio CZ Envelopes</a></li><li><a href="/cz/13466-envelopes/2-machine_values/">Machine Values</a></li><li><span>The Myth</span></li></ul></li></ul></div></nav>
+
+
+
+
+				</section>
+
+				<section class="debug">
+
+13466.78082
+
+				</section>
+
+				<footer class="article">
+
+
+				</footer>
+
+			</article>
+
+			<nav class="footer">
+
+<ul class="footer_nav">
+<li><a href="/contact/">Contact</a></li>
+<li><a href="/about_me/">About</a></li>
+<li><a href="/privacy/">Privacy</a></li>
+</ul>
+
+			</nav>
+
+			<footer class="main">
+
+<p>Project date: 2012-06-30 01:05:23 utc</p>
+<p>Page created: 2012-06-30 01:05:23 utc</p>
+<p>Page last edited: 2019-07-13 18:26:56 utc</p>
+<p>© 2026 Michael Rickard</p>
+
+			</footer>
+
+		  </div><!-- max_width -->
+	</body>
+</html>

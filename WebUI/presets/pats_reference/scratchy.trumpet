@@ -1,0 +1,48 @@
+Name: Scratchy Trumpet
+>From: Alan Bland <..!ihnp4!druak!mab>
+
+line    mod     detune          vibrato         octave
+1+2'            + 0 00 00       1 19 50 14      0
+
+DCO 1
+wave
+4 0
+rate    level
+00      00e
+
+DCW 1
+key
+0
+rate    level
+99      99s
+27      00e
+
+DCA 1
+key
+4
+rate    level
+70      99
+20      89s
+49      00e
+
+DC0 2
+wave
+3 5
+rate    level
+00      00e
+
+DCW 2
+key
+0
+rate    level
+51      77
+39      00e
+
+DCA 2
+key
+4
+rate    level
+99      79
+32      00e
+
+Comments: 

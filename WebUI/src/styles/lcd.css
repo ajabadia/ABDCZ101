@@ -1,0 +1,456 @@
+/* Header & LCD Display */
+.synth-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px; 
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 15px; 
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  transform: scale(1.2);
+  transform-origin: right center;
+}
+
+.global-keypad {
+  display: grid;
+  grid-template-columns: repeat(2, 95px);
+  grid-template-rows: repeat(2, 28px);
+  gap: 6px;
+  background: var(--bg-panel);
+  padding: 4px;
+  height: 72px;
+  box-sizing: border-box;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.midi-status-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  height: 28px;
+  box-sizing: border-box;
+  justify-content: center;
+}
+
+.lcd-btn-danger {
+  color: #ff5555;
+  border-color: rgba(255, 60, 60, 0.4);
+}
+
+.lcd-btn-danger:hover {
+  background: #ff5555 !important;
+  color: #000000 !important;
+  border-color: #ff5555 !important;
+  box-shadow: 0 0 8px #ff5555 !important;
+}
+
+.lcd-btn-audio {
+  border-color: #ff9933;
+  color: #ff9933;
+  /* Pulse orange while audio is not connected (START AUDIO state) */
+  animation: audio-wait-pulse 1.6s ease-in-out infinite;
+}
+
+.lcd-btn-audio.connected {
+  animation: none;
+  border-color: #00ffcc;
+  color: #00ffcc;
+  box-shadow: 0 0 20px #00ffcc;
+}
+
+@keyframes audio-wait-pulse {
+  0%, 100% {
+    border-color: #ff9933;
+    color: #ff9933;
+    box-shadow: 0 0 4px rgba(255, 153, 51, 0.35);
+    text-shadow: 0 0 4px rgba(255, 153, 51, 0.35);
+  }
+  50% {
+    border-color: #ff7700;
+    color: #ff8800;
+    box-shadow: 0 0 16px rgba(255, 119, 0, 0.85);
+    text-shadow: 0 0 8px rgba(255, 119, 0, 0.85);
+  }
+}
+
+.brand {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  padding: 0 16px;
+}
+
+.brand h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+  text-transform: uppercase;
+}
+
+.lcd-container {
+  display: flex;
+  align-items: center;
+  gap: 2px; /* Tight gap so components are glued together */
+  transform: scale(1.2);
+  transform-origin: left center;
+}
+
+/* 8-graphic matrix (1 row x 8 columns) below the LCD keypad */
+.lcd-graphics-matrix {
+  display: grid;
+  grid-template-columns: repeat(8, 36px);
+  grid-template-rows: repeat(1, 28px);
+  gap: 6px;
+  /* Removed LCD background/border since it is now inside the new sysex-lcd container */
+}
+
+.lcd-graphic-box {
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 3px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.lcd-graphic-box canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.lcd-graphic-box::after {
+  content: attr(data-label);
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.42rem;
+  font-weight: bold;
+  line-height: 1;
+  color: var(--color-lcd-text);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.wave-sprite {
+  background-image: url(../assets/czwavs.png);
+  background-size: 100% 800%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  opacity: 0.85; /* Blend nicely with LCD */
+  filter: brightness(0); /* Guarantee that the lines are black, no matter the source image color */
+}
+
+.lcd-display {
+  background-color: var(--color-lcd-bg);
+  border: 4px solid #3a3a4a;
+  border-radius: var(--radius-md);
+  padding: 10px 15px;
+  width: 260px;
+  height: 72px;
+  box-sizing: border-box;
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--color-lcd-text);
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sysex-lcd {
+  width: 100%;
+}
+
+.lcd-line-1 {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+/* Compare mode: the whole LCD blinks like the original hardware */
+@keyframes lcd-blink {
+  50% {
+    opacity: 0.12;
+  }
+}
+
+.lcd-blink {
+  animation: lcd-blink 0.9s steps(1, start) infinite;
+}
+
+/* Per-model LCD theme (mirrors LCDDisplay.cpp): Modern gets a teal/cyan tint +
+   glow, Classic 5000 a subtle blue glow, Classic 101 stays stock. */
+#lcd-display {
+  position: relative;
+}
+
+#lcd-display.lcd-mode-modern {
+  background-image: linear-gradient(var(--color-accent-dim), var(--color-accent-dim));
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.3), 0 0 14px var(--color-glow);
+}
+
+#lcd-display.lcd-mode-5000 {
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.3), 0 0 14px var(--color-glow);
+}
+
+.lcd-mode-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 9px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.62rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: color-mix(in srgb, var(--color-lcd-text) 55%, transparent);
+}
+
+/* BNK metadata in the top-right corner of the LCD while Bank Browse mode is
+   active: the bank MODEL on top (CZ-101 / CZ-5000 / CZ-230S / CZ Pack 1 /
+   User) and the position below (B3/12 · P07). */
+.lcd-bnk-badge {
+  position: absolute;
+  top: 3px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.5px;
+  color: color-mix(in srgb, var(--color-lcd-text) 75%, transparent);
+  opacity: 0.9;
+}
+
+.lcd-bnk-badge .lcd-bnk-model {
+  font-size: 0.52rem;
+  opacity: 0.85;
+  text-transform: uppercase;
+}
+
+/* Model tag colour: USER banks green, factory banks gray — glanceable. */
+.lcd-bnk-badge .lcd-bnk-model-user {
+  color: #4ade80;
+  opacity: 1;
+}
+
+.lcd-bnk-badge .lcd-bnk-model-factory {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+/* Occupied-patch count colour: green when the bank has patches, amber empty. */
+.lcd-bnk-badge .lcd-occ {
+  font-weight: bold;
+}
+
+.lcd-bnk-badge .lcd-occ-ok {
+  color: #4ade80;
+}
+
+/* Write mode: the badge sits in the BOTTOM-LEFT corner so it never collides
+   with the "WRITE: SELECT SLOT" readout on line 1. The model row goes below
+   the position row (visually re-flipped for the bottom edge). */
+.lcd-bnk-badge.corner-bottom-left {
+  top: auto;
+  bottom: 3px;
+  left: 8px;
+  right: auto;
+  align-items: flex-start;
+}
+
+/* Write overwrite warning: the target slot turns amber when it already holds
+   a patch (you are about to overwrite it). */
+.lcd-bnk-badge .lcd-slot-occupied {
+  color: #fbbf24;
+  font-weight: bold;
+}
+
+.lcd-bnk-badge .lcd-occ-empty {
+  color: #fbbf24;
+}
+
+/* While browsing, line 1 reserves the corner so the bank name (scrolling or
+   not) never runs under the position badge. */
+#lcd-display.bnk-active .lcd-line-1 {
+  padding-right: 56px;
+}
+
+.lcd-line-2 {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.lcd-controls {
+  display: grid;
+  grid-template-columns: repeat(5, 36px);
+  grid-template-rows: repeat(2, 28px);
+  gap: 6px;
+  background: var(--bg-panel);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+}
+
+.lcd-btn-set {
+  background: var(--color-surface-light);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  letter-spacing: 0.5px;
+}
+
+/* BNK (Bank Browser): amber accent so it reads as a different function from
+   the accent-coloured SET. Stays lit while Bank Browse mode is active. */
+.lcd-btn-bnk {
+  background: var(--color-surface-light);
+  border-color: #e8a33d;
+  color: #e8a33d;
+  letter-spacing: 0.5px;
+}
+
+.lcd-btn-bnk.active {
+  background: #e8a33d;
+  border-color: #e8a33d;
+  color: #0a0a0a;
+  box-shadow: 0 0 12px rgba(232, 163, 61, 0.55);
+  transform: scale(0.97);
+}
+
+/* MDL (Model Browse): violet accent so it reads as a different function from
+   BNK (amber) and SET (accent). Stays lit while Model Browse is active. */
+.lcd-btn-mdl {
+  background: var(--color-surface-light);
+  border-color: #b388ff;
+  color: #b388ff;
+  letter-spacing: 0.5px;
+}
+
+.lcd-btn-mdl.active {
+  background: #b388ff;
+  border-color: #b388ff;
+  color: #0a0a0a;
+  box-shadow: 0 0 12px rgba(179, 136, 255, 0.55);
+  transform: scale(0.97);
+}
+
+.keypad-spacer {
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* Pressed (System Mode active): SET stays lit while the LCD shows the SYSTEM
+   page, like the checked state of the native "Settings (System Mode)" menu
+   item. Pressing SET again (or Edit > Settings / Ctrl+, again) unpresses it. */
+.lcd-btn-set.active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--text-on-accent, var(--bg-dark));
+  box-shadow: 0 0 12px var(--color-accent-dim);
+  transform: scale(0.97);
+}
+
+.lcd-btn {
+  background: var(--color-surface-light);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.lcd-btn:hover {
+  background: var(--color-accent);
+  color: var(--text-on-accent, var(--bg-dark));
+  box-shadow: 0 0 8px var(--color-accent);
+}
+
+.lcd-btn:active {
+  transform: scale(0.95);
+}
+
+.bank-chip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow-y: auto;
+  margin: 6px 0;
+  padding-right: 4px;
+}
+
+.bank-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.75rem;
+}
+
+.bank-chip:hover {
+  background: rgba(0, 255, 204, 0.1);
+  border-color: rgba(0, 255, 204, 0.4);
+}
+
+.bank-chip.active {
+  background: rgba(0, 255, 204, 0.15);
+  border-color: var(--color-accent, #00ffcc);
+  box-shadow: 0 0 8px rgba(0, 255, 204, 0.2);
+}
+
+.bank-chip-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.bank-chip-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oscilloscope-container {
+  background-color: var(--color-lcd-bg);
+  border: 4px solid #3a3a4a;
+  border-radius: var(--radius-md);
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 72px;
+  box-sizing: border-box;
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.3);
+}
+
+#oscilloscope {
+  display: block;
+}

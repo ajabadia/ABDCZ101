@@ -1,0 +1,43 @@
+Name: Glissando Filter Sweep
+
+line    mod     detune          vibrato         octave
+1+1'   off/off  - 0 00 06       1 0 0 6         - 1
+
+DCO 1
+wave 
+8 0
+rate    level
+99      33
+70      0       END
+
+DCW 1
+key 
+0
+rate    level
+99      99
+46      99
+37      52      SUS
+26      0       END
+
+DCA 1
+key 
+0
+rate    level
+99      50
+77      99
+67      91      SUS
+79      59
+33      0       END
+
+
+Comments: 
+This sound creates a "high-to-low" filter sweep in discrete increments
+(hence, glissando) each time a key is pressed. The sweep is most noticable
+in the lower range of the keyboard. For really gothic song intros, 
+try setting DETUNE OCTAVE to -1 and playing single notes going slowly 
+from high to low on the keyboard.
+(Notice that the parameter values of this sound are very similar 
+to those of Space Shots. By tweaking the vibrato, DCO1, DCA1
+it becomes a semi-musical sound.)
+
+------------------------------------------------------------------

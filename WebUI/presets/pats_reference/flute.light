@@ -1,0 +1,52 @@
+Name: Flutelight        ERIC PERSING, _KEYBOARD_ MAGAZINE
+
+line    mod     detune          vibrato         octave
+1+2     noise   - 1 00 00       1 46 52 17      +1
+
+DCO 1
+wave 
+1 0
+rate    level
+52      50
+15      00e
+
+DCW 1
+key 
+9
+rate    level
+72      88
+99      53s
+50      00e
+
+DCA 1
+key 
+0
+rate    level
+99      17
+70      91
+59      99
+12      83s
+65      00e
+
+DCO 2
+wave 
+5 0
+rate    level
+83      67
+50      00e
+
+DCW 2
+key 
+8
+rate    level
+60      57
+00      00e
+
+DCA 2
+key 
+2
+rate    level
+76      67
+61      00e
+
+Comments: Yes, THAT sound again.... play happy major thirds and see.

@@ -58,6 +58,12 @@ public:
      * Usage: manager.onPresetParsed = [this](const auto& preset) { ... };
      */
     std::function<void(const CZ101::State::Preset&)> onPresetParsed;
+
+    /**
+     * Callback when a Dump Request is received.
+     * The argument is the slot requested (0..96).
+     */
+    std::function<void(int)> onDumpRequested;
     
     /**
      * Decode a single SysEx patch (264 bytes including F0/F7)
@@ -70,9 +76,10 @@ public:
     /**
      * Create a SysEx dump (264 bytes) from a Preset.
      * @param preset The preset to encode.
+     * @param opMode The synthesizer operation mode (0: 101, 1: 5000, 2: CZ-1, 3: Modern)
      * @return MemoryBlock containing the SysEx message.
      */
-    juce::MemoryBlock createPatchDump(const CZ101::State::Preset& preset);
+    juce::MemoryBlock createPatchDump(const CZ101::State::Preset& preset, int opMode = 0);
     
     // Protection State
     void setProtectionState(bool protectedMem, bool prgEnabled) {
@@ -81,8 +88,8 @@ public:
     }
 
 private:
-    bool memoryProtected = true;
-    bool programChangeEnabled = false;
+    bool memoryProtected = false;
+    bool programChangeEnabled = true;
     
     juce::MemoryBlock fragmentBuffer; // Audit Fix 4.3: Persistent buffer for fragmented SysEx
 
@@ -104,6 +111,10 @@ private:
     static constexpr uint8_t PROG_INTERNAL_MAX = 0x2F;  // Internal memory end
     static constexpr uint8_t PROG_CART_MIN = 0x40;      // Cartridge start
     static constexpr uint8_t PROG_CART_MAX = 0x4F;      // Cartridge end
+    
+    // CZ Payload sizes
+    static constexpr int PAYLOAD_CZ101 = 256;
+    static constexpr int PAYLOAD_CZ1 = 288;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SysExManager)
 };

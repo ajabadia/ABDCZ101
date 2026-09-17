@@ -1,0 +1,57 @@
+Name: 2-Octave bass (Tony Levin)
+
+line    mod     detune          vibrato         octave
+1+2             + 0 00 05       1 54 11 04      -1
+
+DCO 1
+wave 
+1 2
+rate    level
+66      58
+72      00
+43      05
+65      00e
+
+DCW 1
+key 
+9
+rate    level
+82      83
+42      63
+00      00e
+
+DCA 1
+key 
+9
+rate    level
+99      99
+28      00
+56      00e
+
+
+DCO 2
+wave 
+3 4
+rate    level
+00      00e
+
+DCW 2
+key 
+7
+rate    level
+92      80
+44      62
+00      00e
+
+DCA 2
+key 
+0
+rate    level
+90      99
+30      86s
+86      00e
+
+Comments: I used this to add bottom to bass parts played in higher
+registers until someone pointed out that it sounds just like Tony
+Levin's Chapman Stick.  "I wanna be.... your Sledgehammer..."
+It does have a nice voice of its own.

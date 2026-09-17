@@ -1,0 +1,14 @@
+Name: jangly
+By: Miles Bader
+Vibr: W: 1  Del: 0  R: 53  Dep: 12
+Oct: 0
+Line: 1+1'
+Mod: -
+DCO1: WF: 1,0  Env: 0/e
+DCW1: KF: 0    Env: 99/99, 40/74/s, 47/48, 0/0/e
+DCA1: KF: 2    Env: 80/99/s, 34/0/e
+Vel1: A: 3  W: 0  P: 0
+Detune: -0,0,13
+Comments: If released quickly, sounds very "jangly", otherwise, quickly
+        becomes more breathy sounding, and sustains that way.
+        One of my favorites.

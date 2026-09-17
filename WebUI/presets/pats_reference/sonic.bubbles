@@ -1,0 +1,34 @@
+Line Select 1+1
+Detune: +  Octave: 1  Note: 00  Fine: 06
+Vibrato: Wave 2  Delay: 00  Rate: 60  Depth: 99
+Octave: Range 0
+
+DCO1: Waveform First:2  Second:3
+      Step1- Rate:46  Level:45           Step2- Rate:55  Level:50
+Step3- Rate:56  Level:49           Step4- Rate:50  Level:00  SUS
+      Step5 to Step7- Rate:50  Level:00
+      Step8- Rate:50  Level:00  END
+
+DCW1: Key Follow: 9
+      Step1- Rate:99  Level:00  END
+
+DCA1: Key Follow: 0
+      Step1- Rate:99  Level:90           Step2- Rate:33  Level:16 Step3-
+Rate:57  Level:00  SUS
+      Step4- Rate:99  Level:00  END
+    DC02: Waveform First:3  Second: 7
+      Step1- Rate:99  Level:00  SUS
+      Step2- Rate:99  Level:00  END
+
+DCW2: Key Follow: 0
+      Step1- Rate:99  Level:50  SUS
+      Step2- Rate:99  Level:00  END
+
+DCA2: Key Follow: 0
+      Step1- Rate:76  Level:01           Step2- Rate:94  Level:99 Step3-
+Rate:58  Level:90           Step4- Rate:44  Level:00  SUS
+      Step5- Rate:99  Level:00  END
+
+*For interesting variations on this patch, play around with the
+ line select parameter.
+

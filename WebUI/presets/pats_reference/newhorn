@@ -1,0 +1,55 @@
+Name: newhorn
+
+line    mod     detune          vibrato         octave
+1+2     ring    + 0 00 12       1 27 49 11      (0,+1)
+
+DCO 1
+wave 
+3 2
+rate    level
+00 00e
+
+DCW 1
+key 
+4
+rate    level
+67 79
+15 00e
+
+DCA 1
+key 
+2
+rate    level
+70 91
+70 67
+70 96
+70 77
+70 99s
+44 00r
+
+DCO 2
+wave 
+3 2
+rate    level
+00 00e
+
+DCW 1
+key 
+4
+rate    level
+72 79
+15 00e
+
+DCA 1
+key 
+2
+rate    level
+70 91
+70 67
+70 96
+70 77
+70 99s
+35 00r
+
+Comments:
+Tone mix one voice in octave 0 with one in octave +1

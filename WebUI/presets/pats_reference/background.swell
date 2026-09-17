@@ -1,0 +1,44 @@
+Name: background swell
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line    mod     detune          vibrato         octave
+1+2     -       + 0 00 07       1 11 51 23      0
+DCO1
+wave
+1 0
+rt lv
+0 0e
+DCO1
+key
+2
+rt lv
+99 97s
+40 00e
+DCA1
+key
+2
+rt lv
+72 15
+31 93s
+31 0e
+DCO2
+wave
+2 0
+rt lv
+00 00e
+DCW2
+key
+2
+rt lv
+99 99s
+40 00e
+DCA2
+key
+2
+rt lv
+72 15
+31 93s
+31 00e
+
+Comments:  turn down DCW1 sustain level if using without tons of processing
+

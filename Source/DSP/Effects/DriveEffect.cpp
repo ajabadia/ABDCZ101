@@ -1,4 +1,3 @@
-#include <JuceHeader.h>
 #include "DriveEffect.h"
 #include <cmath>
 
@@ -17,6 +16,9 @@ void DriveEffect::prepare(const juce::dsp::ProcessSpec& spec)
     
     // Resize temp buffer
     wetBuffer.setSize((int)spec.numChannels, (int)spec.maximumBlockSize);
+    
+    // Recalculate coefficients with the actual sampleRate
+    setColor(currentColor);
     
     reset();
 }

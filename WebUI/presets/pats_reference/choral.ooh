@@ -1,0 +1,60 @@
+
+---------------------------------------------------------------------
+Tone Name: "Choral oooh"
+
+Line Select:  1 + 2'
+Modulation: none
+
+Detune     (-)       oct:  0
+         Note: 00   fine: 07
+
+Vibrato  wave:  1   delay: 40
+         rate: 26   depth: 03
+
+Octave  -1
+
+DCO1  wave   1st: 1   2nd: 0
+step       1   2   3
+rate      86  00  74
+level     66  10  00
+sus/end  sus     end
+
+DCW1  key follow: 6
+step       1   2   3
+rate      70  00  50
+level     24  79  00
+sus/end  sus     end
+
+DCA1  key follow: 0
+step       1   2   3   4
+rate      85  36  40  50
+level     99  40  00  00
+sus/end  sus         end
+
+DCO2  wave   1st: 2   2nd: 0
+step       1   2   3
+rate      59  81  00
+level     66  62  00
+sus/end  sus     end
+
+DCW2  key follow: 5
+step       1   2   3
+rate      70  69  50
+level     28  79  00
+sus/end  sus     end
+
+DCA2  key follow: 9
+step       1   2   3
+rate      85  83  50
+level     99  37  00
+sus/end  sus     end
+
+Comments:  "Choral oooh" was a semi-successful experiment to see if
+           something close to vocals could be obtained. As you CZ
+           owners know, the "human voice" preset sounds ok, but not
+           at all like a human voice. "Choral oooh" sounds something
+           like a person singing "oooh" (long u sound). It is not
+           perfect, but I think you will find it outclasses the human
+           voice preset by far. This voice sounds best when you play
+           major chords on the middle-high octave range.
+---------------------------------------------------------------------

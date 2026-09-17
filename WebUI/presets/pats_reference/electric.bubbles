@@ -1,0 +1,58 @@
+
+
+Name: Electric bubbles
+
+line    mod     detune          vibrato         octave
+1+2'    ring    + 2 00 08       3 00 75 99      0
+
+DCO 1
+wave 
+6 5
+rate    level
+00      00e
+
+DCW 1
+key 
+8
+rate    level
+60      57s
+00      00e
+
+DCA 1
+key 
+0
+rate    level
+99      36
+70      91
+59      99
+12      93s
+66      00e
+
+DCO 2
+wave 
+1 8
+rate    level
+00      00e
+
+DCW 2
+key 
+8
+rate    level
+60      57
+00      00e
+
+DCA 2
+key 
+1
+rate    level
+99      36
+70      91
+59      99
+12      93s
+66      00e
+
+Comments: Strictly for special effects.  High notes sound like a ray
+gun (don't ask what kind of ray); low notes sound like a helicopter.
+Based on CZ-101 patch #7 (flute) -- which explains the gratuitous
+detail in the DCA's.
+

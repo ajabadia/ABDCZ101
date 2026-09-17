@@ -1,0 +1,54 @@
+Name: organ brass
+
+line    mod     detune          vibrato         octave
+1+1'            + 1 00 06                       +1
+
+DCO 1
+wave 
+3 5
+rate    level
+99      33
+68      00e
+
+DCW 1
+key 
+0
+rate    level
+80      99
+47      96
+37      52s
+26      00
+50      00e
+
+DCA 1
+key 
+0
+rate    level
+99      90
+78      65
+83      95
+70      75
+70      99s
+79      59
+33      00e
+
+DCO 2
+wave 
+
+rate    level
+
+
+DCW 2
+key 
+
+rate    level
+
+
+DCA 2
+key 
+
+rate    level
+
+
+Comments: I forget what this sounds like.  I'll have to try it again.
+Probably an organ set to "brass".

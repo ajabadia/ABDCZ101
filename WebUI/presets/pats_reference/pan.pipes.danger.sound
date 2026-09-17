@@ -1,0 +1,44 @@
+Name: Pan Pipes / Danger Sound
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line    mod     detune          vibrato         octave
+
+DCO1
+wave
+
+rt lv
+
+DCO1
+key
+
+rt lv
+
+DCA1
+key
+
+rt lv
+
+DCO2
+wave
+
+rt lv
+
+DCW2
+key
+
+rt lv
+
+DCA2
+key
+
+rt lv
+
+
+Comments:  Take the "Internal #3" setting and change DCO1 to
+        2 0     for pan pipes
+        7 0     for Dangersound
+
+        "Dangersound" on the low D note is something like Ministry
+opened their show with last time I saw them.  Excuse me for making fun
+of those Casio Sound Data book names like "Dangerous Sound #2".
+

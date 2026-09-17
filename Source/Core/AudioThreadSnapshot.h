@@ -13,15 +13,17 @@ namespace Core {
 struct ParameterSnapshot {
     struct DCOParams {
          int wave1 = 0, wave2 = 0;
+         int window = 0;
          float level = 1.0f;
          int octave = 0;
          int coarse = 0;
          int fine = 0;
+         float legacyDetune = 0.0f;
     } dco1, dco2;
 
     struct LineModParams {
-        bool ring = false;
-        bool noise = false;
+        int mode = 0; // 0=Off, 1=Ring1, 2=Noise1, 3=Ring2, 4=Ring3, 5=Noise2
+        bool special = false;
     } lineMod;
 
     struct SystemParams {
@@ -44,6 +46,14 @@ struct ParameterSnapshot {
         int keyFollowDco = 0; // [NEW]
         int detune = 0; 
         float glideTime = 0.0f; // [NEW]
+        
+        // CZ-1 Velocity Sensitivities
+        int opMode = 0; // 0:101, 1:5000, 2:CZ-1, 3:Modern
+        float line1VeloPitch = 0.0f, line1VeloDcw = 0.0f, line1VeloDca = 0.0f;
+        float line2VeloPitch = 0.0f, line2VeloDcw = 0.0f, line2VeloDca = 0.0f;
+        
+        float line1KfPitch = 0.0f, line1KfDcw = 0.0f, line1KfDca = 0.0f;
+        float line2KfPitch = 0.0f, line2KfDcw = 0.0f, line2KfDca = 0.0f;
     } mod;
     
     struct ArpParams {

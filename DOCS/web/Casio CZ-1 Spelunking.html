@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Casio CZ-1 Spelunking</title>
+
+		<meta charset="utf-8">
+		<meta name="author" content="Michael Rickard">
+		<meta name="dcterms.dateCopyrighted" content="2005 to 2026">
+		<meta name="description" content="An easter egg hunt inside a Casio CZ-1. A very close look at the 16 bits of sysex data that control wave, window, and modulation on Casio CZ synthesizers.">
+		<meta name="DC.date" content="2007-12-17 00:15:14 utc">
+		<meta name="DC.date.created" content="2007-12-17 00:15:14 utc">
+		<meta name="DC.date.modified" content="2019-07-12 17:53:17 utc">
+		<meta name="generator" content="Text Editor">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<link rel="icon" href="https://media.kasploosh.com/img/favicons/kasploosh.ico">
+		<link rel="canonical" href="https://www.kasploosh.com/cz/11800-spelunking/">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/main.css?v=20200729">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/pages/cz.css">
+	</head>
+
+	<body>
+
+		<div class="max_width">
+
+			<header class="main">
+<img src="https://media.kasploosh.com/img/logos/flag-15517.gif"> kasploosh.com
+			</header>
+
+			<nav class="main">
+
+<label for="toggle_nav" id="toggle_nav_label"><span></span><span class="text">Tap For Menu</span><span></span></label>
+<input type="checkbox" id="toggle_nav" name="toggle_nav" value="toggle_nav">
+
+<ul class="main_nav">
+<li><a href="https://www.kasploosh.com/">Home</a></li>
+<li><a href="https://www.kasploosh.com/art/">Art</a></li>
+<li><a href="https://www.kasploosh.com/stories/">Stories</a></li>
+<li><a href="https://www.kasploosh.com/cz/">CZ</a></li>
+<li><a href="https://www.kasploosh.com/make_stuff/">Make Stuff</a></li>
+<li><a href="https://www.kasploosh.com/software/">Software</a></li>
+<li><a href="https://www.kasploosh.com/music/">Music</a></li>
+<li><a href="https://www.kasploosh.com/videos/">Videos</a></li>
+<li><a href="https://www.kasploosh.com/mike_date/">By Mike Date</a></li>
+<li><a href="https://www.kasploosh.com/date/">By Date</a></li>
+<li><a href="https://www.kasploosh.com/tag/">By Tag</a></li>
+<li><a href="https://www.kasploosh.com/search/">By Search</a></li>
+</ul>
+
+			</nav>
+
+
+			<article class="main">
+				<header class="article">
+
+					<div class="breadcrumbs">
+
+
+					</div><!-- breadcrumbs -->
+
+				</header>
+
+
+				<section class="article">
+
+
+<h1>Casio CZ-1 Spelunking</h1>
+
+<p class="article_date">2007-12-17</p>
+
+
+
+<div class="photo right">
+	<img
+		src="https://media.kasploosh.com/img/cz/11800-spelunking/CZ1.png"
+		title="Casio CZ-1"
+		alt="Photo of a Casio CZ-1"
+	>
+	<p>Casio CZ-1</p>
+</div>
+
+<p>
+I was in the process of making a program that would let me edit Casio
+CZ-1 sysex dumps.  A Casio CZ-1 is a synthesizer.  I wanted the
+program to also be able to take advantage of any known easter eggs in
+the CZ-1, which I learned about from the
+<a href="#" title="http://homepage.mac.com/synth_seal/html/cz1.html" class="line-through">Sealed web pages</a>.
+Those web pages were the starting point for this study.
+</p>
+
+<p>
+However, those pages left me with a lot of questions, so I started
+doing bit-by-bit analyses of my CZ-1.  I wanted to do a really
+systematic study of those easter eggs, and to document them better so
+that they will be more usable.  I was originally just doing this for
+my own interest, but I've wasted so much time on it now that I figure
+I ought to make it available to everyone.
+</p>
+
+<p>
+The easter eggs I'm working on concern the waveform types, the "window
+function", and the modulation type.  For example: There are more basic
+waveforms than the Casio documentation admits to.  The "resonant"
+waves are created by passing a certain waveform through a window
+function, and if you manipulate the window function separately you can
+create all sorts of new waves.  Also, if you program the CZ-1 from the
+front panel you can only combine certain waves.  But when you use
+sysex you can combine any wave with any other wave and run it through
+any of the windows.  And lastly, there are more types of modulation
+available than Casio has documented.  All of these things were written
+up on the
+<a href="#" title="http://homepage.mac.com/synth_seal/html/cz1.html" class="line-through">Sealed website</a>,
+and I just wanted to do more thorough documentation and
+samples of those things.
+</p>
+
+
+<h2>General Notes</h2>
+
+<p>
+The following notes apply to all the pages in this section.
+</p>
+
+<ol>
+	<li>
+To distinguish hex characters from other numbers, all hex data will be
+prefixed with "<span class="hex">0x</span>".  So, for example, the hex number <span class="hex">F0</span> would
+be written <span class="hex">0xF0</span>, and that equals 240 in decimal.
+	</li>
+
+	<li>
+All bits and bytes are numbered STARTING WITH ZERO. That's the method
+of numbering that makes the most sense for this project.  So the first
+byte of a sysex file is <b>byte 0</b>, the second is <b>byte 1</b>,
+and so on.
+	</li>
+
+	<li>
+Where binary data is shown, I'm using a period
+	"<span class="bin">.</span>"
+to represent a data position that doesn't concern the current
+discussion.  For example, if I'm concerned only with byte 3, 4, and 5
+of 8-bit data, I would replace everything else with periods:
+	<span class="bin">...010..</span>
+	</li>
+
+	<li>
+For consistency, all audio samples on this page are of the same
+frequency, <b>A at 220 Hz</b>.  All notes are played at the same
+volume level (no envelopes, no velocity) so their relative amplitudes
+are comparable.  All images were taken at the same zoom level relative
+to each other so the visualizations of the waves would be comparable.
+	</li>
+
+</ol>
+
+<nav class="section"><h2>Section Navigation</h2><div><img src="https://media.kasploosh.com/img/cz/11800-spelunking/thumbnail.png" alt=""><ul><li><span>Casio CZ-1 Spelunking</span><ul><li><a href="/cz/11800-spelunking/1-which_bits/">Which Bits?</a></li><li><a href="/cz/11800-spelunking/2-basic_waves/">Your Basic Waveforms</a></li><li><a href="/cz/11800-spelunking/3-combo_waves/">The Truth About Combination Waves</a></li><li><a href="/cz/11800-spelunking/4-window/">Window Function Explained</a></li><li><a href="/cz/11800-spelunking/5-window-single/">Window Function And Single Waves</a></li><li><a href="/cz/11800-spelunking/6-window-combo/">Window Function And Combination Waves</a></li><li><a href="/cz/11800-spelunking/7-window-unique/">Unique Wave-Window Combinations</a></li><li><a href="/cz/11800-spelunking/8-modulation/">Types Of Modulation</a></li></ul></li></ul></div></nav>
+
+
+
+
+				</section>
+
+				<section class="debug">
+
+11809.74600
+
+				</section>
+
+				<footer class="article">
+
+
+				</footer>
+
+			</article>
+
+			<nav class="footer">
+
+<ul class="footer_nav">
+<li><a href="/contact/">Contact</a></li>
+<li><a href="/about_me/">About</a></li>
+<li><a href="/privacy/">Privacy</a></li>
+</ul>
+
+			</nav>
+
+			<footer class="main">
+
+<p>Project date: 2007-12-17 00:15:14 utc</p>
+<p>Page created: 2007-12-17 00:15:14 utc</p>
+<p>Page last edited: 2019-07-12 17:53:17 utc</p>
+<p>© 2026 Michael Rickard</p>
+
+			</footer>
+
+		  </div><!-- max_width -->
+	</body>
+</html>

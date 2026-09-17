@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Types Of Modulation</title>
+
+		<meta charset="utf-8">
+		<meta name="author" content="Michael Rickard">
+		<meta name="dcterms.dateCopyrighted" content="2005 to 2026">
+		<meta name="description" content="An easter egg hunt inside a Casio CZ-1. A look at the modulation settings, and several additional modulation settings than normally allowed.">
+		<meta name="DC.date" content="2007-12-17 00:15:14 utc">
+		<meta name="DC.date.created" content="2007-12-17 00:15:14 utc">
+		<meta name="DC.date.modified" content="2019-07-12 19:04:04 utc">
+		<meta name="generator" content="Text Editor">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<link rel="icon" href="https://media.kasploosh.com/img/favicons/kasploosh.ico">
+		<link rel="canonical" href="https://www.kasploosh.com/cz/11800-spelunking/8-modulation/">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/main.css?v=20200729">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/pages/cz.css">
+	</head>
+
+	<body>
+
+		<div class="max_width">
+
+			<header class="main">
+<img src="https://media.kasploosh.com/img/logos/flag-15517.gif"> kasploosh.com
+			</header>
+
+			<nav class="main">
+
+<label for="toggle_nav" id="toggle_nav_label"><span></span><span class="text">Tap For Menu</span><span></span></label>
+<input type="checkbox" id="toggle_nav" name="toggle_nav" value="toggle_nav">
+
+<ul class="main_nav">
+<li><a href="https://www.kasploosh.com/">Home</a></li>
+<li><a href="https://www.kasploosh.com/art/">Art</a></li>
+<li><a href="https://www.kasploosh.com/stories/">Stories</a></li>
+<li><a href="https://www.kasploosh.com/cz/">CZ</a></li>
+<li><a href="https://www.kasploosh.com/make_stuff/">Make Stuff</a></li>
+<li><a href="https://www.kasploosh.com/software/">Software</a></li>
+<li><a href="https://www.kasploosh.com/music/">Music</a></li>
+<li><a href="https://www.kasploosh.com/videos/">Videos</a></li>
+<li><a href="https://www.kasploosh.com/mike_date/">By Mike Date</a></li>
+<li><a href="https://www.kasploosh.com/date/">By Date</a></li>
+<li><a href="https://www.kasploosh.com/tag/">By Tag</a></li>
+<li><a href="https://www.kasploosh.com/search/">By Search</a></li>
+</ul>
+
+			</nav>
+
+
+			<article class="main">
+				<header class="article">
+
+					<div class="breadcrumbs">
+
+
+					</div><!-- breadcrumbs -->
+
+				</header>
+
+
+				<section class="article">
+
+
+<h1>Types Of Modulation</h1>
+
+<p class="article_date">2007-12-17</p>
+
+
+
+<p>
+It's amazing to me that I'm only talking about 16 bits of data, and
+I've already written seven pages.  Now this is the eighth page!  I'm
+pleased to say this is the last page.  The last thing that is included
+in those 16 bits is <span class="syx">MODULATION</span>.  It's no
+surprise that there are more types of modulation available than Casio
+describes.
+</p>
+
+<h2>How Modulation Is Specified</h2>
+
+<p>
+Modulation is specified by three bits of the sixteen-bit sequence.
+If you have three binary bits, then there are eight possible outcomes
+(2<sup>3</sup>&nbsp;=&nbsp;8).
+Some of the eight possibilities are redundant, but others are new and
+not documented.
+</p>
+
+
+<h2>Modulation Bits</h2>
+
+<p>
+These are the same 16 bits that have been discussed on the other pages,
+but now I am demonstrating the parts of the sequence that affect modulation.
+</p>
+
+<table class="border left">
+	<col><col><col style="width: 300px">
+	<tr><th>binary data</th><th></th><th>description</th></tr>
+	<tr><td class="bin">................</td><td></td><td>16 bit data = 16 <span class="bin">1</span>s or <span class="bin">0</span>s</td></tr>
+	<tr><td class="bin">..........000...</td><td><span class="icon cz_panel"></span></td><td class="syx">MODULATION - NO MODULATION</td></tr>
+	<tr><td class="bin">..........001...</td><td><span class="icon cz_sysex"></span></td><td><span class="syx">MODULATION - NO MODULATION</span><br>(same as 000)</td></tr>
+	<tr><td class="bin">..........010...</td><td><span class="icon cz_sysex"></span></td><td class="syx">MODULATION - RING MODULATION 2</td></tr>
+	<tr><td class="bin">..........011...</td><td><span class="icon cz_panel"></span></td><td class="syx">MODULATION - NOISE MODULATION 1</td></tr>
+	<tr><td class="bin">..........100...</td><td><span class="icon cz_panel"></span></td><td class="syx">MODULATION - RING MODULATION 1</td></tr>
+	<tr><td class="bin">..........101...</td><td><span class="icon cz_sysex"></span></td><td><span class="syx">MODULATION - RING MODULATION 1</span><br>(same as 100)</td></tr>
+	<tr><td class="bin">..........110...</td><td><span class="icon cz_sysex"></span></td><td class="syx">MODULATION - RING MODULATION 3</td></tr>
+	<tr><td class="bin">..........111...</td><td><span class="icon cz_sysex"></span></td><td class="syx">MODULATION - NOISE MODULATION 2</td></tr>
+</table>
+
+<p>
+Three out of eight possibilites are just the normal modulation available
+from the front panel. These are:
+<span class="syx">NO MODULATION</span>, 
+<span class="syx">RING MODULATION 1</span>, and 
+<span class="syx">NOISE MODULATION 1</span>.
+They are marked with the panel icon in the table.
+</p>
+
+<p>
+Another three out of eight possibilities are new kinds of modulation
+available only via sysex. These are named:
+<span class="syx">RING MODULATION 2</span>,
+<span class="syx">RING MODULATION 3</span>, and
+<span class="syx">NOISE MODULATION 2</span>.
+</p>
+
+<p>
+The remaining two out of eight possibilities are merely repeats of
+other settings.
+</p>
+
+<h2 class="clear">The Mysterious Fourth Bit</h2>
+
+<p>
+In addition to the three bits that specify modulation, there is also a
+fourth bit that affects the output:
+</p>
+
+<table class="border left">
+	<col><col><col style="width: 300px">
+	<tr><th>binary data</th><th></th><th>description</th></tr>
+	<tr><td class="bin">.............0..</td><td><span class="icon cz_panel"></span></td><td><span class="syx">MODULATION - NORMAL</span><br>Modulation behaves normally, mixing the modulated and non-modulated output.</td></tr>
+	<tr><td class="bin">.............1..</td><td><span class="icon cz_sysex"></span></td><td><span class="syx">MODULATION - SPECIAL</span><br><span class="syx">LINE 1</span> is muted, and only the product of modulation (<span class="syx">LINE 1'</span> or <span class="syx">LINE 2'</span>) is sent out.</td></tr>
+</table>
+
+<p>
+If this fourth bit is "<span class="bin">0</span>", the different
+lines are output in the normal way.  Normal means: if Line Select is
+set to <span class="syx">1&nbsp;+&nbsp;1'</span>, the CZ will output
+<span class="syx">LINE 1</span> and layer it with
+<span class="syx">LINE 1'</span> (a modulated and detuned
+<span class="syx">LINE 1</span>).  Or, if Line Select is set to
+<span class="syx">1&nbsp;+&nbsp;2'</span>, the CZ will output
+<span class="syx">LINE 1</span> and layer it with
+<span class="syx">LINE 2'</span>.
+
+</p>
+
+
+<table class="logic" style="float: right; margin-left: 8px">
+	<tr>
+		<td class="non" colspan="4">EXISTING<br>LINE SELECT</td>
+		<td class="oui" colspan="2">NEW<br>LINE SELECT</td>
+	</tr>
+	<tr>
+		<td class="non">1</td>
+		<td class="non">2</td>
+		<td class="non">1 + 1'</td>
+		<td class="non">1 + 2'</td>
+		<td class="oui">1'</td>
+		<td class="oui">2'</td>
+	</tr>
+</table>
+
+<p style="clear: left">
+But if the fourth bit is "<span class="bin">1</span>", then <b>LINE 1
+IS MUTED</b>.  This is actually an interesting feature, because it is
+otherwise impossible to mute <span class="syx">LINE 1</span> while
+using modulation.  From the front panel, you can only select
+<span class="syx">1&nbsp;+&nbsp;1'</span> or
+<span class="syx">1&nbsp;+&nbsp;2'</span> if you want to use modulation.
+But by making the fourth bit "<span class="bin">1</span>", you can
+also have <span class="syx">LINE 1'</span> by itself or
+<span class="syx">LINE 2'</span> by itself.  In effect it gives you <b>two
+new possibilities for Line Select</b>.
+</p>
+
+
+
+<h2>Modulation Type Demonstration</h2>
+
+<p>
+In the interest of keeping the experiment simple, I selected a simple
+wave for <span class="syx">LINE 1</span>,
+and a simple wave for <span class="syx">LINE 2</span>.
+I wanted them to sound distinct, but not be too complicated.
+Theses same two waves were used for every part of the experiment.  The
+same amp envelope is applied to each wave.  No wave envelope, no pitch
+envelope, no detune between the two lines, no velocity, no chorus, no
+extras at all.
+</p>
+
+
+<table class="border feature">
+	<tr>
+		<td class="syx">LINE&nbsp;1&nbsp;ONLY<br>WAVE 100</td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/line1_wv100.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/line1_wv100.png" alt="LINE 1 only" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_panel"></span></td>
+		<td>
+			This is the plain, unmodulated wave for <span class="syx">LINE&nbsp;1</span>. It's just <span class="syx">WAVE&nbsp;100</span> (<span class="syx">SINE-PULSE</span>) with a simple amp envelope.
+		</td>
+	</tr>
+	<tr>
+		<td class="syx">LINE&nbsp;2&nbsp;ONLY<br>WAVE 001</td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/line2_wv001.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/line2_wv001.png" alt="LINE 2 only" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_panel"></span></td>
+		<td>
+			This is the plain, unmodulated wave for <span class="syx">LINE&nbsp;2</span>. It's just <span class="syx">WAVE&nbsp;001</span> (<span class="syx">SQUARE</span>) with a simple amp envelope.
+		</td>
+	</tr>
+
+	<tr class="spacer"><td> </td><td></td><td></td><td></td><td></td></tr>
+
+	<tr>
+		<td class="syx">MODULATION&nbsp;000<br>LINE<span class="syx">1&nbsp;+&nbsp;2'</span></td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod0000.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod0000.png" alt="Modulation 000, LINE 1 + 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_panel"></span></td>
+		<td>
+			This is a mix of <span class="syx">LINE&nbsp;1</span> and <span class="syx">LINE&nbsp;2</span> with <span class="syx">NO&nbsp;MODULATION</span>. It's just a regular mix of the two lines.
+		</td>
+	</tr>
+	<tr>
+		<td class="syx">MODULATION&nbsp;000<br>LINE 2' ONLY</td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod0001.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod0001.png" alt="Modulation 000, Line 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_sysex"></span></td>
+		<td>
+			This is <span class="syx">LINE&nbsp;2</span> with <span class="syx">NO&nbsp;MODULATION</span>. You can see here that this is exactly the same as plain <span class="syx">LINE&nbsp;2</span> (above).
+		</td>
+	</tr>
+
+	<tr class="spacer"><td> </td><td></td><td></td><td></td><td></td></tr>
+
+	<tr>
+		<td class="syx">MODULATION&nbsp;001<br>LINE<span class="syx">1&nbsp;+&nbsp;2'</span></td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod0010.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod0010.png" alt="Modulation 001, Line 1 + 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_sysex"></span></td>
+		<td>
+			This is identical to <span class="syx">MODULATION&nbsp;000</span>. See above.
+		</td>
+	</tr>
+	<tr>
+		<td class="syx">MODULATION&nbsp;001<br>LINE 2' ONLY</td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod0011.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod0011.png" alt="Modulation 001, Line 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_sysex"></span></td>
+		<td>
+			This is identical to <span class="syx">MODULATION&nbsp;000</span>. See above.
+		</td>
+	</tr>
+
+	<tr class="spacer"><td> </td><td></td><td></td><td></td><td></td></tr>
+
+	<tr>
+		<td class="syx">MODULATION&nbsp;010<br>LINE<span class="syx">1&nbsp;+&nbsp;2'</span></td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod0100.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod0100.png" alt="Modulation 010, Line 1 + 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_sysex"></span></td>
+		<td>
+			This is <span class="syx">1&nbsp;+&nbsp;2'</span> with <span class="syx">RING&nbsp;MODULATION&nbsp;2</span>, clearly different than the regular <span class="syx">RING&nbsp;MODULATION</span>. It has a wavering detuned aspect.
+		</td>
+	</tr>
+	<tr>
+		<td class="syx">MODULATION&nbsp;010<br>LINE 2' ONLY</td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod0101.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod0101.png" alt="Modulation 010, Line 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_sysex"></span></td>
+		<td>
+			This is <span class="syx">LINE&nbsp;2</span> modulated with <span class="syx">RING&nbsp;MODULATION&nbsp;2</span>. You can hear the detuned quality in the audio sample.
+		</td>
+	</tr>
+
+	<tr class="spacer"><td> </td><td></td><td></td><td></td><td></td></tr>
+
+	<tr>
+		<td class="syx">MODULATION&nbsp;011<br>LINE<span class="syx">1&nbsp;+&nbsp;2'</span></td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod0110.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod0110.png" alt="Modulation 011, Line 1 + 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_panel"></span></td>
+		<td>
+			This is <span class="syx">1&nbsp;+&nbsp;2'</span> with <span class="syx">NOISE&nbsp;MODULATION&nbsp;1</span>, which is the standard noise modulation. This option can be accessed from the front panel.
+		</td>
+	</tr>
+	<tr>
+		<td class="syx">MODULATION&nbsp;011<br>LINE 2' ONLY</td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod0111.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod0111.png" alt="Modulation 011, Line 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_sysex"></span></td>
+		<td>
+			This is <span class="syx">LINE&nbsp;2</span> only with <span class="syx">NOISE&nbsp;MODULATION&nbsp;1</span>, which is the standard noise modulation. The original sound is mostly unrecognizable.
+		</td>
+	</tr>
+
+	<tr class="spacer"><td> </td><td></td><td></td><td></td><td></td></tr>
+
+	<tr>
+		<td class="syx">MODULATION&nbsp;100<br>LINE<span class="syx">1&nbsp;+&nbsp;2'</span></td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod1000.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod1000.png" alt="Modulation 100, Line 1 + 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_panel"></span></td>
+		<td>
+			This is <span class="syx">1&nbsp;+&nbsp;2'</span> with <span class="syx">RING&nbsp;MODULATION&nbsp;1</span>, the standard ring modulation. This has a distorted quality, but still has the character of the original sound. A good choice for the default!
+		</td>
+	</tr>
+	<tr>
+		<td class="syx">MODULATION&nbsp;100<br>LINE 2' ONLY</td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod1001.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod1001.png" alt="Modulation 100, Line 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_sysex"></span></td>
+		<td>
+			This is <span class="syx">LINE&nbsp;2</span> only with <span class="syx">RING&nbsp;MODULATION&nbsp;1</span>, the standard ring modulation. Compared to the original sound, this is higher and thinner.
+		</td>
+	</tr>
+
+	<tr class="spacer"><td> </td><td></td><td></td><td></td><td></td></tr>
+
+	<tr>
+		<td class="syx">MODULATION&nbsp;101<br>LINE<span class="syx">1&nbsp;+&nbsp;2'</span></td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod1010.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod1010.png" alt="Modulation 101, Line 1 + 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_sysex"></span></td>
+		<td>
+			This is identical to <span class="syx">MODULATION&nbsp;100</span>. See above.
+		</td>
+	</tr>
+	<tr>
+		<td class="syx">MODULATION&nbsp;101<br>LINE 2' ONLY</td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod1011.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod1011.png" alt="Modulation 101, Line 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_sysex"></span></td>
+		<td>
+			This is identical to <span class="syx">MODULATION&nbsp;100</span>. See above.
+		</td>
+	</tr>
+
+	<tr class="spacer"><td> </td><td></td><td></td><td></td><td></td></tr>
+
+	<tr>
+		<td class="syx">MODULATION&nbsp;110<br>LINE<span class="syx">1&nbsp;+&nbsp;2'</span></td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod1100.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod1100.png" alt="Modulation 110, Line 1 + 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_sysex"></span></td>
+		<td>
+			This is <span class="syx">1&nbsp;+&nbsp;2'</span> with <span class="syx">RING&nbsp;MODULATION&nbsp;3</span>. This seems like the effect of <span class="syx">RING&nbsp;1</span> (distorted) and <span class="syx">RING&nbsp;2</span> (detuned) put together.
+		</td>
+	</tr>
+	<tr>
+		<td class="syx">MODULATION&nbsp;110<br>LINE 2' ONLY</td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod1101.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod1101.png" alt="Modulation 110, Line 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_sysex"></span></td>
+		<td>
+			This is <span class="syx">LINE&nbsp;2</span> only with <span class="syx">RING&nbsp;MODULATION&nbsp;3</span>. This also seems like <span class="syx">RING&nbsp;1</span> (distorted) and <span class="syx">RING&nbsp;2</span> (detuned) put together.
+		</td>
+	</tr>
+
+	<tr class="spacer"><td> </td><td></td><td></td><td></td><td></td></tr>
+
+	<tr>
+		<td class="syx">MODULATION&nbsp;111<br>LINE<span class="syx">1&nbsp;+&nbsp;2'</span></td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod1110.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod1110.png" alt="Modulation 111, Line 1 + 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_sysex"></span></td>
+		<td>
+			This is <span class="syx">1&nbsp;+&nbsp;2'</span> with <span class="syx">NOISE&nbsp;MODULATION&nbsp;2</span>. More of the original wave shows through in this sample and image. It's milder.
+		</td>
+	</tr>
+	<tr>
+		<td class="syx">MODULATION&nbsp;111<br>LINE 2' ONLY</td>
+		<td><a href="https://media.kasploosh.com/audio/cz/11800-spelunking/modulation/mod1111.ogg">&#9835;</a></td>
+		<td class="img"><img src ="https://media.kasploosh.com/img/cz/11800-spelunking/modulation/mod1111.png" alt="Modulation 111, Line 2'" height="96" width="320"></td>
+		<td style="text-align: left"><span class="icon cz_sysex"></span></td>
+		<td>
+			This is <span class="syx">LINE&nbsp;2</span> only with <span class="syx">NOISE&nbsp;MODULATION&nbsp;2</span>. A milder noise modulation is a welcome addition to the toolbox.
+		</td>
+	</tr>
+</table>
+
+<h3>Key for this table</h3>
+
+<dl class="table_key">
+	<dt><span class="icon cz_panel"></span></dt>
+	<dd>This option is available through the front panel.</dd>
+	<dt><span class="icon cz_sysex"></span></dt>
+	<dd>This option is only available through sysex.</dd>
+</dl>
+
+<h2>Summary</h2>
+
+<p>
+From the front panel you can only choose the standard ring modulation,
+or the standard noise modulation, or none at all.
+</p>
+
+<p>
+Using sysex, you can select <b>two additional types</b> of ring
+modulation, both of which are more severe.  And you can select
+<b>one additional type</b> of noise modulation, which is milder.
+</p>
+
+<p>
+Using sysex to change the mysterious fourth bit, you can <b>mute Line
+1</b> when using modulation, which is not otherwise possible.
+</p>
+
+
+<nav class="section"><h2>Section Navigation</h2><div><img src="https://media.kasploosh.com/img/cz/11800-spelunking/thumbnail.png" alt=""><ul><li><a href="/cz/11800-spelunking/">Casio CZ-1 Spelunking</a><ul><li><a href="/cz/11800-spelunking/1-which_bits/">Which Bits?</a></li><li><a href="/cz/11800-spelunking/2-basic_waves/">Your Basic Waveforms</a></li><li><a href="/cz/11800-spelunking/3-combo_waves/">The Truth About Combination Waves</a></li><li><a href="/cz/11800-spelunking/4-window/">Window Function Explained</a></li><li><a href="/cz/11800-spelunking/5-window-single/">Window Function And Single Waves</a></li><li><a href="/cz/11800-spelunking/6-window-combo/">Window Function And Combination Waves</a></li><li><a href="/cz/11800-spelunking/7-window-unique/">Unique Wave-Window Combinations</a></li><li><span>Types Of Modulation</span></li></ul></li></ul></div></nav>
+
+
+
+
+				</section>
+
+				<section class="debug">
+
+11809.74600
+
+				</section>
+
+				<footer class="article">
+
+
+				</footer>
+
+			</article>
+
+			<nav class="footer">
+
+<ul class="footer_nav">
+<li><a href="/contact/">Contact</a></li>
+<li><a href="/about_me/">About</a></li>
+<li><a href="/privacy/">Privacy</a></li>
+</ul>
+
+			</nav>
+
+			<footer class="main">
+
+<p>Project date: 2007-12-17 00:15:14 utc</p>
+<p>Page created: 2007-12-17 00:15:14 utc</p>
+<p>Page last edited: 2019-07-12 19:04:04 utc</p>
+<p>© 2026 Michael Rickard</p>
+
+			</footer>
+
+		  </div><!-- max_width -->
+	</body>
+</html>

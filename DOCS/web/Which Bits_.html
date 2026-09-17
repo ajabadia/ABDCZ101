@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Which Bits?</title>
+
+		<meta charset="utf-8">
+		<meta name="author" content="Michael Rickard">
+		<meta name="dcterms.dateCopyrighted" content="2005 to 2026">
+		<meta name="description" content="An easter egg hunt inside a Casio CZ-1. Master table of 16 bits that control wave, window, modulation. How Casio CZ sysex data is packed and how to edit sysex data by hand.">
+		<meta name="DC.date" content="2007-12-17 00:15:14 utc">
+		<meta name="DC.date.created" content="2007-12-17 00:15:14 utc">
+		<meta name="DC.date.modified" content="2019-07-12 18:12:50 utc">
+		<meta name="generator" content="Text Editor">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<link rel="icon" href="https://media.kasploosh.com/img/favicons/kasploosh.ico">
+		<link rel="canonical" href="https://www.kasploosh.com/cz/11800-spelunking/1-which_bits/">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/main.css?v=20200729">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/pages/cz.css">
+	</head>
+
+	<body>
+
+		<div class="max_width">
+
+			<header class="main">
+<img src="https://media.kasploosh.com/img/logos/flag-15517.gif"> kasploosh.com
+			</header>
+
+			<nav class="main">
+
+<label for="toggle_nav" id="toggle_nav_label"><span></span><span class="text">Tap For Menu</span><span></span></label>
+<input type="checkbox" id="toggle_nav" name="toggle_nav" value="toggle_nav">
+
+<ul class="main_nav">
+<li><a href="https://www.kasploosh.com/">Home</a></li>
+<li><a href="https://www.kasploosh.com/art/">Art</a></li>
+<li><a href="https://www.kasploosh.com/stories/">Stories</a></li>
+<li><a href="https://www.kasploosh.com/cz/">CZ</a></li>
+<li><a href="https://www.kasploosh.com/make_stuff/">Make Stuff</a></li>
+<li><a href="https://www.kasploosh.com/software/">Software</a></li>
+<li><a href="https://www.kasploosh.com/music/">Music</a></li>
+<li><a href="https://www.kasploosh.com/videos/">Videos</a></li>
+<li><a href="https://www.kasploosh.com/mike_date/">By Mike Date</a></li>
+<li><a href="https://www.kasploosh.com/date/">By Date</a></li>
+<li><a href="https://www.kasploosh.com/tag/">By Tag</a></li>
+<li><a href="https://www.kasploosh.com/search/">By Search</a></li>
+</ul>
+
+			</nav>
+
+
+			<article class="main">
+				<header class="article">
+
+					<div class="breadcrumbs">
+
+
+					</div><!-- breadcrumbs -->
+
+				</header>
+
+
+				<section class="article">
+
+
+<h1>Which Bits?</h1>
+
+<p class="article_date">2007-12-17</p>
+
+
+
+<p>
+You can access the hidden features of a CZ-1 using a hex editor.  You
+can manually edit the hex data of a sysex file, and then send the
+edited file to the CZ-1. If you want to try that, you need to know
+which bytes to edit, and what they all do.
+</p>
+
+<p>
+To systematically create all of the samples that are found on the
+subsequent pages, I made a little Python script that allowed me to
+manipulate the hex data faster. That saved a lot of time over using
+a text editor, but was more complicated to set up.
+</p>
+
+<h2>Intro To Casio Sysex Data</h2>
+
+<p>
+This stuff has been written about before, because I've read about it
+online.  However I feel the explanations were not always crystal
+clear, so I'm going to take another crack at it.
+</p>
+
+<table class="border left">
+	<tr><th>binary</th><th>hex</th></tr>
+	<tr><td class="bin">00000000</td><td class="hex">0x00</td></tr>
+	<tr><td class="bin">00001000</td><td class="hex">0x08</td></tr>
+	<tr><td class="bin">10000000</td><td class="hex">0x80</td></tr>
+	<tr><td class="bin">10100100</td><td class="hex">0xA4</td></tr>
+	<tr><td class="bin">11111111</td><td class="hex">0xFF</td></tr>
+</table>
+
+<p>
+Casio sysex is usually done with 8-bit binary data.  That means there
+are eight <span class="bin">1</span>s and <span class="bin">0</span>s
+in every "word".  With 8-bit binary data, there are 256 possibilities
+(2<sup>8</sup>&nbsp;=&nbsp;256).
+</p>
+
+<p>
+The hex version of 8-bit binary data would
+be a pair of hex characters (16<sup>2</sup>&nbsp;=&nbsp;256).
+The table shows some basic examples of binary and hex equivalents.
+</p>
+
+<p>
+With some projects, you are <i>either</i> dealing with hex <i>or</i> dealing with
+binary. But for a Casio Sysex project, it becomes necessary to switch
+back and forth between the two. For example, you might need to compose a binary
+string, and then convert that to hex, to match what you are seeing with a hex editor.
+</p>
+
+<p>
+Each section of 8 binary bits constitutes <b>one hex byte</b><sup><a href="#fn1x" id="fn1" title="footnote one">1</a></sup>.
+</p>
+
+<ul>
+	<li>The minimum value for a byte is <span class="bin">00000000</span>, or <span class="hex">0x00</span>.</li>
+	<li>The maximum value for a byte is <span class="bin">11111111</span>, or <span class="hex">0xFF</span>.</li>
+</ul>
+
+<h2>The Tricky Part Of Casio Sysex Data</h2>
+
+<p>
+That was the easy part.  But Casio does something tricky with their
+data.  Before sending the data, Casio takes each byte, divides it into
+two parts, pads each part with a zero, and THEN sends it via sysex.
+Further complicating the issue is that ORDER of each of the new bytes
+is counter-intuitive.  This can only be explained with examples.
+</p>
+
+<p>
+
+For example, lets say the byte in question is
+	<span class="hex">0xA4</span>.
+This is equivalent to 164 in decimal.
+Casio splits the byte into two parts,
+	"<span class="hex">A</span>" and "<span class="hex">4</span>".
+It pads each part with zero, creating two bytes where there was previously one:
+	<span class="hex">0x0A</span> and <span class="hex">0x04</span>.
+Next Casio packs the data into the sysex file in the counter-intuitive order:
+	<span class="hex">0x04 0x0A</span>.
+</p>
+
+<p>
+Here are some examples:
+</p>
+
+<ul>
+	<li>The hex data <span class="hex">0x12</span> is transmitted as <span class="hex">0x02 0x01</span>.</li>
+	<li>The hex data <span class="hex">0x5C</span> is transmitted as <span class="hex">0x0C 0x05</span>.</li>
+	<li>The hex data <span class="hex">0x08</span> is transmitted as <span class="hex">0x08 0x00</span>.</li>
+</ul>
+
+
+<h2>Bits That Control The Waveforms, Window Function, And Modulation</h2>
+
+<p>
+There are 16 bits that control
+<span class="syx">WAVE 1</span>,
+<span class="syx">WAVE 2</span>,
+<span class="syx">WINDOW</span>, and
+<span class="syx">MODULATION</span>.
+Here is my master list of those 16 bits and what each one controls.
+Each section of the following detail is described in detail on a
+subesquent page.
+</p>
+
+<table class="border">
+	<col>
+	<col>
+	<col style="width: 300px">
+	<tr>
+		<th>binary data</th>
+		<th></th>
+		<th>description</th>
+	</tr>
+	<tr>
+		<td class="bin">................</td>
+		<td></td>
+		<td>16 bit data = 16 <span class="bin">1</span>s or <span class="bin">0</span>s</td>
+	</tr>
+	<tr>
+		<td class="bin">000.............</td>
+		<td></td>
+		<td class="syx">WAVE 1 - SAW</td>
+	</tr>
+	<tr>
+		<td class="bin">001.............</td>
+		<td></td>
+		<td class="syx">WAVE 1 - SQUARE</td>
+	</tr>
+	<tr>
+		<td class="bin">010.............</td>
+		<td></td>
+		<td class="syx">WAVE 1 - PULSE</td>
+	</tr>
+	<tr>
+		<td class="bin">011.............</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td class="syx">WAVE 1 - NULL</td>
+	</tr>
+	<tr>
+		<td class="bin">100.............</td>
+		<td></td>
+		<td class="syx">WAVE 1 - SINE-PULSE</td>
+	</tr>
+	<tr>
+		<td class="bin">101.............</td>
+		<td></td>
+		<td class="syx">WAVE 1 - SAW-PULSE</td>
+	</tr>
+	<tr>
+		<td class="bin">110.............</td>
+		<td></td>
+		<td class="syx">WAVE 1 - MULTI-SINE</td>
+	</tr>
+	<tr>
+		<td class="bin">111.............</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td class="syx">WAVE 1 - PULSE2</td>
+	</tr>
+	<tr>
+		<td class="bin">...000..........</td>
+		<td></td>
+		<td class="syx">WAVE 2 - SAW</td>
+	</tr>
+	<tr>
+		<td class="bin">...001..........</td>
+		<td></td>
+		<td class="syx">WAVE 2 - SQUARE</td>
+	</tr>
+	<tr>
+		<td class="bin">...010..........</td>
+		<td></td>
+		<td class="syx">WAVE 2 - PULSE</td>
+	</tr>
+	<tr>
+		<td class="bin">...011..........</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td class="syx">WAVE 2 - NULL</td>
+	</tr>
+	<tr>
+		<td class="bin">...100..........</td>
+		<td></td>
+		<td class="syx">WAVE 2 - SINE-PULSE</td>
+	</tr>
+	<tr>
+		<td class="bin">...101..........</td>
+		<td></td>
+		<td class="syx">WAVE 2 - SAW-PULSE</td>
+	</tr>
+	<tr>
+		<td class="bin">...110..........</td>
+		<td></td>
+		<td class="syx">WAVE 2 - MULTI-SINE</td>
+	</tr>
+	<tr>
+		<td class="bin">...111..........</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td class="syx">WAVE 2 - PULSE2</td>
+	</tr>
+	<tr>
+		<td class="bin">......1.........</td>
+		<td></td>
+		<td>Yes, there's a second wave</td>
+	</tr>
+	<tr>
+		<td class="bin">......0.........</td>
+		<td></td>
+		<td>No, there's not a second wave</td>
+	</tr>
+	<tr>
+		<td class="bin">.......000......</td>
+		<td></td>
+		<td class="syx">WINDOW - NONE</td>
+	</tr>
+	<tr>
+		<td class="bin">.......001......</td>
+		<td></td>
+		<td class="syx">WINDOW - SAW</td>
+	</tr>
+	<tr>
+		<td class="bin">.......010......</td>
+		<td></td>
+		<td class="syx">WINDOW - TRIANGLE</td>
+	</tr>
+	<tr>
+		<td class="bin">.......011......</td>
+		<td></td>
+		<td class="syx">WINDOW - TRAPEZOID</td>
+	</tr>
+	<tr>
+		<td class="bin">.......100......</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td class="syx">WINDOW - PULSE</td>
+	</tr>
+	<tr>
+		<td class="bin">.......101......</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td class="syx">WINDOW - DOUBLESAW</td>
+	</tr>
+	<tr>
+		<td class="bin">.......110......</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td><span class="syx">WINDOW - DOUBLESAW</span><br>(same as 101)</td>
+	</tr>
+	<tr>
+		<td class="bin">.......111......</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td><span class="syx">WINDOW - DOUBLESAW</span><br>(same as 101)</td>
+	</tr>
+	<tr>
+		<td class="bin">..........000...</td>
+		<td></td>
+		<td class="syx">MODULATION - NO MODULATION</td>
+	</tr>
+	<tr>
+		<td class="bin">..........001...</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td><span class="syx">MODULATION - NO MODULATION</span><br>(same as 000)</td>
+	</tr>
+	<tr>
+		<td class="bin">..........010...</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td class="syx">MODULATION - RING MODULATION 2</td>
+	</tr>
+	<tr>
+		<td class="bin">..........011...</td>
+		<td></td>
+		<td class="syx">MODULATION - NOISE MODULATION 1</td>
+	</tr>
+	<tr>
+		<td class="bin">..........100...</td>
+		<td></td>
+		<td class="syx">MODULATION - RING MODULATION 1</td>
+	</tr>
+	<tr>
+		<td class="bin">..........101...</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td><span class="syx">MODULATION - RING MODULATION 1</span><br>(same as 100)</td>
+	</tr>
+	<tr>
+		<td class="bin">..........110...</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td class="syx">MODULATION - RING MODULATION 3</td>
+	</tr>
+	<tr>
+		<td class="bin">..........111...</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td class="syx">MODULATION - NOISE MODULATION 2</td>
+	</tr>
+	<tr>
+		<td class="bin">.............0..</td>
+		<td></td>
+		<td><span class="syx">MODULATION - NORMAL</span><br>Modulation behaves normally, mixing the modulated and non-modulated output.</td>
+	</tr>
+	<tr>
+		<td class="bin">.............1..</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td><span class="syx">MODULATION - SPECIAL</span><br><span class="syx">LINE 1</span> is muted, and only the product of modulation (<span class="syx">LINE 1'</span> or <span class="syx">LINE 2'</span>) is sent out.</td>
+	</tr>
+	<tr>
+		<td class="bin">..............XX</td>
+		<td></td>
+		<td>These bits seem to have no effect on anything</td>
+	</tr>
+</table>
+
+<h3>Key for this table</h3>
+
+<dl class="table_key">
+	<dt><span class="icon cz_sysex"></span></dt>
+	<dd>This option is only available through sysex.</dd>
+</dl>
+
+<h2>How Do I Make The CZ-1 Do What I Want?</h2>
+
+<p>
+First, create a bit sequence to your taste using the table above.
+Let's say you want the first wave to be
+	<span class="syx">SINE-PULSE</span>, the second wave to be
+	<span class="syx">PULSE</span>, run it through the
+	<span class="syx">DOUBLESAW</span> window, and for it to be
+	<span class="syx">RING</span> modulated.
+You would assemble the following bit sequence:
+</p>
+
+<table class="noborder">
+	<tr>
+		<td class="tt">1000101101100000</td>
+		<td>looks intimidating!</td>
+	</tr>
+	<tr>
+		<td class="tt"><span class="bin">100</span>0101101100000</td>
+		<td class="syx">WAVE 1 - SINE-PULSE</td>
+	</tr>
+	<tr>
+		<td class="tt">100<span class="bin">010</span>1101100000</td>
+		<td class="syx">WAVE 2 - PULSE</td>
+	</tr>
+	<tr>
+		<td class="tt">100010<span class="bin">1</span>101100000</td>
+		<td>Yes, there's a second wave</td>
+	</tr>
+	<tr>
+		<td class="tt">1000101<span class="bin">101</span>100000</td>
+		<td class="syx">WINDOW - DOUBLESAW</td>
+	</tr>
+	<tr>
+		<td class="tt">1000101101<span class="bin">100</span>000</td>
+		<td class="syx">MODULATION - RING MODULATION 1</td>
+	</tr>
+	<tr>
+		<td class="tt">1000101101100<span class="bin">0</span>00</td>
+		<td class="syx">MODULATION - NORMAL</td>
+	</tr>
+	<tr>
+		<td class="tt">10001011011000<span class="bin">00</span></td>
+		<td>These bits seem to have no effect on anything</td>
+	</tr>
+</table>
+
+<p>
+Now that you have the bit sequence, you need to convert it into hex
+data that can be used in a sysex file.  The following is a shortcut
+way to do it.
+</p>
+
+<table class="noborder" style="text-align: center">
+	<tr>
+		<td class="bin" colspan="2">10001011</td>
+		<td class="bin" colspan="2">01100000</td>
+		<td style="text-align: left">Divide the 16-bit sequence into two 8-bit sequences.</td>
+	</tr>
+	<tr>
+		<td class="hex" colspan="2">0x8B</td>
+		<td class="hex" colspan="2">0x60</td>
+		<td style="text-align: left">Convert each of the 8-bit sequences into its hex byte equivalent.</td>
+	</tr>
+	<tr>
+		<td class="hex">0x0B</td>
+		<td class="hex">0x08</td>
+		<td class="hex">0x00</td>
+		<td class="hex">0x06</td>
+		<td style="text-align: left">Split each byte, pad it with zero, and reverse it as explained above.</td>
+	</tr>
+</table>
+
+<p>
+The result is a four byte sequence <span class="hex">0x0B 0x08 0x00
+0x06</span>.  You can use a hex editor to insert this sequence into
+any sysex file if you know where to put it.
+</p>
+
+
+<h2>How Do I Edit The Sysex File?</h2>
+
+<p>
+The easiest way is to open a sysex file with a hex editor, find the four bytes that control the waveforms and modulation,
+and replace them with bytes of your choice.  Step by step:
+</p>
+
+<ol>
+	<li>Open a sysex file with a hex editor.</li>
+	<li><span class="hex">0xF0</span> begins a sysex message, and <span class="hex">0xF7</span> ends a sysex message</li>
+	<li>Make sure you're editing a <span class="syx">TIMBRE DATA</span> sysex message.  For a CZ-1 this message will be <b>296 bytes</b> long, from <span class="hex">0xF0</span> to <span class="hex">0xF7</span>. For a CZ-101 et al this message will be <b>264 bytes</b> long, from <span class="hex">0xF0</span> to <span class="hex">0xF7</span>.</li>
+	<li>The <span class="hex">0xF0</span> that start a message is <b>BYTE 0</b>.  Count up through all the bytes until you find bytes 35, 36, 37, and 38.</li>
+	<li>Replace bytes 35, 36, 37, and 38 with whatever you please.  This alters the waveforms, window function, and modulation for <span class="syx">LINE 1</span>.</li>
+	<li>Continue counting through the message until you get to bytes 149, 150, 151, and 152.</li>
+	<li>Replace bytes 149, 150, 151, and 152 with whatever you please.  This alters the waveforms and window function for <span class="syx">LINE 2</span>. Note that <span class="syx">LINE 2</span> does not carry any modulation information.</li>
+</ol>
+
+<h2>Footnotes</h2>
+
+<ol>
+	<li id="fn1x">
+Note that it is sometimes useful to think of Casio Sysex data as
+being a string of binary digits greater than 8 bits or less than 8 bits.
+The Casio engineers have the data crammed in to the Sysex messages. 
+When we break the data back apart to study it, we wind up with some
+segments that are not in perfect 8-bit chunks.
+<a href="#fn1">&#x25b2;</a>
+	</li>
+</ol>
+
+<nav class="section"><h2>Section Navigation</h2><div><img src="https://media.kasploosh.com/img/cz/11800-spelunking/thumbnail.png" alt=""><ul><li><a href="/cz/11800-spelunking/">Casio CZ-1 Spelunking</a><ul><li><span>Which Bits?</span></li><li><a href="/cz/11800-spelunking/2-basic_waves/">Your Basic Waveforms</a></li><li><a href="/cz/11800-spelunking/3-combo_waves/">The Truth About Combination Waves</a></li><li><a href="/cz/11800-spelunking/4-window/">Window Function Explained</a></li><li><a href="/cz/11800-spelunking/5-window-single/">Window Function And Single Waves</a></li><li><a href="/cz/11800-spelunking/6-window-combo/">Window Function And Combination Waves</a></li><li><a href="/cz/11800-spelunking/7-window-unique/">Unique Wave-Window Combinations</a></li><li><a href="/cz/11800-spelunking/8-modulation/">Types Of Modulation</a></li></ul></li></ul></div></nav>
+
+
+
+
+				</section>
+
+				<section class="debug">
+
+11809.74600
+
+				</section>
+
+				<footer class="article">
+
+
+				</footer>
+
+			</article>
+
+			<nav class="footer">
+
+<ul class="footer_nav">
+<li><a href="/contact/">Contact</a></li>
+<li><a href="/about_me/">About</a></li>
+<li><a href="/privacy/">Privacy</a></li>
+</ul>
+
+			</nav>
+
+			<footer class="main">
+
+<p>Project date: 2007-12-17 00:15:14 utc</p>
+<p>Page created: 2007-12-17 00:15:14 utc</p>
+<p>Page last edited: 2019-07-12 18:12:50 utc</p>
+<p>© 2026 Michael Rickard</p>
+
+			</footer>
+
+		  </div><!-- max_width -->
+	</body>
+</html>

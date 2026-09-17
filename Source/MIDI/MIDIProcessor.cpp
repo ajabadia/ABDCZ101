@@ -5,8 +5,8 @@
 namespace CZ101 {
 namespace MIDI {
 
-MIDIProcessor::MIDIProcessor(Core::VoiceManager& vm, State::PresetManager& pm)
-    : voiceManager(vm), presetManager(pm)
+MIDIProcessor::MIDIProcessor(Core::VoiceManager& vm)
+    : voiceManager(vm)
 {
     // Audit Fix [B]: Pre-allocate sustained notes vector to avoid reallocation in audio thread
     sustainedNotes.reserve(128); 
@@ -63,15 +63,22 @@ void MIDIProcessor::processMidiBuffer(const juce::MidiBuffer& midiBuffer) noexce
 
 void MIDIProcessor::handleNoteOn(int note, float velocity) noexcept
 {
+    // KEY_TRANSPOSE + OCTAVE shift the note before it reaches the voice manager
+    const int shifted = note + keyTranspose + octaveShift * 12;
+    if (shifted < 0 || shifted > 127) return; // out of MIDI range: drop
+
     // If note is already in sustained list, remove it (retrigger)
     auto it = std::find(sustainedNotes.begin(), sustainedNotes.end(), note);
     if (it != sustainedNotes.end()) sustainedNotes.erase(it);
 
-    voiceManager.noteOn(note, velocity);
+    voiceManager.noteOn(shifted, velocity);
 }
 
 void MIDIProcessor::handleNoteOff(int note) noexcept
 {
+    const int shifted = note + keyTranspose + octaveShift * 12;
+    if (shifted < 0 || shifted > 127) return; // out of MIDI range: drop
+
     if (sustainPedalActive)
     {
         // Add to sustained notes if not already there
@@ -80,7 +87,7 @@ void MIDIProcessor::handleNoteOff(int note) noexcept
     }
     else
     {
-        voiceManager.noteOff(note);
+        voiceManager.noteOff(shifted);
     }
 }
 
@@ -183,7 +190,7 @@ void MIDIProcessor::handleControlChange(int cc, int value) noexcept
 
         case 120: // All Sound Off
         case 123: // All Notes Off
-            voiceManager.allNotesOff();
+            voiceManager.allSoundOff();
             sustainedNotes.clear();
             break;
             

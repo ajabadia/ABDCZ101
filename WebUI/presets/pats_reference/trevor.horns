@@ -1,0 +1,54 @@
+Name: Trevor Horns
+
+line    mod     detune          vibrato         octave
+1+1'            - 0 02 24       3 06 02 99      +1
+
+DCO 1
+wave 
+3 0
+rate    level
+99      33
+33      00e
+
+DCW 1
+key 
+2
+rate    level
+67      99
+47      96
+37      52s
+26      00e
+
+DCA 1
+key 
+2
+rate    level
+82      99
+36      91s
+79      59
+55      00e
+
+DCO 2
+wave 
+
+rate    level
+
+
+DCW 2
+key 
+
+rate    level
+
+
+DCA 2
+key 
+
+rate    level
+
+
+Comments: Everybody likes this one, but you have to play it a certain
+way or it sounds stupid.  Turn your reverb WAY up and playing three
+or four octaves in unison, tap short horn-punch chords.
+
+Ha ha ha, five people have mistaken it for a Fairlight on tape so
+far!

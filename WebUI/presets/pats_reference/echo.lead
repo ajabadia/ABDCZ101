@@ -1,0 +1,33 @@
+Name:                             ECHO LEAD
+
+Line  Ring  Noise   +/-  Octv  Note  Fine   Wave  Delay  Rate  Depth   Octv
+1+2    OFF   OFF     +    0     00    07     1      20    53     20     +1
+
+             Line 1                                 Line 2
+             ------                                 ------
+
+         DCO Waveforms                          DCO Waveforms
+            1     1                               1      1
+
+         Pitch Envelope                         Pitch Envelope
+Rate  00 00 00 00 00 00 00 00          Rate  00 00 00 00 00 00 00 00 
+Level 00 00 00 00 00 00 00 00          Level 00 00 00 00 00 00 00 00
+      E                                      E
+
+         DCW Keyfollow                          DCW Keyfollow
+               0                                      0
+ 
+Rate  82 36 24 00 00 00 00 00          Rate  84 83 46 54 50 50 50 50 
+Level 92 75 00 00 00 00 00 00          Level 57 93 66 74 30 60 30 00
+         S  E                                   S                 E
+
+         DCA Keyfollow                          DCA Keyfollow
+               0                                      0
+
+Rate  77 58 51 48 50 50 38 45          Rate  44 37 60 30 80 50 50 00
+Level 99 25 80 27 64 23 41 00          Level 25 80 27 64 23 41 00 00
+      S                    E                 S                    E
+
+
+Comments:  This patch is a lot of fun if you don't have a digital
+           delay handy.  All those envelope steps are good for something!

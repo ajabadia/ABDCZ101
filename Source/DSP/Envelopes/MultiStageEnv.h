@@ -67,6 +67,7 @@ public:
     
 private:
     double sampleRate = 44100.0;
+    double effectiveRate = 44100.0 / 8.0;  // Envelopes polled at control rate (every 8 samples)
     std::array<Stage, MAX_STAGES> stages;
     
     // Envelope Smoother
@@ -87,6 +88,10 @@ private:
     
     // Velocity Sensitivity [NEW]
     float rateScaler = 1.0f; 
+    float levelScaler = 1.0f;
+    
+    // Gets the level of a stage scaled by the levelScaler relative to the initialValue
+    float getScaledLevel(int index) const noexcept;
     
     Model activeModel = Model::CZ101; // Audit Fix [2.2] 
     
@@ -96,13 +101,18 @@ private:
     // Let's assume identity for now if not defined elsewhere.
     float mapValue(float v) const noexcept { return v; } 
 public:
+    enum class EnvType { DCA = 0, DCW = 1, DCO = 2 };
+    void setType(EnvType type) noexcept { envType = type; }
+    
     void setRateScaler(float scale) noexcept { rateScaler = scale; }
+    void setLevelScaler(float scale) noexcept { levelScaler = scale; }
     
     // Audit Fix [11.2]: Configurable Start Value (e.g. 0.5 for Pitch)
     void setInitialValue(float val) noexcept { initialValue = val; }
     
 private:
     float initialValue = 0.0f; // Default 0.0 for DCA/DCW, set to 0.5 for Pitch
+    EnvType envType = EnvType::DCA;
 };
 
 

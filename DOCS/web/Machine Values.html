@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Machine Values</title>
+
+		<meta charset="utf-8">
+		<meta name="author" content="Michael Rickard">
+		<meta name="dcterms.dateCopyrighted" content="2005 to 2026">
+		<meta name="description" content="A discussion of envelope data in Casio CZ synthesizers. The Casio sysex stores both human values (shown to the user) and machine values (used by the synthesizer). ">
+		<meta name="DC.date" content="2012-06-30 01:05:23 utc">
+		<meta name="DC.date.created" content="2012-06-30 01:05:23 utc">
+		<meta name="DC.date.modified" content="2019-07-13 18:22:49 utc">
+		<meta name="generator" content="Text Editor">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<link rel="icon" href="https://media.kasploosh.com/img/favicons/kasploosh.ico">
+		<link rel="canonical" href="https://www.kasploosh.com/cz/13466-envelopes/2-machine_values/">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/main.css?v=20200729">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/pages/cz.css">
+	</head>
+
+	<body>
+
+		<div class="max_width">
+
+			<header class="main">
+<img src="https://media.kasploosh.com/img/logos/flag-15517.gif"> kasploosh.com
+			</header>
+
+			<nav class="main">
+
+<label for="toggle_nav" id="toggle_nav_label"><span></span><span class="text">Tap For Menu</span><span></span></label>
+<input type="checkbox" id="toggle_nav" name="toggle_nav" value="toggle_nav">
+
+<ul class="main_nav">
+<li><a href="https://www.kasploosh.com/">Home</a></li>
+<li><a href="https://www.kasploosh.com/art/">Art</a></li>
+<li><a href="https://www.kasploosh.com/stories/">Stories</a></li>
+<li><a href="https://www.kasploosh.com/cz/">CZ</a></li>
+<li><a href="https://www.kasploosh.com/make_stuff/">Make Stuff</a></li>
+<li><a href="https://www.kasploosh.com/software/">Software</a></li>
+<li><a href="https://www.kasploosh.com/music/">Music</a></li>
+<li><a href="https://www.kasploosh.com/videos/">Videos</a></li>
+<li><a href="https://www.kasploosh.com/mike_date/">By Mike Date</a></li>
+<li><a href="https://www.kasploosh.com/date/">By Date</a></li>
+<li><a href="https://www.kasploosh.com/tag/">By Tag</a></li>
+<li><a href="https://www.kasploosh.com/search/">By Search</a></li>
+</ul>
+
+			</nav>
+
+
+			<article class="main">
+				<header class="article">
+
+					<div class="breadcrumbs">
+
+
+					</div><!-- breadcrumbs -->
+
+				</header>
+
+
+				<section class="article">
+
+
+<h1>Machine Values</h1>
+
+<p class="article_date">2012-06-30</p>
+
+
+
+<h2 id="machine_vs_humans">Machine Versus Human Values</h2>
+
+<p>To really understand envelopes in Casio CZ synthesizers, you have
+to get the concept of <strong>machine values</strong>, which are
+different from <strong>human values</strong>.</p>
+
+<dl>
+	<dt>Human Values</dt>
+
+	<dd>Human values are easy to understand. These are the values that
+	we see when we program the LCD of the synthesizer, or when we use
+	an editor, or any time a “friendly” value is needed. Because we’re
+	humans, not robots, and we want to see small decimal numbers in a
+	certain range that our little brains can handle.</dd>
+
+	<dt>Machine Values</dt>
+
+	<dd>Machine values are also easy to understand in contrast to
+	human values. The machine has a computer brain, and it often needs
+	binary or hexadecimal values to do its job. The machine doesn’t
+	get confused by hexadecimal or binary.</dd>
+</dl>
+
+<p>Casio uses this distinction between human and machine values all
+throughout the Casio CZ system exclusive data. The strategy makes
+sense:</p>
+
+<ul>
+<li>What the machine wants to see is different from what we want to see.</li>
+<li>Both values are stored in the sysex data.</li>
+<li>There are discrete functions to translate one value into the other.</li>
+</ul>
+
+<p>Envelope data makes use of this distinction between human and machine
+data. Humans are asked to select from a range of human values. Those values
+are then mapped to certain machine values, which are then used by the
+machine.</p>
+
+<h2>Human Values In Envelope Data</h2>
+
+<p>All of the human values in envelope data range from zero to 99. 99
+is the maximum value as recorded in all the Casio documentation, and
+it is the maximum that can be shown on the LCD of the synthesizer.</p>
+
+<p>I suspect that the number 99 was chosen for the following reasons.
+First, the numbers needed to be decimal numbers, because the
+synthesizers were being sold to humans, not robots. Second, if the
+numbers were three digits long, it would have disrupted the display on
+the LCD, which has a limited amount of space.</p>
+
+<div class="image left">
+	<img
+		src="https://media.kasploosh.com/img/cz/13466-envelopes/99_cents.png"
+		alt="99 cents"
+	>
+</div>
+
+<p>And I would say 99 is a pretty good number anyway, especially for
+anybody who ever used pennies. It reminds me of a trip to the dollar
+store. As long as you are stuck with a base 10 counting system, it
+is a pretty good upper limit.</p>
+
+<h2 id="machine_values" class="clear">Machine Values In Envelope Data</h2>
+
+<table class="border right">
+	<tr>
+		<th>Binary</th>
+		<th>Decimal</th>
+		<th>Hexadecimal</th>
+	</tr>
+	<tr>
+		<td><span class="bin">0000000</span></td>
+		<td>0</td>
+		<td><span class="hex">0x00</span></td>
+	</tr>
+	<tr>
+		<td><span class="bin">1000000</span></td>
+		<td>64</td>
+		<td><span class="hex">0x40</span></td>
+	</tr>
+	<tr>
+		<td><span class="bin">1001000</span></td>
+		<td>72</td>
+		<td><span class="hex">0x48</span></td>
+	</tr>
+	<tr>
+		<td><span class="bin">1111111</span></td>
+		<td>127</td>
+		<td><span class="hex">0x7F</span></td>
+	</tr>
+</table>
+
+<p>All of the machine values for envelope steps are <strong>7-bit
+data</strong> What this means is that machine values can <strong>never
+be greater</strong> than <span class="hex">0x7F</span>. In case you
+are a little rusty on hexadecimal counting, I have prepared the
+adjacent table that explains how 7-bit data,
+<span class="hex">0x7F</span>, and 127 are related.</p>
+
+<p>7-bit data cannot be any number greater than
+<span class="hex">0x7F</span>. That is important to understand when
+addressing the myth.</p>
+
+<h2 class="clear">How Human Values Are Mapped To Machine Values</h2>
+
+<div class="image left">
+	<img
+		src="https://media.kasploosh.com/img/cz/13466-envelopes/sample_human_machine_table.png"
+		alt="sample_human_machine_table.png"
+	>
+	<p>Sample table mapping human and machine values</p>
+</div>
+
+<p>Each human value in the range zero to 99 can be mapped to a machine
+value in the range <span class="hex">0x00</span> to
+<span class="hex">0x7F</span>.</p>
+
+<p>The way that the human values map to the machine values is
+specified by Casio in their system exclusive specification. They
+provide both tables and formulas that do this translation.</p>
+
+<p>I found several problems in Casio’s tables and formulas,
+so I created a new version that is easier to read and understand.
+<a href="https://media.kasploosh.com/pdf/cz/13466-envelopes/Casio_CZ_MIDI_Specification-Envelope_Data.pdf" target="_blank">Download the new version</a>
+to see the tables and equations mapping human values to machine values.</p>
+
+<div class="clear"></div>
+
+<nav class="section"><h2>Section Navigation</h2><div><img src="https://media.kasploosh.com/img/cz/13466-envelopes/thumbnail.png" alt=""><ul><li><a href="/cz/13466-envelopes/">Casio CZ Envelopes</a><ul><li><a href="/cz/13466-envelopes/1-cz_envelopes/">About Casio CZ Envelopes</a></li><li><span>Machine Values</span></li><li><a href="/cz/13466-envelopes/3-the_myth/">The Myth</a></li></ul></li></ul></div></nav>
+
+
+
+
+				</section>
+
+				<section class="debug">
+
+13466.78082
+
+				</section>
+
+				<footer class="article">
+
+
+				</footer>
+
+			</article>
+
+			<nav class="footer">
+
+<ul class="footer_nav">
+<li><a href="/contact/">Contact</a></li>
+<li><a href="/about_me/">About</a></li>
+<li><a href="/privacy/">Privacy</a></li>
+</ul>
+
+			</nav>
+
+			<footer class="main">
+
+<p>Project date: 2012-06-30 01:05:23 utc</p>
+<p>Page created: 2012-06-30 01:05:23 utc</p>
+<p>Page last edited: 2019-07-13 18:22:49 utc</p>
+<p>© 2026 Michael Rickard</p>
+
+			</footer>
+
+		  </div><!-- max_width -->
+	</body>
+</html>

@@ -34,8 +34,9 @@ public:
         // We want subtle detune. 
         p.parameters[ParameterIDs::osc2Detune.toStdString()] = (rng.nextFloat() - 0.5f) * 0.2f; // +/- 0.1 semitones
         
-        p.parameters[ParameterIDs::ringMod.toStdString()] = (rng.nextFloat() > 0.8f) ? 1.0f : 0.0f;
-        // NOISE_MOD? Not in Parameters.cpp. Check HARDWARE_NOISE? That's global.
+        // LINE_MODULATION: occasionally enable Ring 1, rarely an extended mode
+        p.parameters[ParameterIDs::lineMod.toStdString()] = (rng.nextFloat() > 0.8f) ? 1.0f : 0.0f;
+        p.parameters[ParameterIDs::modSpecial.toStdString()] = (rng.nextFloat() > 0.9f) ? 1.0f : 0.0f;
         
         // 2. Envelopes
         randomizeEnvelope(p.dcaEnv, rng, true); 

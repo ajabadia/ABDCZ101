@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Receive Sysex From CZ-1 Using amidi</title>
+
+		<meta charset="utf-8">
+		<meta name="author" content="Michael Rickard">
+		<meta name="dcterms.dateCopyrighted" content="2005 to 2026">
+		<meta name="description" content="How to receive sysex from Casio CZ-1 using amidi on Linux.">
+		<meta name="DC.date" content="2012-09-20 20:21:26 utc">
+		<meta name="DC.date.created" content="2012-09-20 20:21:26 utc">
+		<meta name="DC.date.modified" content="2019-07-14 05:38:02 utc">
+		<meta name="generator" content="Text Editor">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<link rel="icon" href="https://media.kasploosh.com/img/favicons/kasploosh.ico">
+		<link rel="canonical" href="https://www.kasploosh.com/cz/13549-how_to_transfer_sysex/amidi-cz1-receive/">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/main.css?v=20200729">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/pages/cz.css">
+	</head>
+
+	<body>
+
+		<div class="max_width">
+
+			<header class="main">
+<img src="https://media.kasploosh.com/img/logos/flag-15517.gif"> kasploosh.com
+			</header>
+
+			<nav class="main">
+
+<label for="toggle_nav" id="toggle_nav_label"><span></span><span class="text">Tap For Menu</span><span></span></label>
+<input type="checkbox" id="toggle_nav" name="toggle_nav" value="toggle_nav">
+
+<ul class="main_nav">
+<li><a href="https://www.kasploosh.com/">Home</a></li>
+<li><a href="https://www.kasploosh.com/art/">Art</a></li>
+<li><a href="https://www.kasploosh.com/stories/">Stories</a></li>
+<li><a href="https://www.kasploosh.com/cz/">CZ</a></li>
+<li><a href="https://www.kasploosh.com/make_stuff/">Make Stuff</a></li>
+<li><a href="https://www.kasploosh.com/software/">Software</a></li>
+<li><a href="https://www.kasploosh.com/music/">Music</a></li>
+<li><a href="https://www.kasploosh.com/videos/">Videos</a></li>
+<li><a href="https://www.kasploosh.com/mike_date/">By Mike Date</a></li>
+<li><a href="https://www.kasploosh.com/date/">By Date</a></li>
+<li><a href="https://www.kasploosh.com/tag/">By Tag</a></li>
+<li><a href="https://www.kasploosh.com/search/">By Search</a></li>
+</ul>
+
+			</nav>
+
+
+			<article class="main">
+				<header class="article">
+
+					<div class="breadcrumbs">
+
+
+					</div><!-- breadcrumbs -->
+
+				</header>
+
+
+				<section class="article">
+
+
+<h1>Receive Sysex From CZ-1 Using amidi</h1>
+
+<p class="article_date">2012-09-20</p>
+
+
+
+<h2>Get Ready</h2>
+
+<ol>
+
+	<li>Make sure your cables are connected in the correct order. <em>OUT</em> from the computer goes to <em>IN</em> on the CZ. <em>OUT</em> from the CZ goes to <em>IN</em> on the computer.</li>
+	<li>Make sure the <span class="fg_violetred">PROTECT</span> switch is set to <span class="fg_violetred">OFF</span>. This is a slide switch on the back of the CZ.</li>
+	<li>Make sure the CZ-1’s MIDI system is turned on. The LED above the <span class="fg_violetred">MIDI ON/OFF</span> button should be lit.</li>
+
+	<li>
+		<p>Press the <span class="fg_violetred">MIDI</span> button. To make things simple, we are going to use default values and MIDI channel 1 everywhere. Apply the following settings:</p>
+
+		<table class="noborder">
+			<tr><td class="syx">POLY</td><td>Polyphonic mode</td></tr>
+			<tr><td class="syx">KBCH=01</td><td>Sending on MIDI channel 1</td></tr>
+			<tr><td class="syx">CH=01</td><td>Receiving on MIDI channel 1</td></tr>
+			<tr><td class="syx">PRG=ENA</td><td>Program changes enabled</td></tr>
+		</table>
+
+		<p>When you’re done, your LCD should look like this:</p>
+
+		<p class="lcd"> POLY    KBCH=01
+CH=01    PRG=ENA</p>
+
+	</li>
+	<li>
+		<p>You need to know what port you are targeting with amidi. Your CZ is connected to a physical port on your computer, but what is that port called, according to amidi? To find out, open a terminal and do this:</p>
+
+		<p class="console">amidi -l
+--> Dir Device    Name
+--> IO  hw:0,0    EMU10K1 MPU-401 (UART)
+--> IO  hw:0,1    Emu10k1 Synth MIDI (16 subdevices)
+--> IO  hw:0,2    Emu10k1 Synth MIDI (16 subdevices)</p>
+
+		<p>At this point, you can test to make sure amidi is getting messages from your CZ. Start amidi in dump mode:</p>
+
+		<p class="console">amidi -d</p>
+
+		<p>Now press a few keys on the CZ keyboard. You should see note on and note off events immediately. If not, amidi can’t yet talk to your CZ. Press Ctrl-C to exit dump mode.</p>
+
+	</li>
+</ol>
+
+<h2>Actual Steps</h2>
+
+<ol>
+	
+	<li>
+		<p>Make your CZ-1 ready to use sysex tone data. Press the <span class="fg_violetred">MIDI</span> button on the CZ, and press the <span class="fg_violetred">DOWN</span> button. Please set <span class="syx">SYSTEM EXCLUSIVE TONE DATE=ENA</span>.</p>
+
+		<p>When you’re done your LCD should look like this:</p>
+
+		<p class="lcd">SYSTEM EXCLUSIVE
+ TONE DATA=ENA  </p>
+
+	</li>
+	<li>
+		<p>Open a terminal and change directories to somewhere you can write the sysex file:</p>
+
+		<p class="console">cd /path/to/store/sysex/files/</p>
+	</li>
+
+	<li>
+		<p>Launch amidi, have it listen to the midi port, and have it write what it hears to a file:</p>
+
+		<p class="console">amidi -p hw:0 -r my_sysex.syx</p>
+
+		<p>Change <span class="tt">"hw:0"</span> to whatever MIDI port you are using. Change <span class="tt">"my_sysex.syx"</span> to whatever you want to name the sysex file.</p>
+	</li>
+
+	<li>On the CZ-1, Press the <span class="fg_violetred">CARTRIDGE/MIDI</span> button to prepare for dumping.</li>
+
+	<li>
+		<p>Press <span class="fg_violetred">PAGE DOWN</span> until you see this screen:</p>
+
+		<p class="lcd">      MIDI      
+  SAVE OR LOAD  </p>
+
+		<p>We want to save MIDI data, so press the <span class="fg_violetred">SAVE</span> button.</p>
+	</li>
+
+	<li>
+		<p>It asks you whether you are sure or not:</p>
+
+		<p class="lcd"> SAVE MIDI DATA 
+     (Y/N)?     </p>
+
+		<p>Choose yes by pressing the <span class="fg_violetred">YES</span> button. The CZ-1 starts dumping all data.</p>
+
+		<p class="lcd"> SAVE MIDI DATA 
+      RUN!      </p>
+
+	<li>
+		<p>Wait patiently until the process is complete. Don’t press any other keys until you see this:</p>
+
+		<p class="lcd"> SAVE MIDI DATA 
+      OK!       </p>
+
+	</li>
+	<li>
+		<p>When the CZ has finished, just hit Ctrl-C to exit amidi. Check to make sure the file arrived:</p>
+
+		<p class="console">ls -1
+--> my_sysex.syx</p>
+
+		<p>The sysex has safely arrived!</p>
+	</li>
+
+</ol>
+
+<nav class="section"><h2>Section Navigation</h2><div><img src="https://media.kasploosh.com/img/cz/13549-how_to_transfer_sysex/thumbnail.png" alt=""><ul><li><a href="/cz/13549-how_to_transfer_sysex/">CZ How To Transfer Sysex</a><ul><li><span>Receive Sysex From CZ-1 Using amidi</span></li><li><a href="/cz/13549-how_to_transfer_sysex/amidi-cz1-send/">Send Sysex To CZ-1 Using amidi</a></li><li><a href="/cz/13549-how_to_transfer_sysex/amidi-cz101-receive/">Receive Sysex From CZ-101 Using amidi</a></li><li><a href="/cz/13549-how_to_transfer_sysex/amidi-cz101-send/">Send Sysex To CZ-101 Using amidi</a></li><li><a href="/cz/13549-how_to_transfer_sysex/midiox-cz1-receive/">Receive Sysex From CZ-1 Using MIDI-OX</a></li><li><a href="/cz/13549-how_to_transfer_sysex/midiox-cz1-send/">Send Sysex To CZ-1 Using MIDI-OX</a></li><li><a href="/cz/13549-how_to_transfer_sysex/midiox-cz101-receive/">Receive Sysex From CZ-101 Using MIDI-OX</a></li><li><a href="/cz/13549-how_to_transfer_sysex/midiox-cz101-send/">Send Sysex To CZ-101 Using MIDI-OX</a></li></ul></li></ul></div></nav>
+
+
+
+
+				</section>
+
+				<section class="debug">
+
+13549.58363
+
+				</section>
+
+				<footer class="article">
+
+
+				</footer>
+
+			</article>
+
+			<nav class="footer">
+
+<ul class="footer_nav">
+<li><a href="/contact/">Contact</a></li>
+<li><a href="/about_me/">About</a></li>
+<li><a href="/privacy/">Privacy</a></li>
+</ul>
+
+			</nav>
+
+			<footer class="main">
+
+<p>Project date: 2012-09-20 20:21:26 utc</p>
+<p>Page created: 2012-09-20 20:21:26 utc</p>
+<p>Page last edited: 2019-07-14 05:38:02 utc</p>
+<p>© 2026 Michael Rickard</p>
+
+			</footer>
+
+		  </div><!-- max_width -->
+	</body>
+</html>

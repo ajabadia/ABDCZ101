@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ABDCZ101 Parameter Registry Schema",
+  "description": "Canonical parameter specification standard for CZ-101 Phase Distortion synthesizer",
+  "type": "object",
+  "required": ["schemaVersion", "pluginId", "parameters"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "pluginId": { "type": "string", "const": "CZ101Emulator" },
+    "parameters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "category", "type", "min", "max", "default"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "type": { "type": "string", "enum": ["float", "int", "choice", "bool"] },
+          "min": { "type": "number" },
+          "max": { "type": "number" },
+          "default": { "type": "number" },
+          "step": { "type": "number" },
+          "unit": { "type": "string" },
+          "choices": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

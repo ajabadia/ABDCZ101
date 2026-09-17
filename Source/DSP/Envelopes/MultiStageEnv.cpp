@@ -1,5 +1,6 @@
 #include "MultiStageEnv.h"
 #include <algorithm>
+#include "../../Core/HardwareConstants.h"
 #include "../../Core/AuthenticHardware.h"
 
 namespace CZ101 {
@@ -28,6 +29,9 @@ MultiStageEnvelope::MultiStageEnvelope()
 void MultiStageEnvelope::setSampleRate(double sr) noexcept
 {
     sampleRate = sr;
+    // Envelopes are advanced at control rate (every CONTROL_RATE_DIVIDER samples),
+    // so the smoother must be told the effective poll rate.
+    effectiveRate = sr / static_cast<double>(CZ101::Core::HardwareConstants::CONTROL_RATE_DIVIDER);
 }
 
 void MultiStageEnvelope::setStage(int index, float rate, float level) noexcept
@@ -62,36 +66,50 @@ void MultiStageEnvelope::noteOn() noexcept
     smoother.setCurrentAndTargetValue(startVal);
     
     // Setup first stage
-    float seconds = rateToSeconds(stages[0].rate);
-    smoother.reset(sampleRate, seconds > 0.001f ? seconds : 0.001f); 
+    float targetVal = getScaledLevel(0);
+    float delta = std::max(0.0001f, std::abs(targetVal - startVal));
+    float seconds = rateToSeconds(stages[0].rate) * delta;
+    smoother.reset(effectiveRate, seconds > 0.001f ? seconds : 0.001f);
     smoother.setCurrentAndTargetValue(startVal);
-    smoother.setTargetValue(stages[0].level);
+    smoother.setTargetValue(targetVal);
 }
 
 void MultiStageEnvelope::noteOff() noexcept
 {
     released = true;
     
-    // AUTHENTIC CZ BEHAVIOR: "Dampening" / Jump to End Point
-    // When key is released, regardless of current stage (even if before sustain),
-    // the envelope immediately targets the End Point Level using the End Point Rate.
     if (active)
     {
-        // Jump state to End Point
-        // Note: In CZ, the "End Point" step IS the release phase.
-        currentStage = endPoint;
+        if (sustainPoint >= 0)
+        {
+            if (sustainPoint < endPoint)
+            {
+                // When key is released, proceed to the release stage (immediately following sustainPoint)
+                currentStage = sustainPoint + 1;
+            }
+            else
+            {
+                // Sustain point is the end point. Key release means end immediately.
+                active = false;
+                return;
+            }
+        }
+        else
+        {
+            // sustainPoint == -1 (No sustain). Key release has no effect, the envelope continues its normal course.
+            return;
+        }
 
-        // Verify validity
         if (currentStage < MAX_STAGES)
         {
-            // Retarget smoother from current value to End Point Level
             float currentVal = smoother.getCurrentValue();
-            float seconds = rateToSeconds(stages[currentStage].rate);
+            float targetVal = getScaledLevel(currentStage);
+            float delta = std::max(0.0001f, std::abs(targetVal - currentVal));
+            float seconds = rateToSeconds(stages[currentStage].rate) * delta;
             
-            // Audit Fix 1.2: Ensure cleaner reset
-            smoother.reset(sampleRate, seconds > 0.001f ? seconds : 0.001f);
+            smoother.reset(effectiveRate, seconds > 0.001f ? seconds : 0.001f);
             smoother.setCurrentAndTargetValue(currentVal);
-            smoother.setTargetValue(stages[currentStage].level);
+            smoother.setTargetValue(targetVal);
         }
         else
         {
@@ -101,12 +119,11 @@ void MultiStageEnvelope::noteOff() noexcept
 }
 
 // Audit Fix 1.1: Implementation
-// Audit Fix 1.1: Implementation
 void MultiStageEnvelope::setCurrentValue(float val) noexcept
 {
     // Force smoother target to value instantly
     // We must reset the smoother to snap it, otherwise it ramps from previous value
-    smoother.reset(sampleRate, 0.001); // Minimal time to avoid division by zero but effectively instant
+    smoother.reset(effectiveRate, 0.001); // Minimal time to avoid division by zero but effectively instant
     smoother.setCurrentAndTargetValue(val);
 }
 
@@ -114,12 +131,12 @@ void MultiStageEnvelope::reset() noexcept
 {
     active = false;
     currentStage = 0;
-    smoother.setCurrentAndTargetValue(0.0f);
+    smoother.setCurrentAndTargetValue(initialValue);
 }
 
 float MultiStageEnvelope::getNextValue() noexcept
 {
-    if (!active) return 0.0f;
+    if (!active) return initialValue;
     
     float val = smoother.getNextValue();
     
@@ -149,10 +166,12 @@ float MultiStageEnvelope::getNextValue() noexcept
             if (currentStage < MAX_STAGES)
             {
                 float currentVal = val;
-                float seconds = rateToSeconds(stages[currentStage].rate);
-                smoother.reset(sampleRate, seconds > 0.001f ? seconds : 0.001f);
+                float targetVal = getScaledLevel(currentStage);
+                float delta = std::max(0.0001f, std::abs(targetVal - currentVal));
+                float seconds = rateToSeconds(stages[currentStage].rate) * delta;
+                smoother.reset(effectiveRate, seconds > 0.001f ? seconds : 0.001f);
                 smoother.setCurrentAndTargetValue(currentVal);
-                smoother.setTargetValue(stages[currentStage].level);
+                smoother.setTargetValue(targetVal);
             }
             else
             {
@@ -171,11 +190,16 @@ void MultiStageEnvelope::setModel(Model newModel) noexcept
 
 float MultiStageEnvelope::rateToSeconds(float rate) const noexcept
 {
-    // Authentic 0-99 Step Mapping
-    int rate99 = static_cast<int>(rate * 99.0f);
+    // Authentic 0-99 Step Mapping (Use std::round to avoid float truncation errors like 39.999 -> 39)
+    int rate99 = static_cast<int>(std::round(rate * 99.0f));
+    
+    // Convert EnvType enum to the integer expected by the hardware timing function
+    int envTypeInt = 0; // DCA
+    if (envType == EnvType::DCW) envTypeInt = 1;
+    else if (envType == EnvType::DCO) envTypeInt = 2;
     
     // Use AuthenticHardware utility
-    float seconds = CZ101::Core::HardwareConstants::getRateInSeconds(rate99, activeModel == Model::CZ5000);
+    float seconds = CZ101::Core::HardwareConstants::getRateInSeconds(rate99, envTypeInt, activeModel == Model::CZ5000);
 
     return seconds * rateScaler;
 }
@@ -192,6 +216,16 @@ float MultiStageEnvelope::getStageLevel(int index) const noexcept
     if (index >= 0 && index < MAX_STAGES)
         return stages[index].level;
     return 0.0f;
+}
+
+float MultiStageEnvelope::getScaledLevel(int index) const noexcept
+{
+    if (index >= 0 && index < MAX_STAGES)
+    {
+        float rawLevel = stages[index].level;
+        return initialValue + (rawLevel - initialValue) * levelScaler;
+    }
+    return initialValue;
 }
 
 } // namespace DSP

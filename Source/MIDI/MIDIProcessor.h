@@ -2,7 +2,12 @@
 
 #include "../Core/VoiceManager.h"
 #include "SysExManager.h"
-#include <juce_audio_processors/juce_audio_processors.h>
+#include <functional>
+#include <map>
+#include <string>
+#include <vector>
+
+namespace juce { class AudioProcessorValueTreeState; }
 
 namespace CZ101 {
 namespace MIDI {
@@ -10,7 +15,10 @@ namespace MIDI {
 class MIDIProcessor
 {
 public:
-    MIDIProcessor(Core::VoiceManager& voiceManager, State::PresetManager& presetManager);
+    // NOTE: The PresetManager reference was removed in the WASM-integration
+    // refactor — it was stored but never used (dead dependency that prevented
+    // compiling this class in the standalone WASM build).
+    explicit MIDIProcessor(Core::VoiceManager& voiceManager);
     
     void processMidiMessage(const juce::MidiMessage& message) noexcept;
     void setSysExManager(SysExManager* sysEx) { sysExManager = sysEx; }
@@ -21,6 +29,8 @@ public:
     
     void setPitchBendRange(int semitones) noexcept { pitchBendRange = semitones; }
     void setMidiChannel(int channel) noexcept { listenChannel = channel; }
+    void setKeyTranspose(int semitones) noexcept { keyTranspose = semitones; }
+    void setOctaveShift(int octaves) noexcept { octaveShift = octaves; }
     
     // Activity Tracking
     bool hasRecentActivity() const noexcept { return activityFlag; }
@@ -28,7 +38,6 @@ public:
 
 private:
     Core::VoiceManager& voiceManager;
-    State::PresetManager& presetManager; 
     
     // Audit Fix 10.1: Lock-free callback for parameter updates
     std::function<void(const char*, float)> onMidiParamChange; 
@@ -41,6 +50,8 @@ private:
     SysExManager* sysExManager = nullptr;
     int pitchBendRange = 2;  // ±2 semitones
     int listenChannel = 0;   // 0 = OMNI, 1-16 = Single Channel
+    int keyTranspose = 0;    // KEY_TRANSPOSE (-12..+12 semitones)
+    int octaveShift = 0;      // OCTAVE from SysEx (-1..+1 = ±12 semitones)
     float currentPitchBend = 0.0f;
     bool activityFlag = false;
     

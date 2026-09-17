@@ -1,0 +1,25 @@
+Name: "Space" (Couldn't think of a better name. Can you?)
+
+Line Select: 1 + 1'
+Modulation: None
+Detune: (+)    Oct: 00
+  Note: 00    Fine: 07
+Octave: +1
+Vibrato: Wave: 1    Delay: 23
+         Rate: 52   Depth: 05
+
+DCO 1:   Wave: 2  0
+         Env: 99  00 (E)
+
+DCW 1:   Key Follow: 0
+         Env: 89  99
+              68  00 (E)
+
+DCA 1:   Key Follow: 3
+         Env: 94 99
+              55 93
+              21 10 (S)
+              33 00 (E)
+
+This one also works well with line select set to 1, which gives you 8 voice
+polyphony.

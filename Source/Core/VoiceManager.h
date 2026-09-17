@@ -42,17 +42,26 @@ public:
     // Audit Fix [2.3]
     void setVoiceLimit(int limit) noexcept;
 
+    // Unified operation-mode switch: 0 = Classic 101 (CZ101 model, 4 voices),
+    // 1 = Classic 5000 (CZ5000 model, 8 voices), 2 = Modern (CZ5000 model, 16
+    // voices). No-op when the mode has not changed. Mirrors the WASM bridge so
+    // the native plugin and the standalone engine behave identically.
+    void setOperationMode(int opMode) noexcept;
+
+    // Global envelope rate multiplier (Performance Macro "Tone").
+    void setToneRateScale(float scale) noexcept;
+
     void setSampleRate(double sampleRate) noexcept;
     void setVoiceStealingMode(VoiceStealingMode mode) noexcept { stealingMode = mode; }
     
     // Parameter Control (Proxy to all voices)
     // Oscillator 1
     // Oscillator 1
-    void setOsc1Waveforms(int firstIndex, int secondIndex) noexcept;
+    void setOsc1Waveforms(int firstIndex, int secondIndex, int windowIndex = 0) noexcept;
     void setOsc1Level(float level) noexcept;
     
     // Oscillator 2
-    void setOsc2Waveforms(int firstIndex, int secondIndex) noexcept;
+    void setOsc2Waveforms(int firstIndex, int secondIndex, int windowIndex = 0) noexcept;
     void setOsc2Level(float level) noexcept;
     void setOsc2Detune(float cents) noexcept;
     void setOsc2DetuneHardware(int oct, int coarse, int fineCents) noexcept;
@@ -99,8 +108,11 @@ public:
     // Hard Sync
     void setHardSync(bool enabled) noexcept;
 
-    // Ring Mod
-    void setRingMod(bool enabled) noexcept;
+    // Line Modulation (0=Off, 1=Ring1, 2=Noise1, 3=Ring2, 4=Ring3, 5=Noise2)
+    void setLineModulation(int mode) noexcept;
+
+    // Mod Special (mute Line 1, only modulated output)
+    void setModSpecial(bool enabled) noexcept;
 
     // Glide
     void setGlideTime(float seconds) noexcept;
@@ -127,9 +139,13 @@ public:
     // Phase 5.1: Oversampling
     void setOversamplingFactor(int factor) noexcept;
 
+    // Phase 9: Authentic Hardware Noise Emulation
+    void setHardwareNoiseEnabled(bool enabled) noexcept;
+
     void noteOn(int midiNote, float velocity) noexcept;
     void noteOff(int midiNote) noexcept;
     void allNotesOff() noexcept;
+    void allSoundOff() noexcept;
     
     // Audio Processing
     // LFO is now internal to Voices
@@ -150,6 +166,7 @@ private:
     
     // Audit Fix [2.3]: Dynamic Voice Count
     int maxActiveVoices = MAX_VOICES; 
+    int cachedOpMode = -1; // [NEW] last applied operation mode (for setOperationMode)
     
     VoiceStealingMode stealingMode = RELEASE_PHASE;
     int lastMidiNote = -1;

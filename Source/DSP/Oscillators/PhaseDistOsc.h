@@ -1,6 +1,7 @@
 #pragma once
 
 #include "WaveTable.h"
+#include "../../../../ABDSharedCode/LutDSP/LutEvaluatorSimd.h"
 #include <cmath>
 
 namespace CZ101 {
@@ -17,16 +18,26 @@ class PhaseDistOscillator
 public:
     enum CzWaveform
     {
-        SAWTOOTH,
+        SAWTOOTH = 0,
         SQUARE,
         PULSE,
         DOUBLE_SINE,
         SAW_PULSE,
-        RESONANCE_1,
-        RESONANCE_2,
-        RESONANCE_3,
-        NONE, // Explicit "Off" state
+        RESO1,
+        RESO2,
+        RESO3,
+        NONE, // 8 - Explicit "Off" state
         NUM_CZ_WAVEFORMS
+    };
+    
+    enum CzWindow
+    {
+        WIN_NONE = 0,
+        WIN_SAW,
+        WIN_TRIANGLE,
+        WIN_TRAPEZOID,
+        WIN_PULSE,
+        WIN_DOUBLESAW
     };
     
     PhaseDistOscillator();
@@ -48,11 +59,12 @@ public:
      * @param waveform Waveform enum value
      */
     /**
-     * @brief Set composite waveforms (Authentic CZ Behavior)
-     * @param first First waveform (1-8)
-     * @param second Second waveform (0-8, 0=None/Off)
+     * @brief Set composite waveforms and window function
+     * @param first First waveform
+     * @param second Second waveform (use NONE for single)
+     * @param window Window function to apply
      */
-    void setWaveforms(CzWaveform first, CzWaveform second) noexcept;
+    void setWaveforms(CzWaveform first, CzWaveform second, CzWindow window) noexcept;
     
     /**
      * @brief Reset phase to zero
@@ -69,12 +81,14 @@ public:
     
 private:
     WaveTable waveTable;
+    abd::lutdsp::LutEvaluator1DSimd lutEvaluator;
     
     double sampleRate = 44100.0;
     float frequency = 440.0f;
     CzWaveform firstWaveform = SAWTOOTH;
     CzWaveform secondWaveform = SAWTOOTH; 
     bool secondWaveformActive = false;
+    CzWindow currentWindow = WIN_NONE;
     
     float phase = 0.0f;           // Current phase [0.0, 1.0]
     float phaseIncrement = 0.0f;  // Phase increment per sample
@@ -85,7 +99,15 @@ private:
      * @param dcwValue The DCW amount [0.0, 1.0] controlling the intensity of the distortion.
      * @return The distorted phase.
      */
-    float applyPhaseDistortion(float linearPhase, float dcwValue, CzWaveform waveform) noexcept;
+    float applyPhaseDistortion(float linearPhase, float dcwValue, CzWaveform waveform) const noexcept;
+    
+    /**
+     * @brief Applies amplitude window function based on Kasploosh's findings
+     * @param phase Current linear phase
+     * @param window Selected window type
+     * @return Amplitude multiplier [0.0, 1.0]
+     */
+    float applyWindow(float phase, CzWindow window) const noexcept;
     
     /**
      * @brief PolyBLEP: Polynomial Bandlimited Step

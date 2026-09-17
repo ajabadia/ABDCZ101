@@ -32,6 +32,10 @@ public:
 
     // Audit Fix [2.2]: Model Selection
     void setModel(DSP::MultiStageEnvelope::Model newModel) noexcept;
+
+    // Global envelope rate multiplier from the "Tone" performance macro
+    // (combined with the per-note velocity attack response at noteOn).
+    void setToneRateScale(float scale) noexcept;
     
     // Note control
     void noteOn(int midiNote, float velocity) noexcept;
@@ -40,13 +44,13 @@ public:
     
     // Oscillator 1 parameters
     // Oscillator 1 parameters
-    void setOsc1Waveforms(DSP::PhaseDistOscillator::CzWaveform first, DSP::PhaseDistOscillator::CzWaveform second) noexcept;
+    void setOsc1Waveforms(DSP::PhaseDistOscillator::CzWaveform first, DSP::PhaseDistOscillator::CzWaveform second, DSP::PhaseDistOscillator::CzWindow window = DSP::PhaseDistOscillator::WIN_NONE) noexcept;
     void setOsc1Level(float level) noexcept;
     
     // Oscillator 2 parameters
-    void setOsc2Waveforms(DSP::PhaseDistOscillator::CzWaveform first, DSP::PhaseDistOscillator::CzWaveform second) noexcept;
+    void setOsc2Waveforms(DSP::PhaseDistOscillator::CzWaveform first, DSP::PhaseDistOscillator::CzWaveform second, DSP::PhaseDistOscillator::CzWindow window = DSP::PhaseDistOscillator::WIN_NONE) noexcept;
     void setOsc2Level(float level) noexcept;
-    void setOsc2Detune(float cents) noexcept;  // -100 to +100 cents
+    void setOsc2Detune(float semitones) noexcept;  // -12 to +12 semitones (APVTS OSC2_DETUNE)
     void setOsc2DetuneHardware(int oct, int coarse, int fineCents) noexcept;
     
     /**
@@ -60,8 +64,8 @@ public:
     /**
      * @brief Enable/Disable Ring Modulation (Osc2 output = Osc1 * Osc2)
      */
-    void setRingMod(bool enabled) noexcept;
-    void setNoiseMod(bool enabled) noexcept; // Audit Fix: Missing Noise Mod decl
+    void setLineModulation(int mode) noexcept;
+    void setModSpecial(bool enabled) noexcept;
 
     /**
      * @brief Set Glide (Portamento) Time in seconds
@@ -104,8 +108,34 @@ public:
         int kfDco = 0; // 0:OFF, 1:FIX, 2:VAR
         int kfDcw = 0;
         int kfDca = 0;
+        
+        int opMode = 0; // 0:101, 1:5000, 2:CZ-1, 3:Modern
+        float line1VeloPitch = 0.0f, line1VeloDcw = 0.0f, line1VeloDca = 0.0f;
+        float line2VeloPitch = 0.0f, line2VeloDcw = 0.0f, line2VeloDca = 0.0f;
+        
+        float line1KfPitch = 0.0f, line1KfDcw = 0.0f, line1KfDca = 0.0f;
+        float line2KfPitch = 0.0f, line2KfDcw = 0.0f, line2KfDca = 0.0f;
+
+        // ── Free matrix (ABDEEP-style): 8 slots, each a Source → Dest → Depth
+        //    routing chosen by the user instead of the fixed hardware routes.
+        //    Sources: 0=None 1=Velocity 2=ModWheel 3=Aftertouch 4=KeyTrack
+        //             5=LFO 6=EnvDCW 7=EnvDCA 8=EnvPitch(bipolar)
+        //             9=PitchBend 10=Noise 11=AuthKeyTrack (hardware curve)
+        //    Dests:   0=None 1=DCW 2=DCA 3=Pitch 4=VibratoDepth 5=LFORate
+        //             6=Osc2Detune(semitones) 7=Pan
+        struct ModSlot {
+            int source = 0;
+            int dest = 0;
+            float depth = 0.0f; // bipolar -1..1
+        };
+        static constexpr int kNumModSlots = 8;
+        ModSlot slots[kNumModSlots];
     };
     void setModulationMatrix(const ModulationMatrix& m) noexcept;
+    float getModSlotSourceValue(int source) const noexcept;
+    float getModSlotContribution(int dest) const noexcept;
+    // Current per-voice pan position (0=L .. 1=R) driven by free-matrix dest 7.
+    float getPan() const noexcept { return panValue.getCurrentValue(); }
     
     // Phase 5.1: Oversampling
     void setOversamplingFactor(int factor) noexcept { oversamplingFactor = juce::jlimit(1, 4, factor); }
@@ -157,13 +187,15 @@ public:
     
     // Rendering
     float renderNextSample() noexcept;
-    
+
     bool isActive() const noexcept { return dcaEnvelope1.isActive() || dcaEnvelope2.isActive(); }
     bool isReleasing() const noexcept { return dcaEnvelope1.isReleased() || dcaEnvelope2.isReleased(); }
     int getCurrentNote() const noexcept { return currentNote; }
     int64_t getLastNoteOnTime() const noexcept { return lastNoteOnTime; }
-    
+
 private:
+    float applyLineModulation(float osc1Sample, float osc2Sample, bool osc1Wrapped) noexcept;
+
     // Oscillators
     DSP::PhaseDistOscillator osc1;
     DSP::PhaseDistOscillator osc2;
@@ -195,8 +227,10 @@ private:
     juce::LinearSmoothedValue<float> currentDetuneFactor { 1.0f };
     
     bool isHardSyncEnabled = false;
-    bool isRingModEnabled = false;
-    bool isNoiseModEnabled = false; // Audit Fix
+    int lineModulation = 0; // 0=Off, 1=Ring1, 2=Noise1, 3=Ring2, 4=Ring3, 5=Noise2
+    bool modSpecial = false; // SYSEX-only: mute Line 1, only modulated output
+    float currentNoiseVal = 0.0f;
+    float modDetuneDelay = 0.0f; // previous osc1Sample, for Ring 2/3 detuned flavor
     
     float glideTime = 0.0f;
     float currentFrequency = 440.0f;
@@ -204,11 +238,17 @@ private:
     
     // LFO State
     DSP::LFO lfoModule;
-    float vibratoDepth = 0.0f;
+    juce::LinearSmoothedValue<float> vibratoDepth { 0.0f };
+    float lastLfoValue = 0.0f; // cached once per control-rate block (free matrix source 5)
     
     // Pitch Bend factors
-    float pitchBendFactor = 1.0f;
-    float masterTuneFactor = 1.0f;
+    juce::LinearSmoothedValue<float> pitchBendFactor { 1.0f };
+    float pitchBendSemitones = 0.0f; // raw semitones, free-matrix source 9
+    juce::LinearSmoothedValue<float> masterTuneFactor { 1.0f };
+
+    // Free-matrix state
+    juce::LinearSmoothedValue<float> panValue { 0.5f }; // per-voice pan (dest 7), center by default
+    float lastNoiseValue = 0.0f; // cached once per control-rate block (source 10)
     
     // Velocity Sensitivity [NEW]
     CZ101::DSP::VelocityCurve velocityCurve;
@@ -229,11 +269,12 @@ private:
     float getAuthenticNoise(int note, float dcwLevel) noexcept;
     juce::Random noiseGen;
 
-    void setMasterBend(float semitones) noexcept { pitchBendFactor = std::exp2(semitones / 12.0f); }
+    void setMasterBend(float semitones) noexcept { pitchBendFactor.setTargetValue(std::exp2(semitones / 12.0f)); }
 
     int64_t lastNoteOnTime = 0; // [NEW] For Voice Stealing
     
     // Rendering Helpers (Refactoring Phase 8)
+    float toneRateScale = 1.0f; // [NEW] Tone macro envelope rate multiplier
     void processControlRate() noexcept;
     void calculateEnvelopeValues() noexcept;
     void calculateLFOAndVibrato() noexcept;
@@ -277,8 +318,8 @@ private:
     uint32_t sampleCounter = 0;
     float cachedFreq1 = 440.0f;
     float cachedFreq2 = 440.0f;
-    float dcwVal1 = 0.0f, dcaVal1 = 0.0f;
-    float dcwVal2 = 0.0f, dcaVal2 = 0.0f;
+    float dcwVal1 = 0.0f, dcaVal1 = 0.0f, pitchVal1 = 0.5f;
+    float dcwVal2 = 0.0f, dcaVal2 = 0.0f, pitchVal2 = 0.5f;
     float pitchMod1 = 1.0f, pitchMod2 = 1.0f;
     float vibratoMod = 1.0f;
 

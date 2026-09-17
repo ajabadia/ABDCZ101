@@ -1,0 +1,67 @@
+Name: synth organ
+
+line    mod     detune          vibrato         octave
+1+2             + (1,2) 00 06                   +1
+
+DCO 1
+wave 
+2 4
+rate    level
+99      33
+33      00 e
+
+DCW 1
+key 
+0
+rate    level
+80      99
+47      96
+37      52 s
+26      00
+50      00 e
+
+DCA 1
+key 
+0
+rate    level
+99      90
+78      65
+83      95
+70      75
+70      99 s
+79      59
+33      00 e
+
+DCO 2
+wave 
+3 5
+rate    level
+99      33
+33      00 e
+
+DCW 2
+key 
+0
+rate    level
+80      99
+47      96
+37      52 s
+26      00
+50      00 e
+
+
+DCA 2
+key 
+0
+rate    level
+99      90
+78      65
+83      95
+70      75
+70      99 s
+79      59
+33      00 e
+
+Comments:
+
+Boring but useful.

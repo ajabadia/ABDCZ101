@@ -22,13 +22,15 @@ void ResonantFilter::setType(Type type) noexcept
 
 void ResonantFilter::setCutoff(float frequency) noexcept
 {
-    cutoffFreq = std::clamp(frequency, 20.0f, 20000.0f);
+    float maxCutoff = static_cast<float>(sampleRate * 0.49);
+    cutoffFreq = std::clamp(frequency, 20.0f, maxCutoff > 20.0f ? maxCutoff : 20000.0f);
     updateCoefficients();
 }
 
 void ResonantFilter::setResonance(float q) noexcept
 {
-    resonance = std::clamp(q, 0.1f, 10.0f);
+    // Map normalized [0, 1] parameter to Q factor [0.7071 (flat Butterworth) .. 8.0]
+    resonance = 0.7071f + std::clamp(q, 0.0f, 1.0f) * 6.5f;
     updateCoefficients();
 }
 
@@ -40,11 +42,10 @@ void ResonantFilter::reset() noexcept
 
 float ResonantFilter::processSample(float input) noexcept
 {
-    float output = a0 * input + a1 * z1 + a2 * z2 - b1 * z1 - b2 * z2;
-    
-    z2 = z1;
-    z1 = output;
-    
+    // Direct Form II (Transposed) - Canonical Biquad
+    float output = a0 * input + z1;
+    z1 = a1 * input - b1 * output + z2;
+    z2 = a2 * input - b2 * output;
     return output;
 }
 

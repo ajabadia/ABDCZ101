@@ -1,0 +1,132 @@
+/* Nested grid layouts for compacting controls */
+.grid-2col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.grid-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.span-2 {
+  grid-column: span 2;
+}
+
+/* Vertical Envelopes Styling */
+.env-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  height: 170px;
+  padding: 10px 5px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  margin-top: 5px;
+}
+
+.env-param {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.env-param label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: bold;
+}
+
+/* Vertical Sliders styling */
+.slider-vertical {
+  -webkit-appearance: none;
+  appearance: slider-vertical;
+  width: 16px;
+  height: 95px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.slider-vertical::-webkit-slider-thumb {
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--color-accent);
+}
+
+.env-param .param-val {
+  font-size: 0.7rem;
+  color: var(--color-accent);
+  font-family: 'Share Tech Mono', monospace;
+  margin-top: 2px;
+}
+
+/* Envelope Graphs */
+.env-graph-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 5px;
+  margin-bottom: 10px;
+  width: 100%;
+}
+.env-graph-line {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.env-graph-line .line-label {
+  font-size: 0.65rem;
+  color: var(--color-accent);
+  letter-spacing: 1px;
+  text-align: left;
+  padding-left: 2px;
+  font-family: 'Share Tech Mono', monospace;
+  font-weight: bold;
+}
+.graph-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+}
+.env-canvas {
+  background: #09090e;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  width: 100%;
+  height: 55px;
+  display: block;
+}
+/* COPY / PASTE per envelope line: compact horizontal buttons grouped with
+   SUS / END in the Active Node row (the old vertical column next to the graph
+   was cramped and hard to read). */
+.btn-graph-action {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-light);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.6rem;
+  padding: 2px 7px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+  line-height: 1;
+  white-space: nowrap;
+}
+.btn-graph-action:hover {
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}

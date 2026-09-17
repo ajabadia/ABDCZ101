@@ -1,0 +1,22 @@
+Name: NOISE SWEEP
+
+Noise: On
+Line: 1+1'
+Detune: +,0,0,1
+Vibrato: Wave=1,delay=0,rate=50,depth=2
+Octave: +0
+
+DCO1:     1st wave = 2, 2nd wave = 3
+          Rate=99,level = 99
+               49         00 (end)
+
+DCW1:     Key follow = 0
+          Rate=99, Level = 99
+               50,         00 (end)
+
+DCA1:     Key follow =0
+          rate=99   Level = 99 
+               02           98
+               53           00 (end)
+
+

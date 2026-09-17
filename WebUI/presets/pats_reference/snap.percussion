@@ -1,0 +1,47 @@
+Name: snap percussion
+
+line    mod     detune          vibrato         octave
+1+2     noise   + 1 00 00                       0
+
+DCO 1
+wave 
+1 0
+rate    level
+99      82
+99      00e
+
+DCW 1
+key 
+0
+rate    level
+99      99
+28      00e
+
+DCA 1
+key 
+0
+rate    level
+99      99
+99      00e
+
+DCO 2
+wave 
+1 0
+rate    level
+00      00e
+
+DCW 2
+key 
+0
+rate    level
+00      00e
+
+DCA 2
+key 
+0
+rate    level
+99      99
+58      00e
+
+Comments: Four notes within an octave with a slapback echo make
+realistic handclaps.

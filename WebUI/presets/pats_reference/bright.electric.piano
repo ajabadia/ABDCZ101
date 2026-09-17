@@ -1,0 +1,15 @@
+Name: Bright electric piano
+>From: Michael Schaeffer <michaels%tekigm2.tek.com@RELAY.CS.NET>
+
+COMMENT: I could really use some nice pianos
+ENVELOPE DATA (wave or key - R1.L1 - R2.L2 - *** - R7.L7 - R8);
+DCO1 (wave-env): 5.2-99.66-99e
+DCW1 (key-env): 0-99.99s-0e
+DCA1 (key-env): 0-92.99-95.87-92.99-99.88s-43e
+DCO2 (wave-env):3.1-99.66-99e
+DCW2 (key-env): 0-99.99s-0e
+DCA2 (key-env): 0-92.99-95.87-92.99-99.88-44e
+DETUNE (+- oct - semi - fine):+0-0-10
+MODULATION (1'or 2' - ring or noise): 2'
+VIBRATO (wave-delay-rate-depth): 1-45-52-11
+KEYBOARD OCTAVE (+ o -): +1

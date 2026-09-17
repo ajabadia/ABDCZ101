@@ -1,0 +1,27 @@
+Tone name: BRASS!
+Line select: 1 + 1'
+Ring:ON     Noise:OFF
+Detune - Octave:0    Note:0    Fine:-1
+Vibrato -  Wave:2    Delay:0   Rate:75   Depth:5
+Octave:-1
+
+DCO1                            DCO2
+Wave Form - First:1  Second:0   Wave Form - First:   Second:
+
+Env: 70/30 70/00 70/30 70/00S   Env: 00/00 00/00 00/00 00/00
+     50/00 50/00 50/00 50/00E        00/00 00/00 00/00 00/00
+
+DCW1                            DCW2
+Key Follow:0                    Key Follow:
+
+Env: 99/99S50/00E00/00 00/00    Env: 00/00 00/00 00/00 00/00
+     00/00 00/00 00/00 00/00         00/00 00/00 00/00 00/00
+
+DCA1                            DCA2
+Key Follow:0                    Key Follow:
+
+Env: 99/99S40/00E00/00 00/00    Env: 00/00 00/00 00/00 00/00
+     00/00 00/00 00/00 00/00         00/00 00/00 00/00 00/00
+
+Comments:Very fat, brassy analog type sound. Crank it.
+

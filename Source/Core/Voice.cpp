@@ -11,14 +11,24 @@ namespace Core {
 
 Voice::Voice()
 {
-    // Initialize Modern Filters
+    // Initialize Modern Filters with full open pass-through
     lpf.setType(DSP::ResonantFilter::LOWPASS);
+    lpf.setCutoff(20000.0f);
     hpf.setType(DSP::ResonantFilter::HIGHPASS);
+    hpf.setCutoff(20.0f);
 
     // Audit Fix [11.2]: Pitch Envelope Initialization
     // Pitch envelopes must start at 0.5 (Center/No Pitch Shift) to avoid sweep up from 0.0
     pitchEnvelope1.setInitialValue(0.5f);
     pitchEnvelope2.setInitialValue(0.5f);
+    
+    // Set Authentic Hardware Envelope Types
+    dcaEnvelope1.setType(DSP::MultiStageEnvelope::EnvType::DCA);
+    dcaEnvelope2.setType(DSP::MultiStageEnvelope::EnvType::DCA);
+    dcwEnvelope1.setType(DSP::MultiStageEnvelope::EnvType::DCW);
+    dcwEnvelope2.setType(DSP::MultiStageEnvelope::EnvType::DCW);
+    pitchEnvelope1.setType(DSP::MultiStageEnvelope::EnvType::DCO);
+    pitchEnvelope2.setType(DSP::MultiStageEnvelope::EnvType::DCO);
 
     // Audit Fix 1.5: Safe Initialization
     // Initialize with a default valid sample rate to prevent div-by-zero 
@@ -48,24 +58,23 @@ void Voice::setSampleRate(double sr) noexcept
     dcwEnvelope2.setSampleRate(sr);
     dcaEnvelope2.setSampleRate(sr);
     pitchEnvelope2.setSampleRate(sr);
-    lfoModule.setSampleRate(sr);
     lpf.setSampleRate(sr);
     hpf.setSampleRate(sr);
     
-    osc1Level.reset(sr, 0.02);
-    osc2Level.reset(sr, 0.02);
-    currentDetuneFactor.reset(sr, 0.05); // Detune needs longer smoothing
-    masterVolume.reset(sr, 0.02);
-
-    updateDCWEnvelopeFromADSR(1);
-    updateDCAEnvelopeFromADSR(1);
-    updatePitchEnvelopeFromADSR(1);
-    updateDCWEnvelopeFromADSR(2);
-    updateDCAEnvelopeFromADSR(2);
-    updatePitchEnvelopeFromADSR(2);
+    osc1Level.reset(sr, 0.016);
+    osc2Level.reset(sr, 0.016);
+    masterVolume.reset(sr, 0.016);
+    panValue.reset(sr, 0.016);
     
-    // Smoothed Matrix Init (Control Rate = SR / 8)
+    // Smoothed Matrix & LFO Init (Control Rate = SR / 8)
     double cr = sr / 8.0;
+    
+    currentDetuneFactor.reset(cr, 0.016); // ~16ms smoothing for 60Hz delta updates
+    vibratoDepth.reset(cr, 0.016);
+    pitchBendFactor.reset(cr, 0.016);
+    masterTuneFactor.reset(cr, 0.016);
+    
+    lfoModule.setSampleRate(cr);
     smoothedMatrix.veloToDcw.reset(cr, 0.05);
     smoothedMatrix.veloToDca.reset(cr, 0.05);
     smoothedMatrix.wheelToDcw.reset(cr, 0.05);
@@ -94,10 +103,55 @@ void Voice::noteOn(int midiNote, float velocity) noexcept
     velModVibDepth = DSP::VelocitySensitivityProcessor::apply(normVel, velocityCurve.vibratoDepthResponse);
     velModAttack = DSP::VelocitySensitivityProcessor::apply(normVel, velocityCurve.attackResponse);
 
-    // Apply Rate Scaling to Envelopes
-    dcaEnvelope1.setRateScaler(velModAttack); dcaEnvelope2.setRateScaler(velModAttack);
-    dcwEnvelope1.setRateScaler(velModAttack); dcwEnvelope2.setRateScaler(velModAttack);
-    pitchEnvelope1.setRateScaler(velModAttack); pitchEnvelope2.setRateScaler(velModAttack);
+    // Key Follow Calculation (Pivot note C4 = 60)
+    float keyDiff = (midiNote - 60.0f) / 12.0f;
+    float kfScalePitch1 = std::pow(2.0f, keyDiff * (matrix.line1KfPitch / 9.0f));
+    float kfScaleDcw1   = std::pow(2.0f, keyDiff * (matrix.line1KfDcw / 9.0f));
+    float kfScaleDca1   = std::pow(2.0f, keyDiff * (matrix.line1KfDca / 9.0f));
+    float kfScalePitch2 = std::pow(2.0f, keyDiff * (matrix.line2KfPitch / 9.0f));
+    float kfScaleDcw2   = std::pow(2.0f, keyDiff * (matrix.line2KfDcw / 9.0f));
+    float kfScaleDca2   = std::pow(2.0f, keyDiff * (matrix.line2KfDca / 9.0f));
+
+    // Apply Rate Scaling to Envelopes (velocity attack response * Tone macro * KF)
+    const float baseRateScale = velModAttack * toneRateScale;
+    
+    // CZ-101 global DCA Key Follow (0-9) changes the envelope rate (makes higher notes decay faster)
+    float legacyDcaKf = 1.0f;
+    if (matrix.kfDca > 0) {
+        legacyDcaKf = std::pow(2.0f, keyDiff * (matrix.kfDca / 9.0f));
+    }
+    
+    dcaEnvelope1.setRateScaler(baseRateScale * kfScaleDca1 * legacyDcaKf); 
+    dcaEnvelope2.setRateScaler(baseRateScale * kfScaleDca2 * legacyDcaKf);
+    dcwEnvelope1.setRateScaler(baseRateScale * kfScaleDcw1); 
+    dcwEnvelope2.setRateScaler(baseRateScale * kfScaleDcw2);
+    pitchEnvelope1.setRateScaler(baseRateScale * kfScalePitch1); 
+    pitchEnvelope2.setRateScaler(baseRateScale * kfScalePitch2);
+
+    // Apply Level Scaling to Envelopes (CZ-1 / Modern Mode)
+    // Formula: Level = (MIDI Velocity) ^ (Sensitivity / 15)
+    // When Sensitivity is 0, the exponent is 0 -> Level is 1.0 (no effect).
+    // When Sensitivity is 15, the exponent is 1 -> Level is scaled exactly by velocity.
+    float dcaScale1 = 1.0f, dcwScale1 = 1.0f, pitchScale1 = 1.0f;
+    float dcaScale2 = 1.0f, dcwScale2 = 1.0f, pitchScale2 = 1.0f;
+    
+    // CZ-1 is opMode 2, Modern is 3. Classic 101/5000 is 0/1.
+    if (matrix.opMode >= 2) 
+    {
+        // Add safety to avoid 0^0 which is undefined
+        float safeVel = std::max(0.0001f, normVel);
+        dcaScale1 = std::pow(safeVel, matrix.line1VeloDca / 15.0f);
+        dcwScale1 = std::pow(safeVel, matrix.line1VeloDcw / 15.0f);
+        pitchScale1 = std::pow(safeVel, matrix.line1VeloPitch / 15.0f);
+        
+        dcaScale2 = std::pow(safeVel, matrix.line2VeloDca / 15.0f);
+        dcwScale2 = std::pow(safeVel, matrix.line2VeloDcw / 15.0f);
+        pitchScale2 = std::pow(safeVel, matrix.line2VeloPitch / 15.0f);
+    }
+    
+    dcaEnvelope1.setLevelScaler(dcaScale1); dcaEnvelope2.setLevelScaler(dcaScale2);
+    dcwEnvelope1.setLevelScaler(dcwScale1); dcwEnvelope2.setLevelScaler(dcwScale2);
+    pitchEnvelope1.setLevelScaler(pitchScale1); pitchEnvelope2.setLevelScaler(pitchScale2);
 
     baseFrequency = midiNoteToFrequency(midiNote);
     targetFrequency = baseFrequency;
@@ -113,6 +167,16 @@ void Voice::noteOn(int midiNote, float velocity) noexcept
     dcwEnvelope2.noteOn();
     dcaEnvelope2.noteOn();
     pitchEnvelope2.noteOn();
+
+#ifdef OMEGA_DEBUG_VOICE
+    juce::Logger::writeToLog("Voice::noteOn: note=" + juce::String(midiNote) + 
+                             " freq=" + juce::String(baseFrequency) + 
+                             " dca1_lvl0=" + juce::String(dcaEnvelope1.getStageLevel(0)) + 
+                             " dca1_sus=" + juce::String(dcaEnvelope1.getSustainPoint()) + 
+                             " dca1_end=" + juce::String(dcaEnvelope1.getEndPoint()) + 
+                             " osc1_lvl=" + juce::String(osc1Level.getTargetValue()) + 
+                             " masterVol=" + juce::String(masterVolume.getTargetValue()));
+#endif
 }
 
 void Voice::noteOff() noexcept
@@ -144,15 +208,15 @@ void Voice::reset() noexcept
 
 // ... Oscillators ...
 
-void Voice::setOsc1Waveforms(DSP::PhaseDistOscillator::CzWaveform f, DSP::PhaseDistOscillator::CzWaveform s) noexcept 
+void Voice::setOsc1Waveforms(DSP::PhaseDistOscillator::CzWaveform f, DSP::PhaseDistOscillator::CzWaveform s, DSP::PhaseDistOscillator::CzWindow w) noexcept 
 { 
-    osc1.setWaveforms(f, s); 
+    osc1.setWaveforms(f, s, w); 
 }
 void Voice::setOsc1Level(float level) noexcept { osc1Level.setTargetValue(level); }
 
-void Voice::setOsc2Waveforms(DSP::PhaseDistOscillator::CzWaveform f, DSP::PhaseDistOscillator::CzWaveform s) noexcept 
+void Voice::setOsc2Waveforms(DSP::PhaseDistOscillator::CzWaveform f, DSP::PhaseDistOscillator::CzWaveform s, DSP::PhaseDistOscillator::CzWindow w) noexcept 
 { 
-    osc2.setWaveforms(f, s); 
+    osc2.setWaveforms(f, s, w); 
 }
 void Voice::setOsc2Level(float level) noexcept { osc2Level.setTargetValue(level); }
 void Voice::setOsc2Detune(float semitones) noexcept 
@@ -170,20 +234,51 @@ void Voice::setOsc2DetuneHardware(int oct, int coarse, int fineCents) noexcept
 }
 
 void Voice::setHardSync(bool enabled) noexcept { isHardSyncEnabled = enabled; }
-void Voice::setRingMod(bool enabled) noexcept { isRingModEnabled = enabled; }
-void Voice::setNoiseMod(bool enabled) noexcept { isNoiseModEnabled = enabled; }
+void Voice::setLineModulation(int mode) noexcept { lineModulation = mode; }
+void Voice::setModSpecial(bool enabled) noexcept { modSpecial = enabled; }
+
+// ── Shared line modulation DSP: invoked per sample (or sub-sample) ──
+// 0=Off  1=Ring 1 (standard)  2=Noise 1  3=Ring 2 (detuned)
+// 4=Ring 3 (1+2)  5=Noise 2 (milder)
+float Voice::applyLineModulation(float osc1Sample, float osc2Sample, bool osc1Wrapped) noexcept
+{
+    switch (lineModulation) {
+        case 1: // Ring 1: DCO1 × DCO2
+            return osc1Sample * osc2Sample;
+        case 3: { // Ring 2: detuned ring (1-sample delay on osc1)
+            const float delayed1 = modDetuneDelay;
+            modDetuneDelay = osc1Sample;
+            return 0.5f * (osc1Sample + delayed1) * osc2Sample;
+        }
+        case 4: { // Ring 3: Ring 1 (75%) + Ring 2 (25%)
+            const float delayed1 = modDetuneDelay;
+            modDetuneDelay = osc1Sample;
+            return (0.75f * osc1Sample + 0.25f * delayed1) * osc2Sample;
+        }
+        case 2: // Noise 1 (Authentic CZ Noise is pitch mod, not amp mod)
+            return osc2Sample;
+        case 5: // Noise 2 (Milder noise extension)
+            return osc2Sample;
+        default:
+            return osc2Sample;
+    }
+}
+
+void Voice::setToneRateScale(float scale) noexcept
+{
+    toneRateScale = (scale > 0.0f) ? scale : 1.0f;
+}
 void Voice::setGlideTime(float seconds) noexcept { glideTime = seconds; }
 
 
 // ... LFO / Vibrato ...
 
-void Voice::setVibratoDepth(float semitones) noexcept { vibratoDepth = semitones; }
+void Voice::setVibratoDepth(float semitones) noexcept { vibratoDepth.setTargetValue(semitones); }
 void Voice::setLFOFrequency(float hz) noexcept { lfoModule.setFrequency(hz); }
 void Voice::setLFOWaveform(DSP::LFO::Waveform w) noexcept { lfoModule.setWaveform(w); }
 void Voice::setLFODelay(float s) noexcept { lfoModule.setDelay(s); }
 
-void Voice::setPitchBend(float semitones) noexcept { pitchBendFactor = std::exp2(semitones / 12.0f); }
-void Voice::setMasterTune(float semitones) noexcept { masterTuneFactor = std::exp2(semitones / 12.0f); }
+void Voice::setMasterTune(float semitones) noexcept { masterTuneFactor.setTargetValue(std::exp2(semitones / 12.0f)); }
 void Voice::setMasterVolume(float level) noexcept { masterVolume.setTargetValue(level); }
 
 // ============================================================================
@@ -332,108 +427,114 @@ void Voice::processControlRate() noexcept
     calculateDCWModulation();
     calculateDCAModulation();
     calculatePitchModulation();
+    // Free matrix: Pan destination (dest 7) → per-voice pan position.
+    // depth 1.0 = full left, -1.0 = full right (0.5 = center, default).
+    panValue.setTargetValue(juce::jlimit(0.0f, 1.0f, 0.5f + getModSlotContribution(7) * 0.5f));
 }
 
 void Voice::calculateEnvelopeValues() noexcept
 {
     dcwVal1 = dcwEnvelope1.getNextValue();
     dcaVal1 = dcaEnvelope1.getNextValue();
+    pitchVal1 = pitchEnvelope1.getNextValue();
     
     dcwVal2 = dcwEnvelope2.getNextValue();
     dcaVal2 = dcaEnvelope2.getNextValue();
+    pitchVal2 = pitchEnvelope2.getNextValue();
 }
     
 void Voice::calculateLFOAndVibrato() noexcept
 {
-    // LFO
+    // LFO — advance once per control-rate block and cache for the free matrix
     vibratoMod = 1.0f;
+    lastLfoValue = lfoModule.getNextValue();
+    // Noise — cache one random value per control-rate block (free-matrix source 10)
+    lastNoiseValue = noiseGen.nextFloat() * 2.0f - 1.0f;
+
     float wheelVib = smoothedMatrix.wheelToVibrato.getNextValue();
     float atVib = smoothedMatrix.atToVibrato.getNextValue();
-    float totalVibDepth = vibratoDepth + (modWheel * wheelVib) + (aftertouch * atVib);
+    // Free matrix: vibrato-depth routes (dest 4)
+    float freeVib = getModSlotContribution(4);
+    float totalVibDepth = vibratoDepth.getNextValue() + (modWheel * wheelVib) + (aftertouch * atVib) + freeVib;
     
-    // Apply LFO Rate Modulation from Wheel
+    // Apply LFO Rate Modulation from Wheel + free matrix (dest 5)
     float wLfoRate = smoothedMatrix.wheelToLfoRate.getNextValue();
-    if (wLfoRate > 0.001f) {
-        lfoModule.setFrequencyScale(1.0f + modWheel * wLfoRate * 3.0f);
-    } else {
-        lfoModule.setFrequencyScale(1.0f);
-    }
+    float freeLfoRate = getModSlotContribution(5);
+    lfoModule.setFrequencyScale(1.0f + modWheel * wLfoRate * 3.0f + freeLfoRate * 3.0f);
 
     if (totalVibDepth > 0.001f) {
-        vibratoMod = deterministicExp2(lfoModule.getNextValue() * totalVibDepth); 
+        // vibratoDepth is in semitones; exp2 requires octaves (semitones / 12)
+        vibratoMod = deterministicExp2((lastLfoValue * totalVibDepth) / 12.0f); 
     }
 }
 
 void Voice::calculateDCWModulation() noexcept
 {
     // DCW Key Tracking & Modulation
-    float ktOffset = 0.0f;
-    float ktDcw = smoothedMatrix.keyTrackDcw.getNextValue();
-    if (matrix.kfDcw != 0) // FIX or VAR
-    {
-        // Use authentic hardware curve
-        // Pass current DCW env value (average of both lines for now) to affect curvature
-        float avgEnv = (dcwVal1 + dcwVal2) * 0.5f;
-        ktOffset = HardwareConstants::getAuthenticDCWKeytrack(currentNote, avgEnv) * ktDcw;
-    }
+    // Note: The authentic hardware DCW limit (anti-aliasing) is now applied directly in PhaseDistOscillator
+    // so we no longer apply a heuristic ktOffset here. The envelope naturally gets clamped at high pitches.
     
     float veloDcw = smoothedMatrix.veloToDcw.getNextValue();
     float wheelDcw = smoothedMatrix.wheelToDcw.getNextValue();
     float atDcw = smoothedMatrix.atToDcw.getNextValue();
 
     float modDcw = (currentVelocity * veloDcw) + (modWheel * wheelDcw) + (aftertouch * atDcw);
+    // Free matrix: DCW routes (dest 1)
+    modDcw += getModSlotContribution(1);
+    
     // Apply Velocity Sensitivity to DCW Envelope Output
-    dcwVal1 = juce::jlimit(0.0f, 0.99f, (dcwVal1 * velModDcw) + ktOffset + modDcw);
-    dcwVal2 = juce::jlimit(0.0f, 0.99f, (dcwVal2 * velModDcw) + ktOffset + modDcw);
+    dcwVal1 = juce::jlimit(0.0f, 0.99f, (dcwVal1 * velModDcw) + modDcw);
+    dcwVal2 = juce::jlimit(0.0f, 0.99f, (dcwVal2 * velModDcw) + modDcw);
 }
 
 void Voice::calculateDCAModulation() noexcept
 {
     // DCA Velocity Sensitivity & Key Follow
-    if (matrix.kfDca != 0)
-    {
-        // Key Follow for DCA shortens decay on high notes (simulated as slight level reduction here)
-        float kfDcaOffset = (currentNote - 60) * HardwareConstants::KEYTRACK_DCA_OFFSET;
-        dcaVal1 = juce::jlimit(0.0f, 1.0f, dcaVal1 + kfDcaOffset);
-        dcaVal2 = juce::jlimit(0.0f, 1.0f, dcaVal2 + kfDcaOffset);
-    }
-
     float vDca = smoothedMatrix.veloToDca.getNextValue();
     // matrix.veloToDca: 0 = fixed level, 1 = full velocity range
     float veloDca = 1.0f - vDca + (currentVelocity * vDca);
-    dcaVal1 *= veloDca;
-    dcaVal2 *= veloDca;
+
+    // Free matrix: DCA routes (dest 2)
+    float freeDca = getModSlotContribution(2);
+
+    dcaVal1 = juce::jlimit(0.0f, 1.0f, (dcaVal1 * veloDca) + freeDca);
+    dcaVal2 = juce::jlimit(0.0f, 1.0f, (dcaVal2 * veloDca) + freeDca);
 }
 
 void Voice::calculatePitchModulation() noexcept
 {    
-    float pEnvVal1 = pitchEnvelope1.getCurrentValue();
-    float pEnvVal2 = pitchEnvelope2.getCurrentValue();
-    
     // Pitch mod (±12 semitones) - Deterministic cross-platform
-    pitchMod1 = deterministicExp2((pEnvVal1 - 0.5f) * 2.0f); 
-    pitchMod2 = deterministicExp2((pEnvVal2 - 0.5f) * 2.0f);
+    pitchMod1 = deterministicExp2((pitchVal1 - 0.5f) * 2.0f); 
+    pitchMod2 = deterministicExp2((pitchVal2 - 0.5f) * 2.0f);
 
-     // Custom Key Tracking for Pitch (DCO Key Follow)
-    float pitchKT = 1.0f;
-    float ktPitch = smoothedMatrix.keyTrackPitch.getNextValue();
-    if (matrix.kfDco != 0) // FIX or VAR
+    // Authentic CZ Noise Pitch Modulation (runs at control rate, every 8 samples)
+    if (lineModulation == 2 || lineModulation == 5) // Noise 1 or Noise 2
     {
-         if (std::abs(ktPitch - 1.0f) > 0.001f) {
-            float dist = (currentNote - 60) / 12.0f;
-            pitchKT = std::exp2(dist * (ktPitch - 1.0f));
+        // 50% chance to jump pitch by +32 semitones
+        if (noiseGen.nextFloat() > 0.5f) {
+            // 2^(32/12) = 6.3496042f
+            pitchMod2 *= 6.3496042f; 
         }
     }
-    else
-    {
-        // OFF mode: Pitch is fixed at center note? 
-        // Real hardware "OFF" for DCO usually means 0 tracking (fixed pitch).
-        float dist = (60 - currentNote) / 12.0f;
-        pitchKT = std::exp2(dist); // Cancels out the currentNote tracking
+
+    // Key Tracking for Pitch (DCO Key Follow: 1:1 standard tracking)
+    float pitchKT = 1.0f;
+    float ktPitch = smoothedMatrix.keyTrackPitch.getNextValue();
+    if (std::abs(ktPitch - 1.0f) > 0.001f) {
+        float dist = (currentNote - 60) / 12.0f;
+        pitchKT = std::exp2(dist * (ktPitch - 1.0f));
     }
 
+    // Free matrix: Pitch routes (dest 3) as semitone offsets, folded into the
+    // cached static factors (deterministic exp2 of the summed contribution).
+    float freePitch = getModSlotContribution(3);
+    float freePitchFactor = deterministicExp2(freePitch / 12.0f); // depth 1.0 ≈ +1 semitone
+
+    // Free matrix: Osc2 Detune (dest 6) as semitone offsets on the detune factor
+    float freeDetune = getModSlotContribution(6); // depth 1.0 ≈ +1 semitone
+
     // Cache static factors (Master Tune, Pitch Bend)
-    float globalMod = pitchBendFactor * masterTuneFactor * pitchKT;
+    float globalMod = pitchBendFactor.getNextValue() * masterTuneFactor.getNextValue() * pitchKT * freePitchFactor;
     
     // Target Frequencies (Control Rate)
     if (glideTime > 0.001f && currentFrequency != targetFrequency) {
@@ -453,7 +554,8 @@ void Voice::calculatePitchModulation() noexcept
     }
 
     cachedFreq1 = currentFrequency * pitchMod1 * vibratoMod * globalMod * velModPitch;
-    cachedFreq2 = currentFrequency * pitchMod2 * vibratoMod * globalMod * velModPitch * currentDetuneFactor.getNextValue();
+    cachedFreq2 = currentFrequency * pitchMod2 * vibratoMod * globalMod * velModPitch
+                * currentDetuneFactor.getNextValue() * deterministicExp2(freeDetune / 12.0f);
 }
 
 float Voice::renderOscillators() noexcept
@@ -473,25 +575,16 @@ float Voice::renderOscillators() noexcept
         if (isHardSyncEnabled && osc1Wrapped) osc2.reset();
         float osc2Sample = osc2.renderNextSample(dcwVal2);
         
-        if (isRingModEnabled) {
-            osc2Sample = osc1Sample * osc2Sample;
-        } else if (isNoiseModEnabled) {
-             // Authentic CZ-101 Noise Mod: It's technically Phase Modulation of Noise? 
-             // Or simply Noise replaces the carrier?
-             // "Noise Mod" on CZ modulates the *phase* of the noise source by Osc 1?
-             // Or modulates Osc 1 Amplitude by Noise?
-             // Multiplicative (AM) of Noise * Osc1 creates sidebands.
-             // If Osc2 Level is 0 in patch, we hear nothing. 
-             // The user says "doesn't sound right".
-             // Let's implement a safe audible noise mix for now:
-             // Mix Noise with Osc 1, or modulate Osc 2 phase with Noise.
-             // Simplest "Good Sounding" fix: Ring Modulate Noise with Osc 1 (AM).
-             float noise = (noiseGen.nextFloat() * 2.0f - 1.0f);
-             osc2Sample = osc1Sample * noise + noise * 0.5f; // Add some raw noise to ensure output
-        }
-        
-        float out1 = osc1Sample * osc1Level.getNextValue() * dcaVal1 * velModAmp;
-        float out2 = osc2Sample * osc2Level.getNextValue() * dcaVal2 * velModAmp;
+        // 1. Shape oscillators with DCA before Ring Mod
+        float shaped1 = osc1Sample * osc1Level.getNextValue() * dcaVal1 * velModAmp;
+        float shaped2 = osc2Sample * osc2Level.getNextValue() * dcaVal2 * velModAmp;
+
+        // 2. Line modulation (Ring Mod / Noise) using shaped Osc 1
+        shaped2 = applyLineModulation(shaped1, shaped2, osc1Wrapped);
+
+        // 3. Mod Special (Mute Line 1 in the final mix)
+        float out1 = modSpecial ? 0.0f : shaped1;
+        float out2 = shaped2;
         
         return HardwareConstants::mixLines(out1, out2);
     }
@@ -511,16 +604,11 @@ float Voice::renderOscillators() noexcept
             if (isHardSyncEnabled && osc1Wrapped) osc2.reset();
             float osc2Sample = osc2.renderNextSample(dcwVal2);
             
-            if (isRingModEnabled) {
-                osc2Sample = osc1Sample * osc2Sample;
-            } else if (isNoiseModEnabled) {
-                 float noise = (noiseGen.nextFloat() * 2.0f - 1.0f);
-                 osc2Sample = osc1Sample * noise; 
-            }
-            
+            osc2Sample = applyLineModulation(osc1Sample, osc2Sample, osc1Wrapped);
+
             // Note: We use the same envelope/level values for all sub-samples
             // This is a simplification but works well for anti-aliasing
-            float out1 = osc1Sample * osc1Level.getCurrentValue() * dcaVal1 * velModAmp;
+            float out1 = modSpecial ? 0.0f : (osc1Sample * osc1Level.getCurrentValue() * dcaVal1 * velModAmp);
             float out2 = osc2Sample * osc2Level.getCurrentValue() * dcaVal2 * velModAmp;
             
             accumulator += HardwareConstants::mixLines(out1, out2);
@@ -548,14 +636,19 @@ float Voice::applyPostProcessing(float rawMix) noexcept
          rawMix += getAuthenticNoise(currentNote, dcwMix);
     }
 
-    // Optimization: Fast Tanh
-    float softClipped = fastTanh(rawMix * HardwareConstants::SOFT_CLIP_DRIVE);
+    // Optimization: Digital path has no analog soft clip pre-filter.
+    float softClipped = rawMix;
     
     // Modern Filter Processing (Phase 7)
     float filtered = lpf.processSample(softClipped);
     filtered = hpf.processSample(filtered);
 
     float output = filtered * currentVelocity * masterVolume.getNextValue();
+    
+    // Advance pan smoothing every sample (the ramp target is set by
+    // processControlRate → calculatePanAndEffects). VoiceManager reads the
+    // smoothed value via getPan() for stereo panning.
+    panValue.getNextValue();
     
     // Phase 9: 12-bit DAC Compression Simulation
     if (hardwareNoiseEnabled) {
@@ -575,6 +668,12 @@ float Voice::midiNoteToFrequency(int midiNote) const noexcept
     return 440.0f * std::exp2((static_cast<float>(midiNote) - 69.0f) * 0.083333333f); // slightly faster than /12.0f
 }
 
+void Voice::setPitchBend(float semitones) noexcept
+{
+    pitchBendSemitones = semitones;
+    pitchBendFactor.setTargetValue(std::exp2(semitones / 12.0f));
+}
+
 void Voice::setModulationMatrix(const ModulationMatrix& m) noexcept
 {
     matrix = m;
@@ -587,6 +686,61 @@ void Voice::setModulationMatrix(const ModulationMatrix& m) noexcept
     smoothedMatrix.atToVibrato.setTargetValue(m.atToVibrato);
     smoothedMatrix.keyTrackDcw.setTargetValue(m.keyTrackDcw);
     smoothedMatrix.keyTrackPitch.setTargetValue(m.keyTrackPitch);
+    
+    // Cache the velocity sensitivities and opMode directly into matrix 
+    matrix.line1VeloPitch = m.line1VeloPitch;
+    matrix.line1VeloDcw = m.line1VeloDcw;
+    matrix.line1VeloDca = m.line1VeloDca;
+    matrix.line2VeloPitch = m.line2VeloPitch;
+    matrix.line2VeloDcw = m.line2VeloDcw;
+    matrix.line2VeloDca = m.line2VeloDca;
+    matrix.opMode = m.opMode;
+}
+
+// Free matrix (ABDEEP-style). Sources: 0=None 1=Velocity 2=ModWheel
+// 3=Aftertouch 4=KeyTrack 5=LFO 6=EnvDCW 7=EnvDCA 8=EnvPitch(bipolar)
+// 9=PitchBend 10=Noise 11=AuthKeyTrack (authentic hardware curve)
+float Voice::getModSlotSourceValue(int source) const noexcept
+{
+    switch (source)
+    {
+        case 1:  return currentVelocity;
+        case 2:  return modWheel;
+        case 3:  return aftertouch;
+        case 4:  return currentNote >= 0 ? (currentNote - 60) / 60.0f : 0.0f;
+        case 5:  return lastLfoValue; // cached once per control-rate block
+        case 6:  return dcwEnvelope1.getCurrentValue();
+        case 7:  return dcaEnvelope1.getCurrentValue();
+        // Pitch envelope is 0..1 centered at 0.5 → bipolar -1..1 (centre = no mod)
+        case 8:  return (pitchEnvelope1.getCurrentValue() - 0.5f) * 2.0f;
+        // Pitch bend in raw semitones, normalized so a full octave = ±1
+        case 9:  return juce::jlimit(-1.0f, 1.0f, pitchBendSemitones / 12.0f);
+        // White noise, cached once per control-rate block (-1..1)
+        case 10: return lastNoiseValue;
+        // Authentic hardware Key Follow curve (DCW). Evaluated with the current
+        // DCW envelope value so the envelope interaction of the real CZ is
+        // replicated exactly: depth 1.0 reproduces Key Follow FIX/VAR 1:1.
+        case 11:
+        {
+            const float avgEnv = (dcwVal1 + dcwVal2) * 0.5f;
+            return HardwareConstants::getAuthenticDCWKeytrack(currentNote, avgEnv, matrix.kfDcw);
+        }
+        default: return 0.0f;
+    }
+}
+
+// Sums the weighted source values of every free slot routed to `dest`.
+float Voice::getModSlotContribution(int dest) const noexcept
+{
+    float total = 0.0f;
+    for (int i = 0; i < ModulationMatrix::kNumModSlots; ++i)
+    {
+        const auto& slot = matrix.slots[i];
+        if (slot.dest != dest || slot.source == 0 || slot.depth == 0.0f)
+            continue;
+        total += getModSlotSourceValue(slot.source) * slot.depth;
+    }
+    return total;
 }
 
 float Voice::getAuthenticNoise(int note, float dcwLevel) noexcept
@@ -623,18 +777,21 @@ void Voice::applySnapshot(const ParameterSnapshot* s) noexcept
     
     // Oscillators
     osc1.setWaveforms(static_cast<DSP::PhaseDistOscillator::CzWaveform>(s->dco1.wave1),
-                      static_cast<DSP::PhaseDistOscillator::CzWaveform>(s->dco1.wave2));
+                      static_cast<DSP::PhaseDistOscillator::CzWaveform>(s->dco1.wave2),
+                      static_cast<DSP::PhaseDistOscillator::CzWindow>(s->dco1.window));
     osc2.setWaveforms(static_cast<DSP::PhaseDistOscillator::CzWaveform>(s->dco2.wave1),
-                      static_cast<DSP::PhaseDistOscillator::CzWaveform>(s->dco2.wave2));
+                      static_cast<DSP::PhaseDistOscillator::CzWaveform>(s->dco2.wave2),
+                      static_cast<DSP::PhaseDistOscillator::CzWindow>(s->dco2.window));
                       
     osc1Level.setTargetValue(s->dco1.level);
     osc2Level.setTargetValue(s->dco2.level);
-    setOsc2DetuneHardware(s->dco2.octave, s->dco2.coarse, s->dco2.fine);
+    float totalDetune = s->dco2.legacyDetune + (s->dco2.octave * 12.0f) + s->dco2.coarse + (s->dco2.fine / 100.0f);
+    setOsc2Detune(totalDetune);
     
     // Flags
     setHardSync(s->mod.detune == 1); 
-    setRingMod(s->lineMod.ring);
-    setNoiseMod(s->lineMod.noise);
+    setLineModulation(s->lineMod.mode);
+    setModSpecial(s->lineMod.special);
     
     // Filter / DCW
     // Note: DCW/DCA Envelopes are usually triggered, but key follow/sustains are state.
@@ -644,20 +801,43 @@ void Voice::applySnapshot(const ParameterSnapshot* s) noexcept
     masterTuneFactor = std::pow(2.0f, s->system.masterTune / 12.0f);
     pitchBendFactor = std::pow(2.0f, (s->system.bendRange / 12.0f) * modWheel); // simplified
     
-    // Matrix
+    // Matrix. The routing matrix (wheel->dcw, wheel->lfo rate, aftertouch
+    // routes) is a Modern-only feature of this emulator; CZ-101/CZ-5000 only
+    // had the hardware sensitivities below (velocity, wheel->vibrato, key
+    // track/follow), which stay active in every mode.
+    const bool modMatrixEnabled = (s->system.opMode == 3);
     smoothedMatrix.veloToDcw.setTargetValue(s->mod.veloDcw);
-    smoothedMatrix.veloToDca.setTargetValue(s->mod.veloAmp);
-    smoothedMatrix.wheelToDcw.setTargetValue(s->mod.wheelToDcw);
-    smoothedMatrix.wheelToLfoRate.setTargetValue(s->mod.wheelToLfoRate);
+    // In Modern the free matrix owns the routing: the WebUI seeds a
+    // Velocity→DCA slot on new presets, so the fixed hardware Velo→DCA route
+    // is zeroed here to avoid double velocity→amp. Classic modes keep the
+    // authentic hardware behavior.
+    smoothedMatrix.veloToDca.setTargetValue(modMatrixEnabled ? 0.0f : s->mod.veloAmp);
+    smoothedMatrix.wheelToDcw.setTargetValue(modMatrixEnabled ? s->mod.wheelToDcw : 0.0f);
+    smoothedMatrix.wheelToLfoRate.setTargetValue(modMatrixEnabled ? s->mod.wheelToLfoRate : 0.0f);
     smoothedMatrix.wheelToVibrato.setTargetValue(s->mod.wheelToVibrato);
-    smoothedMatrix.atToDcw.setTargetValue(s->mod.atToDcw);
-    smoothedMatrix.atToVibrato.setTargetValue(s->mod.atToVibrato);
+    smoothedMatrix.atToDcw.setTargetValue(modMatrixEnabled ? s->mod.atToDcw : 0.0f);
+    smoothedMatrix.atToVibrato.setTargetValue(modMatrixEnabled ? s->mod.atToVibrato : 0.0f);
     
     // Audit Fix [PITCH_FIX]: Correctly interpret Key Follow modes
     // Modes: 0=OFF, 1=FIX, 2=VAR
     matrix.kfDcw = s->mod.keyFollowDcw;
     matrix.kfDca = s->mod.keyFollowAmp;
     matrix.kfDco = s->mod.keyFollowDco;
+    matrix.opMode = s->system.opMode;
+    
+    matrix.line1VeloPitch = s->mod.line1VeloPitch;
+    matrix.line1VeloDcw = s->mod.line1VeloDcw;
+    matrix.line1VeloDca = s->mod.line1VeloDca;
+    matrix.line2VeloPitch = s->mod.line2VeloPitch;
+    matrix.line2VeloDcw = s->mod.line2VeloDcw;
+    matrix.line2VeloDca = s->mod.line2VeloDca;
+    
+    matrix.line1KfPitch = s->mod.line1KfPitch;
+    matrix.line1KfDcw = s->mod.line1KfDcw;
+    matrix.line1KfDca = s->mod.line1KfDca;
+    matrix.line2KfPitch = s->mod.line2KfPitch;
+    matrix.line2KfDcw = s->mod.line2KfDcw;
+    matrix.line2KfDca = s->mod.line2KfDca;
     
     // amounts (Wait, were these amounts in snapshot?)
     // Snapshot doesn't have explicit amounts for KF yet, assuming 1.0 (Standard Tracking) if ON.

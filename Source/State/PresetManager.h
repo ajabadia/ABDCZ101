@@ -84,7 +84,7 @@ public:
     void loadPreset(int index, bool updateVoice = true);
     void savePreset(int index, const std::string& name);
     void loadPresetFromStruct(const Preset& p, bool updateVoice = true, bool notifyHost = true); 
-    void copyStateFromProcessor(); 
+    void copyStateFromProcessor(bool notifyListeners = true); 
     void applyPresetToProcessor(const Preset& p);
     
     // Thread safety for preset operations

@@ -49,15 +49,11 @@ struct ADSRtoStageConverter {
         releaseMs = std::clamp(releaseMs, 0.0f, 8000.0f);
         
         // Internal helper: convert milliseconds -> MultiStageEnvelope Rate (0.0 - 1.0)
-        // This unifies the mapping between ADSR controls and the 8-stage engine.
-        // Formula is based on the inverse of MultiStageEnvelope::rateToSeconds:
-        // rate = 1.0 - pow((seconds - 0.001) / 30, 0.25)
-        // ADSR to Stage Formula
-        // Audit Fix [E]: Clamp sec to >= 0.001 to avoid NaN in pow()
+        // Inverse of getRateInSeconds: norm = ((sec - 0.003) / 25.0)^(1/4.5)
         auto msToRate = [](float ms) -> float {
-            float sec = std::clamp(ms / 1000.0f, 0.001f, 30.0f);
-            float r = std::pow(std::clamp((sec - 0.001f) / 30.0f, 0.0f, 1.0f), 0.25f);
-            return std::clamp(1.0f - r, 0.0f, 1.0f);
+            float sec = std::clamp(ms / 1000.0f, 0.003f, 25.0f);
+            float norm = std::pow((sec - 0.003f) / 25.0f, 1.0f / 4.5f);
+            return std::clamp(1.0f - norm, 0.0f, 1.0f);
         };
         
         // ===== STAGE 0: ATTACK =====

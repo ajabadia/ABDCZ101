@@ -13,6 +13,12 @@ namespace State {
  */
 class EnvelopeSerializer {
 public:
+    enum EnvType {
+        PITCH,
+        DCW,
+        DCA
+    };
+
     // --- Snapshot Helpers ---
     
     /** Copies EnvelopeData to a ParameterSnapshot::EnvParam struct for the audio thread. */
@@ -21,10 +27,10 @@ public:
     // --- SysEx Helpers ---
     
     /** Decodes an 8-stage envelope from Casio SysEx nibbles. */
-    static void decodeFromSysEx(const uint8_t* msg, int& offset, int maxSize, EnvelopeData& env);
+    static void decodeFromSysEx(const uint8_t* msg, int& offset, int maxSize, EnvelopeData& env, EnvType type, float& velocityOut);
     
     /** Encodes an 8-stage envelope into Casio SysEx nibbles. */
-    static void encodeToSysEx(const EnvelopeData& env, juce::MemoryBlock& data);
+    static void encodeToSysEx(const EnvelopeData& env, juce::MemoryBlock& data, EnvType type, float velocityIn = 0.0f);
 
     // --- Macro / ADSR Helpers ---
     

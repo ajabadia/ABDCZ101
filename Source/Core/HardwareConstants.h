@@ -19,8 +19,8 @@ namespace HardwareConstants {
     // Output Soft Clip Curve (Derived from scope measurement)
     constexpr float SOFT_CLIP_DRIVE = 0.68f;
 
-    // Master Headroom Scaling (To prevent digital clipping after mix)
-    constexpr float MASTER_HEADROOM_GAIN = 0.9f;
+    // Master Headroom Scaling (To prevent digital clipping after mix of up to 8 voices)
+    constexpr float MASTER_HEADROOM_GAIN = 0.35f;
 
     // --- DSP Thresholds ---
     
@@ -37,13 +37,9 @@ namespace HardwareConstants {
     constexpr int CONTROL_RATE_DIVIDER = 8;
     constexpr int CONTROL_RATE_MASK = CONTROL_RATE_DIVIDER - 1;
 
-    // Audit Fix 10.3: Non-Linear Line Mixing (Simulate summing amp saturation)
-    // Uses tanh approximation for warmth and safety.
+    // CZ-101 is a pure digital synthesizer. Line mixing is a direct sum.
     inline float mixLines(float l1, float l2) {
-        float sum = l1 + l2;
-        // Soft saturation: std::tanh(sum)
-        // We allow a bit of "hotness"
-        return std::tanh(sum); 
+        return (l1 + l2) * 0.5f; // Normalized sum to prevent clipping, preserving pure digital sound
     }
 
 } // namespace HardwareConstants

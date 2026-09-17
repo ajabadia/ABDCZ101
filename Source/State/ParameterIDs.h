@@ -8,19 +8,22 @@ namespace ParameterIDs {
     // --- Oscillators ---
     inline const juce::String lineSelect     { "LINE_SELECT" };
     inline const juce::String osc1Waveform   { "OSC1_WAVEFORM" };
+    inline const juce::String osc1Window     { "OSC1_WINDOW" };
     inline const juce::String osc1Waveform2  { "OSC1_WAVEFORM2" };
     inline const juce::String osc1Level      { "OSC1_LEVEL" };
     inline const juce::String osc2Waveform   { "OSC2_WAVEFORM" };
+    inline const juce::String osc2Window     { "OSC2_WINDOW" };
     inline const juce::String osc2Waveform2  { "OSC2_WAVEFORM2" };
     inline const juce::String osc2Level      { "OSC2_LEVEL" };
     inline const juce::String osc2Detune     { "OSC2_DETUNE" };
+    inline const juce::String octave         { "OCTAVE" };
     inline const juce::String detuneOct      { "DETUNE_OCT" };
     inline const juce::String detuneCoarse   { "DETUNE_COARSE" };
     inline const juce::String detuneFine     { "DETUNE_FINE" };
     inline const juce::String lineMix        { "LINE_MIX" };
     inline const juce::String hardSync       { "HARD_SYNC" };
-    inline const juce::String ringMod        { "RING_MOD" };
-    inline const juce::String noiseMod       { "NOISE_MOD" };
+    inline const juce::String lineMod        { "LINE_MODULATION" };
+    inline const juce::String modSpecial     { "MOD_SPECIAL" };
     inline const juce::String glideTime      { "GLIDE" };
 
     // --- LFO / Vibrato ---
@@ -52,6 +55,22 @@ namespace ParameterIDs {
     inline const juce::String keyFollowDco    { "KEY_FOLLOW_DCO" };
     inline const juce::String keyFollowDcw    { "KEY_FOLLOW_DCW" };
     inline const juce::String keyFollowDca    { "KEY_FOLLOW_DCA" };
+
+    // --- CZ-1 Velocity Sensitivity ---
+    inline const juce::String line1VeloPitch  { "LINE1_VELO_PITCH" };
+    inline const juce::String line1VeloDcw    { "LINE1_VELO_DCW" };
+    inline const juce::String line1VeloDca    { "LINE1_VELO_DCA" };
+    inline const juce::String line2VeloPitch  { "LINE2_VELO_PITCH" };
+    inline const juce::String line2VeloDcw    { "LINE2_VELO_DCW" };
+    inline const juce::String line2VeloDca    { "LINE2_VELO_DCA" };
+
+    // --- Key Follow (0-9) per Envelope ---
+    inline const juce::String line1KfPitch    { "LINE1_KF_PITCH" };
+    inline const juce::String line1KfDcw      { "LINE1_KF_DCW" };
+    inline const juce::String line1KfDca      { "LINE1_KF_DCA" };
+    inline const juce::String line2KfPitch    { "LINE2_KF_PITCH" };
+    inline const juce::String line2KfDcw      { "LINE2_KF_DCW" };
+    inline const juce::String line2KfDca      { "LINE2_KF_DCA" };
 
     // --- Modern Filters ---
     inline const juce::String lpfCutoff      { "MODERN_LPF_CUTOFF" };

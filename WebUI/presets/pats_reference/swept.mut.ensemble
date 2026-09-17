@@ -1,0 +1,14 @@
+Name: swept mute ens.
+>From: Michael Schaeffer <michaels%tekigm2.tek.com@RELAY.CS.NET>
+
+ENVELOPE DATA (wave or key - R1.L1 - R2.L2 - *** - R7.L7 - R8);
+DCO1 (wave-env): 2.1-67.55-42.60-54.6-50e
+DCW1 (key-env): 0-52.99-28.90-30.97-31.93-22.71s-50.52-50e
+DCA1 (key-env): 0-71.99s-38.82-30.75-49e
+DCO2 (wave-env): 2.4-53.15-49e
+DCW2 (key-env): 0-53.99-79.72-50.70s-50e
+DCA2 (key-env):  0-89.91-49.86-18.73(?s?)-20.70-22e
+DETUNE (+- oct - semi - fine): +1-0-2
+MODULATION (1'or 2' - ring or noise): 2' ring
+VIBRATO (wave-delay-rate-depth): 1-42-31-20
+KEYBOARD OCTAVE (+ o -): 0

@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <cmath>
-#include <JuceHeader.h>
+#include <juce_core/juce_core.h>
 #include "BBDChorus.h"
 
 namespace CZ101 {

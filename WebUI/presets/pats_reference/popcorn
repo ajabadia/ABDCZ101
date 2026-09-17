@@ -1,0 +1,47 @@
+Name: popcorn
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line    mod     detune          vibrato         octave
+1+2     ring    + 1 00 00       4 00 97 27      -1
+DCO1
+wave
+5 2
+rt lv
+95 91
+99 00e
+DCO1
+key
+0
+rt lv
+99 78
+47 79s
+50 00
+47 00e
+DCA1
+key
+4
+rt lv
+97 99
+56 49
+99 00e
+DCO2
+wave
+8 3
+rt lv
+99 99
+93 00e
+DCW2
+key
+0
+rt lv
+99 81s
+64 00e
+DCA2
+key
+0
+rt lv
+99 99
+56 00e
+
+
+Comments:  Great for adding attack to sequencer bass lines.

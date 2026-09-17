@@ -1,0 +1,17 @@
+Name: fen
+By: Miles Bader
+Vibr: -
+Oct: -1
+Line: 1+2'
+Mod: -
+DCO1: WF: 5,0  Env: 80/66, 75/0/e
+DCW1: KF: 0    Env: 85/87/s, 51/0/e
+DCA1: KF: 2    Env: 80/99/s, 33/0/e
+DCO2: WF: 5,0  Env: 0/e
+DCW2: KF: 0    Env: 85/36, 67/89/s, 30/0/e
+DCA2: KF: 2    Env: 80/99/s, 33/0/e
+Vel1: A: 7  W: 0  P: 0
+Vel2: A: 7  W: 0  P: 0
+Detune: +0,0,7
+Comments: This is what a synthesizer is SUPPOSED to sound like!  A bit
+        harsh on the high end... Line 2 sounds alright by itself too.

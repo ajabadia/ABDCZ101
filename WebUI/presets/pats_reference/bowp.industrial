@@ -1,0 +1,50 @@
+Name: Bowp/Industrial [Bass]
+>From: Paul Boutin <paul@athena.mit.edu>
+
+line    mod     detune          vibrato         octave
+1 +2    *       + 3 05 00       -               -1
+DCO1
+wave
+6 *
+rt lv
+0 0e
+DCO1
+key
+0
+rt lv
+72 53
+52 00e
+DCA1
+key
+0
+rt lv
+99 99 
+44 00e
+DCO2
+wave
+4 0
+rt lv
+00 00e
+DCW2
+key
+2
+rt lv
+99 10
+48 00e
+DCA2
+key
+0
+rt lv
+99 81
+42 00e
+
+Comments:  * This is one of my most-used sounds.  There are four variations
+according to the following matrix:
+        
+                Bowp            Industrial
+
+Regular         ring mod        noise mod
+                DCO1 6 0        DCO1 6 0
+
+Bass            ring mod        noise mod
+                DCO1 6 2        DCO1 6 2

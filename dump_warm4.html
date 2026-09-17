@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>WARM OK</title>
+</head>
+<body>
+<iframe id="ui" src="index.html" style="width:1300px;height:900px"></iframe>
+<pre id="out">total banks: 9 warmed=true
+Factory CZ-101 [cz101] occupied=4 first=[{"name":"Init Patch"}]
+CZ-230S Bank 00-15 [cz230s] occupied=16 first=[{"name":"Bank 00-15 01"}]
+CZ-230S Bank 16-31 [cz230s] occupied=16 first=[{"name":"Bank 16-31 01"}]
+CZ-230S Bank 31-47 [cz230s] occupied=16 first=[{"name":"Bank 31-47 01"}]
+CZ-230S Bank 48-63 [cz230s] occupied=16 first=[{"name":"Bank 48-63 01"}]
+CZ-230S Bank 64-79 [cz230s] occupied=16 first=[{"name":"Bank 64-79 01"}]
+CZ-230S Bank 80-95 [cz230s] occupied=16 first=[{"name":"Bank 80-95 01"}]
+CZ-230S Bank 96-99 [cz230s] occupied=4 first=[{"name":"Bank 96-99 01"}]
+CZ Pack 1 [czpack1] occupied=20 first=[{"name":"Patch 01"}]
+</pre>
+<script>
+  window.addEventListener('load', async () => {
+    const out = document.getElementById('out');
+    const log = (s) => { out.textContent += s + '\n'; console.log(s); };
+    try {
+      localStorage.removeItem('cz101.bankLibrary');
+      localStorage.removeItem('cz101.activeBankId');
+      const iframe = document.getElementById('ui');
+      iframe.src = 'index.html';
+      await new Promise(r => iframe.addEventListener('load', r, { once: true }));
+      // Poll until warm-up persists (up to 20s)
+      let done = false;
+      for (let i = 0; i < 40; i++) {
+        await new Promise(r => setTimeout(r, 500));
+        const lib = JSON.parse(localStorage.getItem('cz101.bankLibrary') || 'null');
+        if (lib && lib.banks && lib.banks.some(b => b.readOnly && b.source && b.presets.some(p => p.name.startsWith('Patch')))) {
+          done = true;
+          break;
+        }
+      }
+      const lib = JSON.parse(localStorage.getItem('cz101.bankLibrary') || 'null');
+      if (!lib) { log('NO LIBRARY'); document.title = 'FAIL'; return; }
+      const lines = lib.banks.map(b => {
+        const occ = b.presets.filter(p => !p.name.startsWith('Init')).length;
+        return `${b.name} [${b.model}] occupied=${occ} first=${JSON.stringify(b.presets.slice(0,1))}`;
+      });
+      log('total banks: ' + lib.banks.length + ' warmed=' + done);
+      lines.forEach(l => log(l));
+      document.title = done ? 'WARM OK' : 'WARM INCOMPLETE';
+    } catch (e) {
+      log('ERR: ' + e.message);
+      document.title = 'FAIL';
+    }
+  });
+</script>
+
+
+</body></html>

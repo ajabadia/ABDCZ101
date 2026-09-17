@@ -1,0 +1,15 @@
+Name: minor vox chorus
+>From: Michael Schaeffer <michaels%tekigm2.tek.com@RELAY.CS.NET>
+
+COMMENT: fairly modal based on casio human voice
+ENVELOPE DATA (wave or key - R1.L1 - R2.L2 - *** - R7.L7 - R8);
+DCO1 (wave-env): 1.4-55.65-40.66s-2e
+DCW1 (key-env): 0-99e
+DCA1 (key-env): 0-79.99-21.74s-31.75-60e
+DCO2 (wave-env): 5.0-50e
+DCW2 (key-env): 8-46.65-35.20s-54e
+DCA2 (key-env): 0-67.77-21.77-12.90s-35e
+DETUNE (+- oct - semi - fine): (-)0-7-10
+MODULATION (1'or 2' - ring or noise): 2'
+VIBRATO (wave-delay-rate-depth): 1-72-46-19
+KEYBOARD OCTAVE (+ o -): 0

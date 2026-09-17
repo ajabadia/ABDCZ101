@@ -1,0 +1,165 @@
+/* Bank Manager overlay (native BankManagerOverlay) */
+.bank-manager-box {
+  width: min(800px, 94vw); /* Increased width for two columns */
+  max-width: 800px; /* Override .modal-box max-width */
+  display: flex;
+  flex-direction: column;
+}
+
+.bank-manager-grid {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 20px;
+  max-height: 70vh;
+}
+
+.bank-manager-col {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Allow internal lists to scroll */
+}
+
+.bank-manager-col-left {
+  border-right: 1px solid var(--border-light);
+  padding-right: 20px;
+}
+
+.bank-mgr-toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Active-preset row inside the Bank Manager (moved from the front panel: slot
+   dropdown + prev/next and the preset name, same IDs as before). */
+.bank-active-preset {
+  border-top: 1px solid var(--border-light);
+  padding-top: 8px;
+}
+
+.bank-active-preset:first-of-type {
+  border-top: none;
+}
+
+.bank-mgr-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.bank-name-input {
+  flex: 1;
+  min-width: 120px;
+  font-family: 'Share Tech Mono', monospace;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+.bank-name-input:focus {
+  border-color: var(--color-accent);
+}
+
+.bank-model-badge {
+  display: inline-block;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 1px;
+  color: var(--color-accent, #00ffcc);
+  background: rgba(0, 255, 204, 0.12);
+  border: 1px solid rgba(0, 255, 204, 0.35);
+  border-radius: 8px;
+  padding: 1px 8px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.bank-mgr-toolbar .btn-glow {
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.bank-search-input {
+  flex: 1;
+  min-width: 120px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.78rem;
+  background: #0c0f1d;
+  color: var(--color-accent, #00ffcc);
+  border: 1px solid #1a233d;
+  border-radius: 4px;
+  padding: 5px 8px;
+  outline: none;
+}
+
+.bank-search-input:focus {
+  border-color: var(--color-accent, #00ffff);
+}
+
+.bank-mgr-status {
+  flex: 1;
+  text-align: left;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.bank-slot-row.empty {
+  opacity: 0.55;
+}
+
+.bank-manager-list {
+  flex: 1;
+  min-height: 240px;
+  max-height: 50vh;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.85rem;
+}
+
+.bank-slot-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  cursor: context-menu;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+}
+
+.bank-slot-row:hover {
+  background: rgba(0, 255, 204, 0.08);
+}
+
+.bank-slot-row.selected {
+  background: rgba(0, 255, 204, 0.18);
+}
+
+.bank-slot-num {
+  color: var(--color-accent);
+  min-width: 34px;
+  text-align: right;
+}
+
+.bank-slot-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bank-manager-actions {
+  display: flex;
+  justify-content: flex-end;
+}

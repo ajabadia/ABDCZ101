@@ -1,0 +1,46 @@
+Name: Simmons SDS-7
+
+line    mod     detune          vibrato         octave
+1+1     noise   +1 03 00                        -1
+
+DCO 1
+wave 
+1 5
+rate    level
+99      70
+42      00e
+
+DCW 1
+key 
+0
+rate    level
+99      99
+99      00e
+
+DCA 1
+key 
+9
+rate    level
+99      99
+43      00s
+50      00e
+
+DCO 2
+wave 
+
+rate    level
+
+
+DCW 2
+key 
+
+rate    level
+
+
+DCA 2
+key 
+
+rate    level
+
+
+Comments: I tried to duplicate the sound on Duran Duran's "Rio".

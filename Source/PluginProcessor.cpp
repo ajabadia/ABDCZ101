@@ -3,7 +3,6 @@
 #include "State/PresetManager.h"
 #include "State/EnvelopeSerializer.h"
 #include "DSP/Envelopes/ADSRtoStage.h" // [NEW] for Snapshot Builder // Required for unique_ptr destructor
-#include "UI/LCDStateManager.h"
 
 // --- CONSTRUCTOR ---
 CZ101AudioProcessor::CZ101AudioProcessor()
@@ -13,7 +12,7 @@ CZ101AudioProcessor::CZ101AudioProcessor()
       undoManager(),
       parameters(*this, &undoManager),
       presetManager(&parameters, &voiceManager),
-      midiProcessor(voiceManager, presetManager),
+      midiProcessor(voiceManager),
       sysExManager()
 {
     DBG("CZ101 Processor: Constructor Start");
@@ -47,6 +46,12 @@ CZ101AudioProcessor::CZ101AudioProcessor()
         }
         triggerAsyncUpdate();
     };
+
+    sysExManager.onDumpRequested = [this](int slotId) {
+        pendingDumpSlotId.store(slotId);
+        hasPendingDumpRequest.store(true);
+        triggerAsyncUpdate();
+    };
     
     juce::Logger::writeToLog("Setting SysEx Manager...");
     midiProcessor.setSysExManager(&sysExManager);
@@ -57,9 +62,7 @@ CZ101AudioProcessor::CZ101AudioProcessor()
         scheduleMidiParamUpdate(id, val);
     });
     
-    // Initialize LCD State Manager here to ensure it persists and avoids dangling references
-    juce::Logger::writeToLog("CZ101 Processor: Initializing LCD State Manager");
-    lcdStateManager = std::make_unique<CZ101::UI::LCDStateManager>(parameters.getAPVTS());
+    // LCD State Manager removed for WebUI
 
     // Audit Fix [D]: Reconnect UI and DSP
     // Register this processor as a listener for all parameters to trigger snapshot updates
@@ -117,7 +120,7 @@ void CZ101AudioProcessor::applyPresetEnvelopes(const EnvelopeStatePOD& pod)
 // --- BASIC PLUGIN INFO ---
 const juce::String CZ101AudioProcessor::getName() const { return JucePlugin_Name; }
 bool CZ101AudioProcessor::acceptsMidi() const { return true; }
-bool CZ101AudioProcessor::producesMidi() const { return false; }
+bool CZ101AudioProcessor::producesMidi() const { return true; }
 bool CZ101AudioProcessor::isMidiEffect() const { return false; }
 // Audit Fix 2.2: Return max reasonable tail (CZ-101 envelope max).
 // Audit Fix 2.2: Return max reasonable tail (CZ-101 envelope max).
@@ -138,11 +141,24 @@ void CZ101AudioProcessor::changeProgramName(int index, const juce::String& newNa
     presetManager.renamePreset(index, newName.toStdString()); 
 }
 
-// --- EDITOR ---
-bool CZ101AudioProcessor::hasEditor() const { return true; }
-juce::AudioProcessorEditor* CZ101AudioProcessor::createEditor() 
-{ 
-    return new CZ101AudioProcessorEditor(*this); 
+//==============================================================================
+//==============================================================================
+bool CZ101AudioProcessor::hasEditor() const
+{
+#if GOLDEN_MASTER_BUILD
+    return false;
+#else
+    return true; // (make sure this is set to true when providing an editor)
+#endif
+}
+
+juce::AudioProcessorEditor* CZ101AudioProcessor::createEditor()
+{
+#if GOLDEN_MASTER_BUILD || SNAPSHOT_DSP_TEST_BUILD
+    return nullptr;
+#else
+    return new CZ101AudioProcessorEditor(*this);
+#endif
 }
 
 // --- PREPARE TO PLAY ---
@@ -158,6 +174,7 @@ void CZ101AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     
     // Audit Fix 4.1: FIFO resizing
     voiceManager.setSampleRate(sampleRate);
+    uiMidiCollector.reset(sampleRate);
  
     // Audit Fix: Initialize Vis Buffer (Triple Buffer is std::array, no resize needed)
     // visBuffer.setSize(1, VIS_FIFO_SIZE);
@@ -183,17 +200,24 @@ void CZ101AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     }
     
     juce::Logger::writeToLog("CZ101Processor: Initializing Preset 0");
+    juce::Logger::writeToLog("DEBUG: Calling loadPreset(0)");
     presetManager.loadPreset(0);
+    juce::Logger::writeToLog("DEBUG: loadPreset(0) finished");
+
     // Modern Filters Setup
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
     spec.maximumBlockSize = samplesPerBlock;
     spec.numChannels = 2; // Stereo
     
+    juce::Logger::writeToLog("DEBUG: Calling effectsChain.prepare");
     effectsChain.prepare(spec);
+    juce::Logger::writeToLog("DEBUG: effectsChain.prepare finished");
     
     // Audit Fix 3.1: Initialize Latency
+    juce::Logger::writeToLog("DEBUG: Calling updateParameters");
     updateParameters();
+    juce::Logger::writeToLog("DEBUG: updateParameters finished");
 }
 
 void CZ101AudioProcessor::releaseResources() {}
@@ -222,7 +246,7 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     
     for (int i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i) 
         buffer.clear(i, 0, buffer.getNumSamples());
-    
+        
     // Audit Fix [D]: Using LOCK-FREE Snapshot System
     // 1. Process Message Queue (Envelopes) - Still separate for now, or could be in snapshot?
     // Envelopes are "Events", Snapshot is "State". Keep Events separate.
@@ -237,13 +261,9 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     const auto* snapshot = audioSnapshot.get();
     
     // Optimized Bypass Path
-    // Bypass is not in Snapshot yet (Juice Param). 
-    // We should probably rely on the Param directly for Bypass or put it in Snapshot.
-    // For safety, let's use the param directly as it's an Atomic wrapper usually?
-    // Parameters access in Audio Thread is SAFE if they are Atomics (most JUCE params are).
-    // But `getBypass()->get()` is safe.
     if (parameters.getBypass() && parameters.getBypass()->get())
     {
+        uiMidiCollector.removeNextBlockOfMessages(midiMessages, buffer.getNumSamples());
         midiProcessor.processMidiBuffer(midiMessages);
         performanceMonitor.stopMeasurement();
         return;
@@ -256,7 +276,28 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
         voiceManager.getArpeggiator().setEnabled(snapshot->arp.enabled); // Redundant? applySnapshot does it.
     }
     
+    // Inject UI MIDI messages into the buffer
+    uiMidiCollector.removeNextBlockOfMessages(midiMessages, buffer.getNumSamples());
+    
+    {
+        const juce::SpinLock::ScopedLockType sl(uiMidiLock);
+        for (const auto& msg : uiMidiDirectQueue)
+        {
+            midiMessages.addEvent(msg, 0);
+        }
+        uiMidiDirectQueue.clear();
+    }
+    
     midiProcessor.processMidiBuffer(midiMessages);
+    
+    for (const auto metadata : midiMessages)
+    {
+        auto msg = metadata.getMessage();
+        if (msg.isNoteOn())
+        {
+            lastMidiNotePlayed.store(msg.getNoteNumber(), std::memory_order_relaxed);
+        }
+    }
     
     auto* channelDataL = buffer.getWritePointer(0);
     auto* channelDataR = buffer.getWritePointer(1);
@@ -278,13 +319,21 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     // Copy current block (limit to buffer size)
     int numSamples = std::min(buffer.getNumSamples(), (int)visTripleBuffer.SIZE);
     juce::FloatVectorOperations::copy(backBuf.data(), buffer.getReadPointer(0), numSamples);
-    // Zero the rest if needed? (Optional, if WaveformDisplay uses numSamples known? No, it uses 256 internal)
-    // For now, simple copy.
+    visTripleBuffer.sampleCounts[back] = numSamples;
     
     // 2. Publish: Swap Back with Mid
     int mid = visTripleBuffer.midIndex.exchange(back, std::memory_order_acq_rel);
     visTripleBuffer.backIndex.store(mid, std::memory_order_relaxed);
     visTripleBuffer.hasNewData.store(true, std::memory_order_release);
+
+    // Merge MIDI Output Queue
+    {
+        const juce::ScopedTryLock sl(midiOutputLock);
+        if (sl.isLocked() && !midiOutputQueue.isEmpty()) {
+            midiMessages.addEvents(midiOutputQueue, 0, buffer.getNumSamples(), 0);
+            midiOutputQueue.clear();
+        }
+    }
     
     performanceMonitor.stopMeasurement();
 }
@@ -292,21 +341,32 @@ void CZ101AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 // --- UPDATE PARAMETERS (Centralized Logic) ---
 void CZ101AudioProcessor::updateParameters()
 {
-    // Audit Fix 4.1: Refactored Monolithic Method into Helpers
+    juce::Logger::writeToLog("DEBUG: updateParameters: calculateMacros");
     auto macros = calculateMacros();
     
+    juce::Logger::writeToLog("DEBUG: updateParameters: updateFilters");
     updateFilters(macros);
+    juce::Logger::writeToLog("DEBUG: updateParameters: updateOscillators");
     updateOscillators(macros);
+    juce::Logger::writeToLog("DEBUG: updateParameters: updateEnvelopes");
     updateEnvelopes(macros);
+    juce::Logger::writeToLog("DEBUG: updateParameters: updateLFO");
     updateLFO();
+    juce::Logger::writeToLog("DEBUG: updateParameters: updateModMatrix");
     updateModMatrix();
+    juce::Logger::writeToLog("DEBUG: updateParameters: updateEffects");
     updateEffects(macros);
+    juce::Logger::writeToLog("DEBUG: updateParameters: updateSystemGlobal");
     updateSystemGlobal();
+    juce::Logger::writeToLog("DEBUG: updateParameters: updateArpeggiator");
     updateArpeggiator();
     
+    juce::Logger::writeToLog("DEBUG: updateParameters: buildAudioSnapshot");
     // Centralized Snapshot Creation (Optimization: One allocation per update)
     auto snap = buildAudioSnapshot();
+    juce::Logger::writeToLog("DEBUG: updateParameters: audioSnapshot.commit");
     audioSnapshot.commit(std::move(snap));
+    juce::Logger::writeToLog("DEBUG: updateParameters: done");
 }
 
 // Audit Fix 2.1: Implement setNonRealtime to recalculate smoothing
@@ -483,6 +543,52 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new CZ101Audio
 // Audit Fix 4.2: Handle SysEx parameter updates on Message Thread
 void CZ101AudioProcessor::handleAsyncUpdate()
 {
+    // Handle Dump Request
+    if (hasPendingDumpRequest.exchange(false))
+    {
+        int slotId = pendingDumpSlotId.load();
+        CZ101::State::Preset p;
+        
+        if (slotId == 0x60) // Current Sound / Edit Buffer
+        {
+            presetManager.copyStateFromProcessor();
+            p = presetManager.getCurrentPreset();
+        }
+        else if (slotId >= 0x20 && slotId <= 0x3F) // Internal Presets (32..63)
+        {
+            int presetIdx = slotId - 0x20;
+            const auto& presets = presetManager.getPresets();
+            if (presetIdx >= 0 && presetIdx < (int)presets.size()) {
+                p = presets[presetIdx];
+            } else {
+                presetManager.copyStateFromProcessor();
+                p = presetManager.getCurrentPreset();
+            }
+        }
+        else if (slotId >= 0x00 && slotId <= 0x1F) // Preset Bank (0..31)
+        {
+            int presetIdx = slotId;
+            const auto& presets = presetManager.getPresets();
+            if (presetIdx >= 0 && presetIdx < (int)presets.size()) {
+                p = presets[presetIdx];
+            } else {
+                presetManager.copyStateFromProcessor();
+                p = presetManager.getCurrentPreset();
+            }
+        }
+        else
+        {
+            presetManager.copyStateFromProcessor();
+            p = presetManager.getCurrentPreset();
+        }
+
+        juce::MemoryBlock sysexBlock = sysExManager.createPatchDump(p);
+        {
+            const juce::ScopedLock sl(midiOutputLock);
+            midiOutputQueue.addEvent(juce::MidiMessage(sysexBlock.getData(), (int)sysexBlock.getSize(), 0), 0);
+        }
+    }
+
     std::unique_ptr<CZ101::State::Preset> p;
     
     // Check flag first efficiently
@@ -520,6 +626,21 @@ void CZ101AudioProcessor::handleAsyncUpdate()
 
     // Audit Fix [D]: Rebuild Snapshot after any parameter change (SysEx, MIDI, or UI)
     updateParameters();
+    
+    /*
+    // Realtime Editor: Output full SysEx state to keep hardware in sync
+    static uint32_t lastSysExTime = 0;
+    if (juce::Time::getMillisecondCounter() - lastSysExTime > 200) {
+        presetManager.copyStateFromProcessor();
+        const auto& p = presetManager.getCurrentPreset();
+        juce::MemoryBlock sysexBlock = sysExManager.createPatchDump(p, paramCache.opMode);
+        {
+            const juce::ScopedLock sl(midiOutputLock);
+            midiOutputQueue.addEvent(juce::MidiMessage(sysexBlock.getData(), (int)sysexBlock.getSize(), 0), 0);
+        }
+        lastSysExTime = juce::Time::getMillisecondCounter();
+    }
+    */
 }
 
 // Audit Fix 10.1: Lock-Free MIDI Scheduler
@@ -568,6 +689,13 @@ void CZ101AudioProcessor::toggleCompareMode(bool enable)
 CZ101AudioProcessor::MacroValues CZ101AudioProcessor::calculateMacros()
 {
     MacroValues m;
+    // The performance macros (Brilliance/Tone/Space) are a Modern-only feature
+    // of this emulator (the CZ-101/CZ-5000 had no such macros). In Classic
+    // modes they are neutralized so they cannot affect the sound.
+    int opMode = parameters.getOperationMode() ? parameters.getOperationMode()->getIndex() : 0;
+    if (opMode != 3)
+        return m; // defaults: toneSpeedMult=1.0, brillianceOffset=0.0, spaceMix=0.0
+
     float macroBrilliance = parameters.getMacroBrilliance() ? parameters.getMacroBrilliance()->get() : 0.5f;
     float macroTone = parameters.getMacroTone() ? parameters.getMacroTone()->get() : 0.5f;
     float macroSpace = parameters.getMacroSpace() ? parameters.getMacroSpace()->get() : 0.0f;
@@ -584,19 +712,35 @@ CZ101AudioProcessor::MacroValues CZ101AudioProcessor::calculateMacros()
 
 void CZ101AudioProcessor::updateFilters(const MacroValues& m)
 {
-    if (parameters.getModernLpfCutoff()) {
+    // Tone macro: global envelope rate multiplier (2x per +0.5 above center).
+    // Combined with the velocity attack response inside Voice::noteOn.
+    voiceManager.setToneRateScale(m.toneSpeedMult);
+
+    // The per-voice LPF/HPF are Modern-only: outside Modern they are forced
+    // fully open so the Modern filter params cannot color the Classic models
+    // (the Filter panel is hidden in Classic modes; the engine must match).
+    int opMode = parameters.getOperationMode() ? parameters.getOperationMode()->getIndex() : 0;
+    const bool modern = (opMode == 3);
+
+    if (modern && parameters.getModernLpfCutoff()) {
         float baseCutoff = parameters.getModernLpfCutoff()->get();
         // Voice Filters use Macro Brilliance (Output LPF handled in EffectsChain via Snapshot)
         float finalCutoff = juce::jlimit(20.0f, 20000.0f, baseCutoff + m.brillianceOffset);
         voiceManager.setFilterCutoff(finalCutoff);
+    } else {
+        voiceManager.setFilterCutoff(20000.0f); // fully open in Classic modes
     }
-    if (parameters.getModernLpfReso()) {
+    if (modern && parameters.getModernLpfReso()) {
         float res = parameters.getModernLpfReso()->get();
         voiceManager.setFilterResonance(res);
+    } else {
+        voiceManager.setFilterResonance(0.0f);
     }
-    if (parameters.getModernHpfCutoff()) {
+    if (modern && parameters.getModernHpfCutoff()) {
         float hpf = parameters.getModernHpfCutoff()->get();
         voiceManager.setHPF(hpf);
+    } else {
+        voiceManager.setHPF(20.0f); // open HPF in Classic modes
     }
 }
 
@@ -639,7 +783,14 @@ void CZ101AudioProcessor::updateEffects(const MacroValues& m)
 
 void CZ101AudioProcessor::updateSystemGlobal()
 {
-    // Snapshot logic moved to updateParameters
+    // Wire the APVTS system parameters into the MIDI engine. Previously
+    // MIDI_CH and PITCH_BEND_RANGE only reached the snapshot/LCD and the MIDI
+    // processor kept its defaults (OMNI channel, ±2 st bend), so both params
+    // had no audible effect in the native plugin.
+    int midiCh = parameters.getMidiChannel() ? parameters.getMidiChannel()->get() : 1;
+    int bendRange = parameters.getPitchBendRange() ? parameters.getPitchBendRange()->get() : 2;
+    midiProcessor.setMidiChannel(juce::jlimit(1, 16, midiCh));
+    midiProcessor.setPitchBendRange(juce::jlimit(0, 12, bendRange));
 }
 
 void CZ101AudioProcessor::updateArpeggiator()
@@ -660,21 +811,25 @@ std::unique_ptr<CZ101::Core::ParameterSnapshot> CZ101AudioProcessor::buildAudioS
 
     // DCO 1
     snap->dco1.wave1 = getInt(parameters.getOsc1Waveform());
+    snap->dco1.window = getInt(parameters.getOsc1Window());
     snap->dco1.wave2 = parameters.getOsc1Waveform2() ? (getInt(parameters.getOsc1Waveform2()) == 0 ? 8 : getInt(parameters.getOsc1Waveform2()) - 1) : 8;
     snap->dco1.level = getVal(parameters.getOsc1Level());
 
     // DCO 2
     snap->dco2.wave1 = getInt(parameters.getOsc2Waveform());
+    snap->dco2.window = getInt(parameters.getOsc2Window());
     snap->dco2.wave2 = parameters.getOsc2Waveform2() ? (getInt(parameters.getOsc2Waveform2()) == 0 ? 8 : getInt(parameters.getOsc2Waveform2()) - 1) : 8;
     snap->dco2.level = getVal(parameters.getOsc2Level());
     snap->dco2.octave = getIntParam(parameters.getDetuneOctave()); 
     snap->dco2.coarse = getIntParam(parameters.getDetuneCoarse());
     snap->dco2.fine = getIntParam(parameters.getDetuneFine());
+    snap->dco2.legacyDetune = getVal(parameters.getOsc2Detune());
 
     // 1+1 Logic (Line Select = 2)
     int lineSel = parameters.getLineSelect() ? getInt(parameters.getLineSelect()) : 2;
     if (lineSel == 2) {
          snap->dco2.wave1 = snap->dco1.wave1;
+         snap->dco2.window = snap->dco1.window;
          snap->dco2.wave2 = snap->dco1.wave2;
          snap->dco2.level = snap->dco1.level;
     }
@@ -682,18 +837,30 @@ std::unique_ptr<CZ101::Core::ParameterSnapshot> CZ101AudioProcessor::buildAudioS
     if (lineSel == 1) snap->dco1.level = 0.0f;
 
     // Line Mod
-    snap->lineMod.ring = getBool(parameters.getRingMod());
-    snap->lineMod.noise = parameters.getNoiseMod() ? getBool(parameters.getNoiseMod()) : false;
+    snap->lineMod.mode = getInt(parameters.getLineMod());
+    snap->lineMod.special = getBool(parameters.getModSpecial());
 
     // System
     snap->system.masterVol = getVal(parameters.getMasterVolume(), 1.0f);
-    snap->system.masterTune = 0.0f; 
-    snap->system.bendRange = 2.0f; 
+    // MASTER_TUNE is stored in cents; Voice expects semitones (2^(st/12)).
+    snap->system.masterTune = getVal(parameters.getMasterTune(), 0.0f) / 100.0f;
+    snap->system.bendRange = getIntParam(parameters.getPitchBendRange(), 2);
     
-    // Op Mode & Limits
     snap->system.opMode = getInt(parameters.getOperationMode());
-    snap->system.voiceLimit = (snap->system.opMode == 2) ? 16 : (snap->system.opMode == 0 ? 4 : 8);
-    snap->system.hardwareNoise = getBool(parameters.getHardwareNoise()); // Audit Fix: Corrected name
+    
+    // Dynamic Voice Limit calculation
+    bool isDualLine = (lineSel >= 2);
+    if (snap->system.opMode == 0) { // CZ-101 (8 DCOs: 4 dual-line, 8 single-line)
+        snap->system.voiceLimit = isDualLine ? 4 : 8;
+    } else if (snap->system.opMode == 1) { // CZ-5000 (16 DCOs: 8 dual-line, 16 single-line)
+        snap->system.voiceLimit = isDualLine ? 8 : 16;
+    } else if (snap->system.opMode == 2) { // CZ-1 (16 DCOs: 8 dual-line, 16 single-line)
+        snap->system.voiceLimit = isDualLine ? 8 : 16;
+    } else { // Modern (16 Voices max)
+        snap->system.voiceLimit = 16;
+    }
+    
+    snap->system.hardwareNoise = getBool(parameters.getHardwareNoise());
     snap->system.oversampling = getInt(parameters.getOversamplingQuality()); 
     snap->system.oversampling = (snap->system.oversampling == 0) ? 1 : (snap->system.oversampling == 1 ? 2 : 4);
     
@@ -713,6 +880,27 @@ std::unique_ptr<CZ101::Core::ParameterSnapshot> CZ101AudioProcessor::buildAudioS
     snap->mod.keyFollowDco = getInt(parameters.getKeyFollowDco()); 
     snap->mod.detune = getBool(parameters.getHardSync()) ? 1 : 0; 
     snap->mod.glideTime = getVal(parameters.getGlideTime());
+
+    auto getRawVal = [&](const juce::String& id, float def = 0.0f) {
+        if (auto* ptr = parameters.getAPVTS().getRawParameterValue(id))
+            return ptr->load();
+        return def;
+    };
+
+    // CZ-1 Velocity Sensitivities (Direct APVTS fetch for brevity)
+    snap->mod.line1VeloPitch = getRawVal(CZ101::ParameterIDs::line1VeloPitch);
+    snap->mod.line1VeloDcw = getRawVal(CZ101::ParameterIDs::line1VeloDcw);
+    snap->mod.line1VeloDca = getRawVal(CZ101::ParameterIDs::line1VeloDca);
+    snap->mod.line2VeloPitch = getRawVal(CZ101::ParameterIDs::line2VeloPitch);
+    snap->mod.line2VeloDcw = getRawVal(CZ101::ParameterIDs::line2VeloDcw);
+    snap->mod.line2VeloDca = getRawVal(CZ101::ParameterIDs::line2VeloDca);
+
+    snap->mod.line1KfPitch = getRawVal(CZ101::ParameterIDs::line1KfPitch);
+    snap->mod.line1KfDcw = getRawVal(CZ101::ParameterIDs::line1KfDcw);
+    snap->mod.line1KfDca = getRawVal(CZ101::ParameterIDs::line1KfDca);
+    snap->mod.line2KfPitch = getRawVal(CZ101::ParameterIDs::line2KfPitch);
+    snap->mod.line2KfDcw = getRawVal(CZ101::ParameterIDs::line2KfDcw);
+    snap->mod.line2KfDca = getRawVal(CZ101::ParameterIDs::line2KfDca);
 
     // LFO
     snap->lfo.rate = getVal(parameters.getLfoRate(), 1.0f);
@@ -741,7 +929,13 @@ std::unique_ptr<CZ101::Core::ParameterSnapshot> CZ101AudioProcessor::buildAudioS
     snap->effects.delayMix = getVal(parameters.getDelayMix());
     
     snap->effects.reverbSize = getVal(parameters.getReverbSize(), 0.5f);
-    snap->effects.reverbMix = getVal(parameters.getReverbMix());
+    // Space macro adds to the reverb send, but only in Modern mode (macros are
+    // a Modern-only feature; see calculateMacros).
+    const float spaceContribution = (snap->system.opMode == 3)
+        ? (getVal(parameters.getMacroSpace(), 0.0f) * 0.5f)
+        : 0.0f;
+    snap->effects.reverbMix = juce::jlimit(0.0f, 1.0f,
+        getVal(parameters.getReverbMix()) + spaceContribution);
 
     // [NEW] Drive
     snap->effects.driveAmount = getVal(parameters.getDriveAmount());
@@ -758,29 +952,27 @@ std::unique_ptr<CZ101::Core::ParameterSnapshot> CZ101AudioProcessor::buildAudioS
     snap->effects.lpfReso = getVal(parameters.getModernLpfReso(), 0.0f);
     snap->effects.hpfCutoff = getVal(parameters.getModernHpfCutoff(), 20.0f);
 
-    // Envelopes (Calculated from ADSR Macros)
-    double sr = currentSampleRate.load();
+    // Retrieve Envelopes from PresetManager to preserve loaded state
     auto* envs = &snap->envelopes;
-    
-    // Convert Macros directly to Snapshot format
-    ::CZ101::State::EnvelopeSerializer::convertADSRToSnapshot(
-        getVal(parameters.getDcwAttack()), getVal(parameters.getDcwDecay()),
-        getVal(parameters.getDcwSustain(), 1.0f), getVal(parameters.getDcwRelease()),
-        envs->dcw1, sr);
-    envs->dcw2 = envs->dcw1; 
-
-    ::CZ101::State::EnvelopeSerializer::convertADSRToSnapshot(
-        getVal(parameters.getDcaAttack()), getVal(parameters.getDcaDecay()),
-        getVal(parameters.getDcaSustain(), 1.0f), getVal(parameters.getDcaRelease()),
-        envs->dca1, sr);
-    envs->dca2 = envs->dca1; 
-    
-    // Pitch Envelope: Retrieve from PresetManager to preserve loaded state (Macros don't control Pitch yet)
     {
         const juce::ScopedReadLock srl(presetManager.getLock());
         const auto& currentPreset = presetManager.getCurrentPreset();
-        ::CZ101::State::EnvelopeSerializer::copyToSnapshot(currentPreset.pitchEnv, snap->envelopes.pitch1);
-        ::CZ101::State::EnvelopeSerializer::copyToSnapshot(currentPreset.pitchEnv2, snap->envelopes.pitch2);
+        
+        ::CZ101::State::EnvelopeSerializer::copyToSnapshot(currentPreset.dcwEnv, envs->dcw1);
+        ::CZ101::State::EnvelopeSerializer::copyToSnapshot(currentPreset.dcwEnv2, envs->dcw2);
+        
+        ::CZ101::State::EnvelopeSerializer::copyToSnapshot(currentPreset.dcaEnv, envs->dca1);
+        ::CZ101::State::EnvelopeSerializer::copyToSnapshot(currentPreset.dcaEnv2, envs->dca2);
+        
+        ::CZ101::State::EnvelopeSerializer::copyToSnapshot(currentPreset.pitchEnv, envs->pitch1);
+        ::CZ101::State::EnvelopeSerializer::copyToSnapshot(currentPreset.pitchEnv2, envs->pitch2);
+    }
+    
+    // Line 1+1' logic for envelopes: Line 2 is an exact clone of Line 1
+    if (lineSel == 2) {
+        envs->dcw2 = envs->dcw1;
+        envs->dca2 = envs->dca1;
+        envs->pitch2 = envs->pitch1;
     }
     
     return snap;

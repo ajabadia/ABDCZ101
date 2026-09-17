@@ -1,0 +1,134 @@
+:root {
+  /* Base = native DesignTokens Dark palette (overridden at runtime by themes.js) */
+  --bg-dark: #3a3a3a;
+  --bg-panel: rgba(42, 42, 42, 0.85);
+  --color-section: #2a2a2a;
+  --color-surface-light: #4a4a4a;
+  --border-light: #202020;
+  --color-accent: #4a9eff;
+  --color-accent-dim: rgba(74, 158, 255, 0.15);
+  --color-accent-2: #f5a623;
+  --color-accent-3: #50e3c2;
+  --color-glow: transparent;
+  --color-modern: rgba(245, 166, 35, 0.15);
+  --color-lcd-bg: #d2e4c8;
+  --color-lcd-text: #1a1a1a;
+  --text-primary: #ffffff;
+  --text-secondary: #d3d3d3;
+  --radius-lg: 16px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
+  --transition-fast: 0.2s;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  overflow-x: hidden;
+}
+
+.synth-container {
+  display: flex;
+  flex-direction: row;
+  border: none;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 1409px; /* scaled from 2818px (50%) */
+  aspect-ratio: 2818 / 1536;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(15px);
+  transform-origin: center center;
+  overflow: hidden; /* round corners for the whole synth */
+}
+
+.synth-panel-left {
+  flex: 158;
+  background-image: url('../../dist/bg_left.png');
+  background-size: 100% 100%;
+  position: relative;
+}
+
+.synth-panel-center {
+  flex: 2503;
+  background-image: url('../../dist/bg_center.png');
+  background-size: 100% 100%;
+  padding: 30px 35px 20px 35px; /* Top padding increased to push navbar inside */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* ensures keyboard stays at bottom */
+  position: relative; /* for screw positioning */
+}
+
+.synth-panel-right {
+  flex: 157;
+  background-image: url('../../dist/bg_right.png');
+  background-size: 100% 100%;
+  position: relative;
+}
+
+/* Screws */
+.screw {
+  position: absolute;
+  width: 2.2%; /* relative to central panel width */
+  height: auto;
+  opacity: 0.8;
+  z-index: 1; /* Drop z-index behind keyboard */
+}
+.screw-top-left { top: 4%; left: 1.5%; }
+.screw-bottom-left { bottom: 4%; left: 1.5%; }
+.screw-top-right { top: 4%; right: 1.5%; }
+.screw-bottom-right { bottom: 4%; right: 1.5%; }
+
+body.is-plugin {
+  padding: 0;
+  background: #111; /* Dark letterbox background */
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+}
+
+body.is-plugin .synth-container {
+  width: 1409px;
+  max-width: none;
+  flex-shrink: 0;
+  height: auto;
+  aspect-ratio: 2818 / 1536; /* Enforce natural synth proportions */
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  transform: none; /* override media queries */
+  margin: auto;
+}
+
+@media (max-height: 900px) {
+  .synth-container {
+    transform: scale(0.9);
+  }
+}
+
+@media (max-height: 800px) {
+  .synth-container {
+    transform: scale(0.8);
+  }
+}
+
+@media (max-height: 700px) {
+  .synth-container {
+    transform: scale(0.7);
+  }
+}

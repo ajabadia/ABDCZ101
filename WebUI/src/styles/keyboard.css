@@ -1,0 +1,189 @@
+/* Keyboard UI */
+.synth-keyboard-container {
+  border-top: 1px solid var(--border-light);
+  padding-top: 25px;
+  display: flex;
+  justify-content: center;
+}
+
+.keyboard {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background: #111;
+  padding: 5px;
+  border-radius: 8px;
+  box-shadow: inset 0 5px 15px rgba(0, 0, 0, 0.8);
+  box-sizing: border-box;
+}
+
+/* Overall vintage patina: fine scratches, dust lines and edge vignette over
+   the whole keyboard. Sits above the keys but never intercepts clicks. */
+.keyboard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.015) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0 1px, transparent 1px 4px),
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.3) 100%);
+}
+
+.key {
+  position: relative;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* White keys flex so the 49-key CZ-101 range fills the whole width. Aged ivory
+   instead of flat white: yellowed towards the base from years of hand contact. */
+.key.white {
+  flex: 1 1 0;
+  min-width: 0;
+  background: linear-gradient(180deg, #fdfaf1 0%, #f6efdd 78%, #e6dabf 100%);
+  border-right: 1px solid #d8d0ba;
+  border-bottom: 5px solid #b3a581;
+  border-radius: 0 0 4px 4px;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.key.white:hover, .key.white.active {
+  background: linear-gradient(180deg, #ece4d0 0%, #dccfae 100%);
+  border-bottom: 2px solid #a2946f;
+  height: 98%;
+}
+
+.key.black {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 100px;
+  background: linear-gradient(180deg, #2b2b2b 0%, #1e1e1e 78%, #171717 100%);
+  border-bottom: 4px solid #111;
+  border-radius: 0 0 3px 3px;
+  margin-left: -12px;
+  margin-right: -12px;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.key.black:hover, .key.black.active {
+  background: linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 100%);
+  border-bottom: 2px solid #222;
+}
+
+/* ── Vintage wear: deterministic stains/marks (see keyWear() in app.js) ── */
+.key.white::after, .key.black::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+/* Hand oil / yellowing — heavier towards the base of the key. */
+.key.white.stain-yellow::after {
+  opacity: 0.6;
+  background:
+    radial-gradient(ellipse 75% 45% at 50% 90%, rgba(166, 124, 42, 0.6), transparent 70%),
+    radial-gradient(ellipse 45% 30% at 28% 30%, rgba(190, 150, 70, 0.4), transparent 70%);
+}
+
+/* Dark scuff marks from playing. */
+.key.white.stain-scuff::after {
+  opacity: 0.5;
+  background:
+    radial-gradient(ellipse 32% 22% at 64% 38%, rgba(60, 48, 30, 0.55), transparent 70%),
+    radial-gradient(ellipse 24% 16% at 38% 58%, rgba(70, 55, 35, 0.4), transparent 70%);
+}
+
+/* Chipped edge ding — a hairline crack near the top corner. */
+.key.white.stain-ding::after {
+  opacity: 0.55;
+  background:
+    linear-gradient(160deg, transparent 38%, rgba(90, 70, 40, 0.5) 41%, rgba(90, 70, 40, 0.18) 44%, transparent 47%),
+    radial-gradient(ellipse 14% 9% at 80% 10%, rgba(45, 36, 22, 0.5), transparent 70%);
+}
+
+/* Worn black key — dulled sheen where fingers grip. */
+.key.black.stain-worn::after {
+  opacity: 0.5;
+  background:
+    radial-gradient(ellipse 55% 30% at 32% 58%, rgba(130, 112, 84, 0.4), transparent 70%),
+    radial-gradient(ellipse 45% 20% at 68% 28%, rgba(110, 96, 74, 0.3), transparent 70%);
+}
+
+/* Removed duplicate bank chip classes */
+
+.bank-chip-model {
+  font-size: 0.6rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bank-chip-model-user {
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.4);
+}
+
+.bank-chip-model-factory {
+  color: #9ca3af;
+  border: 1px solid rgba(156, 163, 175, 0.4);
+}
+
+.bank-chip-occ {
+  font-size: 0.6rem;
+}
+
+.bank-chip-occ.occ-ok {
+  color: #4ade80;
+}
+
+.bank-chip-occ.occ-empty {
+  color: #fbbf24;
+}
+
+/* Octave Buttons */
+.octave-btn {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #aaa;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+.octave-btn:active {
+  background: #222;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+}
+.octave-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #333;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+}
+.octave-led.on {
+  background: #f00;
+  box-shadow: 0 0 5px #f00, inset 0 1px 2px rgba(255,255,255,0.3);
+}
+.octave-led.blink {
+  animation: led-blink 0.5s infinite alternate;
+}
+@keyframes led-blink {
+  from { background: #f00; box-shadow: 0 0 5px #f00; }
+  to { background: #333; box-shadow: inset 0 1px 2px rgba(0,0,0,0.5); }
+}

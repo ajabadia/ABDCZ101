@@ -1,0 +1,56 @@
+    TONE Name-8 Note PIANO
+ 
+PARAMETER
+ 
+ LINE SELECT   MODULATION         DETUNE            VIBRATO        OCTAVE
+|1,2,12',11'| |ring|noise| |+/-|oct|note|fine| |wave|dly|rt|dep| |+/-|range|
+|    1      | |    |     | | + | 0 |  0 |  0 | |  1 |51 |52| 05| |   |  0  |
+|___________| |____|_____| |___|___|____|____| |____|___|__|___| |___|_____|
+ 
+************************************    ************************************
+(1)                                     (2)
+DCO 1                                   DCO 2
+  WAVE FORM                               WAVE FORM
+|first|second|                          |first|second|
+|  1  |   0  |                          |     |      |                      
+|_____|______|                          |_____|______|                        
+ (1-8)  (0-8)                            (1-8)  (0-8)  
+               ENV(PITCH)                             ENV(PITCH)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |   |   |   |   |   |   |   |0-99 rate|   |   |   |   |   |   |   |   |
+levl| 0 |   |   |   |   |   |   |   |0-99 levl|   |   |   |   |   |   |   |   |
+s/e | e |   |   |   |   |   |   |   |     s/e |   |   |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCW 1                                   DCW 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     9     |(0-9)                      |           |(0-9)
+|___________|                           |___________|
+ 
+               ENV(WAVE)                             ENV(WAVE)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |99 |   |   |   |   |   |   |0-99 rate|   |   |   |   |   |   |   |   |
+levl|40 | 0 |   |   |   |   |   |   |0-99 levl|   |   |   |   |   |   |   |   |
+s/e | s | e |   |   |   |   |   |   |     s/e |   |   |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+DCA 1                                   DCA 2                                 
+  KEY FOLLOW                              KEY FOLLOW                           
+|     3     |(0-9)                      |           |(0-9)
+|___________|                           |___________|
+ 
+               ENV(AMP)                             ENV(AMP)
+step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|     step|_1_|_2_|_3_|_4_|_5_|_6_|_7_|_8_|
+rate|99 |57 |38 |40 |   |   |   |   |0-99 rate|   |   |   |   |   |   |   |   |
+levl|99 |86 |15 | 0 |   |   |   |   |0-99 levl|   |   |   |   |   |   |   |   |
+s/e |   |   |s  |e  |   |   |   |   |     s/e |   |   |   |   |   |   |   |   |
+_____________________________________     _____________________________________
+ 
+*****************************************************************************
+COMMENT: This is modified from the  Electric Piano Preset. If you select
+Preset #5 and change the line select from 1+2' to 2 and turn the volume on
+max, you get a fair sounding piano. What I did was basically copy the 
+envelopes of line 2 into line1 and changed the DCA to approximate a piano
+envelope. (Perhaps using all 8 steps would offer a better approx.) It seems
+that the middle registers sound the best.
+*****************************************************************************

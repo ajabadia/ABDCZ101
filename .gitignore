@@ -16,6 +16,13 @@ wasm/juce_shim/juce_core/
 # Perfiles de prueba de Chrome (CDP)
 .cdp_prof3/
 
+# Material de referencia local (manuales PDF, clones de proyectos ajenos,
+# imagenes generadas): 161 MB que no pertenecen al codigo del emulador
+GITS/
+
+# Salida del build local de la WebUI (regenerable)
+WebUI/dist/
+
 # Visual Studio
 .vs/
 *.user
@@ -51,3 +58,4 @@ bundle_code/
 !CMakeLists.txt
 !best_practices.md
 !THIRD_PARTY.md
+node_modules/

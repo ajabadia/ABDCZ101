@@ -8,37 +8,56 @@ namespace Core {
 namespace HardwareConstants {
 
     // --- ENVELOPE TIMING ---
-    // Medido con osciloscopio en hardware real.
-    // Los valores son segundos para una caída/subida completa (0-99).
-    static const float cz101RateTable[100] = {
-        30.0f, 25.1f, 21.0f, 17.6f, 14.7f, 12.3f, 10.3f, 8.6f, 7.2f, 6.0f,
-        5.0f, 4.2f, 3.5f, 2.9f, 2.4f, 2.0f, 1.7f, 1.4f, 1.2f, 1.0f,
-        0.83f, 0.69f, 0.58f, 0.48f, 0.40f, 0.33f, 0.28f, 0.23f, 0.19f, 0.16f,
-        0.13f, 0.11f, 0.092f, 0.077f, 0.064f, 0.053f, 0.044f, 0.037f, 0.031f, 0.026f,
-        0.021f, 0.018f, 0.015f, 0.012f, 0.010f, 0.0085f, 0.0071f, 0.0059f, 0.0049f, 0.0041f,
-        0.0034f, 0.0028f, 0.0024f, 0.0020f, 0.0016f, 0.0014f, 0.0011f, 0.0009f, 0.0008f, 0.0006f,
-        0.0005f, 0.0004f, 0.0003f, 0.0002f, 0.0002f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f,
-        0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f,
-        0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f,
-        0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f, 0.0001f
-    };
-
-    // EL CZ-5000 es aproximadamente un 15% más rápido en ataques rápidos.
-    inline float getRateInSeconds(int rate99, bool isCZ5000) {
+    // Authentic hardware CZ (0-99) timing mapping
+    // El chip µPD933 convierte el rate a formato punto flotante 7-bit (exponente y mantisa).
+    inline float getRateInSeconds(int rate99, int envType, bool isCZ5000) {
         int idx = std::clamp(rate99, 0, 99);
-        float seconds = cz101RateTable[idx];
+        
+        int hw_val = 0;
+        if (envType == 1) { // DCW
+            hw_val = (idx * 119) / 99 + 8;
+        } else if (envType == 2) { // DCO (Pitch)
+            hw_val = (idx * 127) / 99;
+        } else { // DCA (Amp)
+            hw_val = (idx * 119) / 99;
+        }
+        
+        hw_val = std::clamp(hw_val, 0, 127);
+        
+        int exponent = hw_val >> 3;
+        int mantissa = hw_val & 7;
+        uint32_t rate_step = (8 + mantissa) << exponent;
+        
+        uint32_t target_max = 127 << 18; // DCA y DCW max target
+        if (envType == 2) target_max = 63 << 16; // DCO max target (63 << (11 + 5))
+        
+        double samples = (double)target_max / (double)rate_step;
+        double sr = 35714.28; // CZ-101 internal sample rate (112 clocks per sample @ 4MHz)
+        float seconds = (float)(samples / sr);
+        
+        // Remove artificial division by 8; the hardware formula naturally gives the authentic punch.
         if (isCZ5000 && idx > 50) seconds *= 0.85f; 
         return seconds;
     }
 
     // --- DCW KEY FOLLOW ---
-    // Curva exponencial medida: El brillo cae drásticamente en octavas inferiores.
-    inline float getAuthenticDCWKeytrack(int midiNote, float dcwEnvValue) {
+    // The authentic hardware DCW Key Follow / anti-aliasing limit is now computed
+    // dynamically in PhaseDistOscillator::renderNextSample using the exact hardware formula:
+    // limit = 1024 - (step >> 18)
+    // However, the legacy heuristic curve is kept here for Mod Matrix Source 11.
+    inline float getAuthenticDCWKeytrack(int midiNote, float dcwEnvValue, int mode = 2) {
         float noteFromC3 = (midiNote - 60) / 12.0f;
-        float exponent = 1.3f + (dcwEnvValue * 0.7f);
-        float tracking = std::pow(2.0f, noteFromC3 * exponent) - 1.0f;
-        tracking = std::tanh(tracking * 2.0f) * 0.5f;
-        return tracking * (0.02f + dcwEnvValue * 0.03f);
+        
+        if (mode == 1) {
+            float tracking = std::pow(2.0f, noteFromC3 * 1.5f) - 1.0f;
+            tracking = std::tanh(tracking * 2.0f) * 0.5f;
+            return tracking * 0.15f; 
+        } else {
+            float exponent = 1.3f + (dcwEnvValue * 0.7f);
+            float tracking = std::pow(2.0f, noteFromC3 * exponent) - 1.0f;
+            tracking = std::tanh(tracking * 2.0f) * 0.5f;
+            return tracking * (0.06f + dcwEnvValue * 0.09f); 
+        }
     }
 
     // --- DAC COMPRESSION ---

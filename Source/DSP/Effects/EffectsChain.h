@@ -1,6 +1,7 @@
 #pragma once
 
-#include <JuceHeader.h>
+#include <juce_dsp/juce_dsp.h>
+#include <juce_audio_processors/juce_audio_processors.h>
 #include "DriveEffect.h"
 #include "Chorus.h"
 #include "StereoDelay.h"
@@ -41,6 +42,22 @@ private:
     StereoDelay stereoDelay;
     juce::Reverb reverb;
     juce::Reverb::Parameters reverbParams;
+
+    // Smoothed Parameters (16ms interpolation)
+    juce::LinearSmoothedValue<float> smoothLpfCutoff { 20000.0f };
+    juce::LinearSmoothedValue<float> smoothLpfReso { 0.0f };
+    juce::LinearSmoothedValue<float> smoothHpfCutoff { 20.0f };
+    juce::LinearSmoothedValue<float> smoothDriveAmount { 0.0f };
+    juce::LinearSmoothedValue<float> smoothDriveColor { 0.5f };
+    juce::LinearSmoothedValue<float> smoothDriveMix { 0.0f };
+    juce::LinearSmoothedValue<float> smoothChorusRate { 0.0f };
+    juce::LinearSmoothedValue<float> smoothChorusDepth { 0.0f };
+    juce::LinearSmoothedValue<float> smoothChorusMix { 0.0f };
+    juce::LinearSmoothedValue<float> smoothDelayTime { 0.25f };
+    juce::LinearSmoothedValue<float> smoothDelayFb { 0.0f };
+    juce::LinearSmoothedValue<float> smoothDelayMix { 0.0f };
+    juce::LinearSmoothedValue<float> smoothReverbSize { 0.5f };
+    juce::LinearSmoothedValue<float> smoothReverbMix { 0.0f };
 
     double sampleRate = 44100.0;
 };

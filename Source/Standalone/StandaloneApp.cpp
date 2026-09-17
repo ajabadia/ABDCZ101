@@ -5,6 +5,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include "../PluginProcessor.h"
+#include "HeadlessRpcServer.h"
 #include <iostream>
 
 // Helper to run embedded verification tests
@@ -44,7 +45,7 @@ static void runVerificationTests(const juce::String& cmd)
         // Let's use the VoiceManager direct access for precision
         
         // Reset voices
-        processor->getVoiceManager().allNotesOff();
+        processor->getVoiceManager().allSoundOff();
         
         // Inject a known envelope: 50ms Attack (0.05s) to 1.0 Level
         // Rate value for 50ms?
@@ -333,6 +334,14 @@ public:
         {
             juce::Logger::writeToLog("Running in HEADLESS mode (Window Hidden)");
             mainWindow->setVisible(false);
+            
+            int port = 8080;
+            juce::String portArg = commandLine.substring(commandLine.indexOf("--port=") + 7).upToFirstOccurrenceOf(" ", false, false);
+            if (portArg.isNotEmpty())
+                port = portArg.getIntValue();
+                
+            rpcServer = std::make_unique<HeadlessRpcServer>(*mainWindow->getProcessor(), port);
+            rpcServer->start();
         }
         else
         {
@@ -342,6 +351,12 @@ public:
 
     void shutdown() override
     {
+        if (rpcServer != nullptr)
+        {
+            rpcServer->stop();
+            rpcServer = nullptr;
+        }
+
         if (mainWindow != nullptr)
             mainWindow->setVisible(false);
 
@@ -369,9 +384,12 @@ public:
     */
     class MainWindow : public juce::DocumentWindow, 
                        private juce::ChangeListener,
-                       private juce::Timer
+                       private juce::Timer,
+                       public juce::MenuBarModel
     {
     public:
+        CZ101AudioProcessor* getProcessor() const { return dynamic_cast<CZ101AudioProcessor*>(m_processor.get()); }
+
         MainWindow(const juce::String& name, std::unique_ptr<juce::AudioProcessor> createdProcessor, 
                    juce::PropertiesFile& settings, juce::AudioDeviceManager& dm)
             : DocumentWindow(name, juce::Desktop::getInstance().getDefaultLookAndFeel()
@@ -380,10 +398,16 @@ public:
               m_processor(std::move(createdProcessor)), // Take ownership
               deviceManager(dm)              // Store reference
         {
-            setUsingNativeTitleBar(false);
+            setUsingNativeTitleBar(true);
             setResizable(true, true);
             setResizeLimits(400, 300, 10000, 10000);
             setTitleBarButtonsRequired(juce::DocumentWindow::allButtons, false);
+            
+#if JUCE_MAC
+            juce::MenuBarModel::setMacMainMenu(this);
+#else
+            setMenuBar(this);
+#endif
 
             if (settings.getValue("windowState").isNotEmpty())
                restoreWindowStateFromString(settings.getValue("windowState"));
@@ -427,6 +451,12 @@ public:
 
             player.setProcessor(nullptr);
             setContentOwned(nullptr, true);
+            
+#if JUCE_MAC
+            juce::MenuBarModel::setMacMainMenu(nullptr);
+#else
+            setMenuBar(nullptr);
+#endif
         }
 
         void closeButtonPressed() override
@@ -464,6 +494,28 @@ public:
                     deviceManager.addMidiInputDeviceCallback(device.identifier, &player);
                 }
             }
+        }
+        
+        //==============================================================================
+        juce::StringArray getMenuBarNames() override
+        {
+            return { "Options" };
+        }
+
+        juce::PopupMenu getMenuForIndex(int topLevelMenuIndex, const juce::String& /*menuName*/) override
+        {
+            juce::PopupMenu menu;
+            if (topLevelMenuIndex == 0)
+            {
+                menu.addItem(1, "Audio/MIDI Settings...");
+            }
+            return menu;
+        }
+
+        void menuItemSelected(int menuItemID, int /*topLevelMenuIndex*/) override
+        {
+            if (menuItemID == 1)
+                showAudioSettings();
         }
 
     private:
@@ -528,6 +580,7 @@ private:
     std::unique_ptr<MainWindow> mainWindow;
     std::unique_ptr<juce::PropertiesFile> settings;
     std::unique_ptr<juce::FileLogger> fileLogger;
+    std::unique_ptr<HeadlessRpcServer> rpcServer;
 };
 
 //==============================================================================

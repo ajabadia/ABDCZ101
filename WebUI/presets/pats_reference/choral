@@ -1,0 +1,29 @@
+Name: "Choral"
+
+Line Select: 1 + 2'
+Modulation: None
+Detune: (-)    Oct: 01
+  Note: 00    Fine: 07
+Octave: +1
+Vibrato: Wave: 1    Delay: 38
+         Rate: 51   Depth: 08
+
+DCO 1:   Wave: 5  0               DCO 2:   Wave: 3  5
+         Env: 00  00 (E)                   Env: 00  00 (E)
+
+DCW 1:   Key Follow: 8            DCW 2:   Key Follow: 7
+         Env: 30  28                       Env: 40  40
+              50  00 (E)                        42  57
+                                                00  56
+                                                15  00 (E)
+
+DCA 1:   Key Follow: 1            DCA 2:   Key Follow: 1
+         Env: 80  36                       Env: 88  36
+              70  91                            70  91
+              59  99                            59  99
+              12  93 (S)                        12  93 (S)
+              32  00 (E)                        23  00 (E)
+
+(If you want 8 voice polyphonic, use Line Select 2, but this is not nearly
+ as good as the whole thing.)
+-------------------------------

@@ -1,0 +1,15 @@
+Name: swept reed
+>From: Michael Schaeffer <michaels%tekigm2.tek.com@RELAY.CS.NET>
+
+COMMENT: modified casio reed
+ENVELOPE DATA (wave or key - R1.L1 - R2.L2 - *** - R7.L7 - R8);
+DCO1 (wave-env): 3.4-99.29-72e
+DCW1 (key-env): 9-74.93-93.86s-50e
+DCA1 (key-env): 1-86.99-63.93-65.94-29e
+DCO2 (wave-env): 6.4-99.66-73e
+DCW2 (key-env): 2-43.60-24.49-26e
+DCA2 (key-env): 0-62.94-18.85-24.77-26e
+DETUNE (+- oct - semi - fine): (-)0-0-7
+MODULATION (1'or 2' - ring or noise): either 1' or 2'
+VIBRATO (wave-delay-rate-depth): 4-81-41-99
+KEYBOARD OCTAVE (+ o -): 0

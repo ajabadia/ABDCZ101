@@ -1,0 +1,95 @@
+/* Context menu (native PopupMenu) */
+.bank-context-menu {
+  position: fixed;
+  z-index: 3000;
+  min-width: 190px;
+  background: var(--surface-elevated, #151a2b);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  padding: 4px;
+  font-size: 0.82rem;
+  font-family: 'Outfit', sans-serif;
+}
+
+.bank-context-item {
+  padding: 7px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.bank-context-item:hover {
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+}
+
+.bank-context-item.disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+.bank-context-separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border-light);
+}
+
+.modal-box .btn-glow {
+  margin-top: 10px;
+}
+
+/* Name Editor overlay (native NameEditorOverlay: 300x150 dialog centered on a
+   semi-transparent black backdrop, #2a2a2a fill, cyan 2px border, rounded 10,
+   RENAME PRESET title in cyan, centered editor, SAVE/CANCEL buttons) */
+.name-editor-box {
+  width: 300px;
+  padding: 14px 16px 16px;
+  background: #2a2a2a;
+  border: 2px solid var(--color-accent, #00ffff);
+  border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  text-align: center;
+}
+
+.name-editor-box h3 {
+  margin: 0 0 12px;
+  color: var(--color-accent, #00ffff);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.95rem;
+  letter-spacing: 2px;
+}
+
+#name-editor-input {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  background: #0c0f1d;
+  color: var(--color-accent, #00ffcc);
+  border: 1px solid #1a233d;
+  padding: 8px 10px;
+  border-radius: 4px;
+  outline: none;
+}
+
+#name-editor-input:focus {
+  border-color: var(--color-accent, #00ffff);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.25);
+}
+
+.name-editor-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.name-editor-actions .btn-glow {
+  flex: 1;
+  margin-top: 0;
+}

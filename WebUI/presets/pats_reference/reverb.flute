@@ -1,0 +1,38 @@
+Name: Reverb Flute (September 1986 Electronics & Music Maker)
+
+Line: 1+2'
+Mod: Noise on
+Detune: +,0,0,0
+Vibrato: Wave=1,delay=26,rate=55,depth=9
+Octave: +1
+
+DCO1:     1st wave = 2, 2nd wave = 0
+          Rate=70,level = 66 (sus)
+               00         00 (end)
+
+DCW1:     Key follow = 0
+          Rate=60, Level = 35 (sus)
+               00,         00 (end)
+
+DCA1:     Key follow =1
+          rate=82   Level = 99 (sus)
+               58           89
+               71           54
+               44           30
+               63           66
+               44           30
+               61           51
+               50           00 (end)
+
+DCO2:          1st wave = 1, 2nd wave = 0
+               rate = 00,     level = 0 (end)
+
+DCW2:          Key follow = 9
+               rate = 99, level = 00 (sus)
+                      00          00 (end)
+
+DCA2:          Key follow = 1
+               rate = 92, level = 64
+                      56          00 (end)
+
+----------------------------------------------------------------

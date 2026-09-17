@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Window Function Explained</title>
+
+		<meta charset="utf-8">
+		<meta name="author" content="Michael Rickard">
+		<meta name="dcterms.dateCopyrighted" content="2005 to 2026">
+		<meta name="description" content="An easter egg hunt inside a Casio CZ-1. Description of all eight basic window functions, including three not normally allowed.">
+		<meta name="DC.date" content="2007-12-17 00:15:14 utc">
+		<meta name="DC.date.created" content="2007-12-17 00:15:14 utc">
+		<meta name="DC.date.modified" content="2019-07-13 18:43:20 utc">
+		<meta name="generator" content="Text Editor">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<link rel="icon" href="https://media.kasploosh.com/img/favicons/kasploosh.ico">
+		<link rel="canonical" href="https://www.kasploosh.com/cz/11800-spelunking/4-window/">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/main.css?v=20200729">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/pages/cz.css">
+	</head>
+
+	<body>
+
+		<div class="max_width">
+
+			<header class="main">
+<img src="https://media.kasploosh.com/img/logos/flag-15517.gif"> kasploosh.com
+			</header>
+
+			<nav class="main">
+
+<label for="toggle_nav" id="toggle_nav_label"><span></span><span class="text">Tap For Menu</span><span></span></label>
+<input type="checkbox" id="toggle_nav" name="toggle_nav" value="toggle_nav">
+
+<ul class="main_nav">
+<li><a href="https://www.kasploosh.com/">Home</a></li>
+<li><a href="https://www.kasploosh.com/art/">Art</a></li>
+<li><a href="https://www.kasploosh.com/stories/">Stories</a></li>
+<li><a href="https://www.kasploosh.com/cz/">CZ</a></li>
+<li><a href="https://www.kasploosh.com/make_stuff/">Make Stuff</a></li>
+<li><a href="https://www.kasploosh.com/software/">Software</a></li>
+<li><a href="https://www.kasploosh.com/music/">Music</a></li>
+<li><a href="https://www.kasploosh.com/videos/">Videos</a></li>
+<li><a href="https://www.kasploosh.com/mike_date/">By Mike Date</a></li>
+<li><a href="https://www.kasploosh.com/date/">By Date</a></li>
+<li><a href="https://www.kasploosh.com/tag/">By Tag</a></li>
+<li><a href="https://www.kasploosh.com/search/">By Search</a></li>
+</ul>
+
+			</nav>
+
+
+			<article class="main">
+				<header class="article">
+
+					<div class="breadcrumbs">
+
+
+					</div><!-- breadcrumbs -->
+
+				</header>
+
+
+				<section class="article">
+
+
+<h1>Window Function Explained</h1>
+
+<p class="article_date">2007-12-17</p>
+
+
+
+<p>
+Using the front panel of the CZ-1, you can program three faux resonant
+waves.  These waves are not basic waves.  Instead, they are the same
+basic wave (<span class="syx">WAVE 110</span>), passed through three
+different window functions.  I learned all of this on the
+<a href="#" title="http://homepage.mac.com/synth_seal/html/cz1.html" class="line-through">Sealed website</a>.
+</p>
+
+<p>
+The purpose of this page is to go past stating that a window function
+exists, and explain what it does.
+</p>
+
+<h2>How The Window Function Works</h2>
+
+<div class="image right">
+	<img
+		src="https://media.kasploosh.com/img/cz/11800-spelunking/window/window_function.png"
+		title="The window function acts on each cycle of the wave"
+		alt="How window functions shapes a wave stream"
+	>
+	<p>The window function acts on each cycle of the wave</p>
+</div>
+
+<p>
+The window function is like an <b>amp envelope for a waveform</b>.
+Here's how I imagine it working:
+</p>
+
+<p>
+Deep inside the computer brain of the CZ, the oscillator spits out a
+stream of waveforms whenever a key is pressed.  If a window function
+is used, it SHAPES the amplitude of each and every cycle of that wave.
+In other words, it performs an amp envelope function on every single
+cycle of the wave.  There are six unique window functions that each
+shape the waves in different ways.
+</p>
+
+<h2>Window Bits</h2>
+
+<table class="border left">
+	<col><col><col style="width: 300px">
+	<tr>
+		<th>binary data</th>
+		<th></th>
+		<th>description</th>
+	</tr>
+	<tr>
+		<td class="bin">................</td>
+		<td></td>
+		<td>16 bit data = 16 <span class="bin">1</span>s or <span class="bin">0</span>s</td>
+	</tr>
+	<tr>
+		<td class="bin">.......000......</td>
+		<td><span class="icon cz_panel"></span></td>
+		<td class="syx">WINDOW - NONE</td>
+	</tr>
+	<tr>
+		<td class="bin">.......001......</td>
+		<td><span class="icon cz_panel"></span></td>
+		<td class="syx">WINDOW - SAW</td>
+	</tr>
+	<tr>
+		<td class="bin">.......010......</td>
+		<td><span class="icon cz_panel"></span></td>
+		<td class="syx">WINDOW - TRIANGLE</td>
+	</tr>
+	<tr>
+		<td class="bin">.......011......</td>
+		<td><span class="icon cz_panel"></span></td>
+		<td class="syx">WINDOW - TRAPEZOID</td>
+	</tr>
+	<tr>
+		<td class="bin">.......100......</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td class="syx">WINDOW - PULSE</td>
+	</tr>
+	<tr>
+		<td class="bin">.......101......</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td class="syx">WINDOW - DOUBLESAW</td>
+	</tr>
+	<tr>
+		<td class="bin">.......110......</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td><span class="syx">WINDOW - DOUBLESAW</span><br>(same as 101)</td>
+	</tr>
+	<tr>
+		<td class="bin">.......111......</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td><span class="syx">WINDOW - DOUBLESAW</span><br>(same as 101)</td>
+	</tr>
+</table>
+
+<p>
+Bitwise, there is room for 8 window functions. One of these
+(<span class="bin">000</span>) needs to be 
+<span class="syx">NONE</span>.
+</p>
+
+<p>
+<span class="bin">001</span>, 
+<span class="bin">010</span>, and 
+<span class="bin">011</span> 
+are available from the front panel, but only
+if they are used with 
+<span class="syx">WAVE 110</span>.
+</p>
+
+<p>
+<span class="bin">100</span>, 
+<span class="bin">101</span>, 
+<span class="bin">110</span>, and 
+<span class="bin">111</span> 
+are window functions only available via sysex.
+<span class="bin">101</span>, 
+<span class="bin">110</span>, and 
+<span class="bin">111</span> 
+are all the same, which seems disappointing at first.
+But that leaves two undocumented window functions:
+<span class="syx">PULSE</span> and 
+<span class="syx">DOUBLESAW</span>.
+</p>
+
+<h3 class="clear">Key for this table</h3>
+
+<dl class="table_key">
+	<dt><span class="icon cz_panel"></span></dt>
+	<dd>This option is available through the front panel.</dd>
+	<dt><span class="icon cz_sysex"></span></dt>
+	<dd>This option is only available through sysex.</dd>
+</dl>
+
+<h2>Window Function Demonstration</h2>
+
+<p>
+The window function is most clearly demonstrated in how it shapes
+<span class="syx">WAVE 110</span>.
+<span class="syx">WAVE 110</span>
+is the basis for the faux resonant waves.
+</p>
+
+<p>
+The red diamonds indicate the start and end point of each cycle of the wave.
+</p>
+
+
+<table class="border feature">
+
+	<tr>
+		<td class="syx">
+			WINDOW&nbsp;000<br>
+			NONE<br>
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/icons/wd000.png"
+				alt="Window 000 Icon"
+			>
+		</td>
+		<td>
+			<a href="https://media.kasploosh.com/audio/cz/11800-spelunking/window/demo/wv110_wd000.ogg">
+				&#9835;
+			</a>
+		</td>
+		<td class="img">
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/demo/wv110_wd000.png"
+				alt="Window 000 Acting On Wave 110"
+			>
+		</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td>
+			Only available using sysex.<br>
+			No window function is applied to the wave, it's just the direct output
+			of <span class="syx">WAVE 110</span>.  Notice how this is a nice solid
+			bar of little sine waves.  In the following examples, that solid bar is
+			carved into by the window function.
+		</td>
+	</tr>
+
+
+	<tr>
+		<td class="syx">
+			WINDOW&nbsp;001<br>
+			SAW<br>
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/icons/wd001.png"
+				alt="Window 001 Icon"
+			>
+		</td>
+		<td>
+			<a href="https://media.kasploosh.com/audio/cz/11800-spelunking/window/demo/wv110_wd001.ogg">
+				&#9835;
+			</a>
+		</td>
+		<td class="img">
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/demo/wv110_wd001.png"
+				alt="Window 001 Acting On Wave 110"
+			>
+		</td>
+		<td><span class="icon cz_panel"></span></td>
+		<td>
+			Available from front panel, where it's called <b>WAVE 6</b><br>
+			<span class="syx">WAVE 110</span> is trimmed into a saw shape.
+			Each wave cycle starts off at 100% amplitude, then ramps steadily down to 0%.
+			This happens over and over to each cycle of the wave.
+		</td>
+	</tr>
+
+
+	<tr>
+		<td class="syx">
+			WINDOW&nbsp;010<br>
+			TRIANGLE<br>
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/icons/wd010.png"
+				alt="Window 010 Icon"
+			>
+		</td>
+		<td>
+			<a href="https://media.kasploosh.com/audio/cz/11800-spelunking/window/demo/wv110_wd010.ogg">
+				&#9835;
+			</a>
+		</td>
+		<td class="img">
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/demo/wv110_wd010.png"
+				alt="Window 010 Acting On Wave 110"
+			>
+		</td>
+		<td><span class="icon cz_panel"></span></td>
+		<td>
+			Available from front panel, where it's called <b>WAVE 7</b><br>
+			<span class="syx">WAVE 110</span> is trimmed into a triangle shape.
+			Each wave cycle starts at 0% amplitude, ramps up to 100% midway
+			through the period, then ramps back down to 0% by the end of the
+			cycle.
+		</td>
+	</tr>
+
+
+	<tr>
+		<td class="syx">
+			WINDOW&nbsp;011<br>
+			TRAPEZOID<br>
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/icons/wd011.png"
+				alt="Window 011 Icon"
+			>
+		</td>
+		<td>
+			<a href="https://media.kasploosh.com/audio/cz/11800-spelunking/window/demo/wv110_wd011.ogg">
+				&#9835;
+			</a>
+		</td>
+		<td class="img">
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/demo/wv110_wd011.png"
+				alt="Window 011 Acting On Wave 110"
+			>
+		</td>
+		<td><span class="icon cz_panel"></span></td>
+		<td>
+			Available from front panel, where it's called <b>WAVE 8</b><br>
+			<span class="syx">WAVE 110</span> is trimmed into a trapezoid shape.
+			Each wave cycle starts at 100% amplitude, remains at that level until
+			midway through the period, then ramps down to 0% by the end of the
+			cycle.
+		</td>
+	</tr>
+
+
+	<tr>
+		<td class="syx">
+			WINDOW&nbsp;100<br>
+			PULSE<br>
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/icons/wd100.png"
+				alt="Window 100 Icon"
+			>
+		</td>
+		<td>
+			<a href="https://media.kasploosh.com/audio/cz/11800-spelunking/window/demo/wv110_wd100.ogg">
+				&#9835;
+			</a>
+		</td>
+		<td class="img">
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/demo/wv110_wd100.png"
+				alt="Window 100 Acting On Wave 110"
+			>
+		</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td>
+			Only available using sysex.<br>
+			<span class="syx">WAVE 110</span> is trimmed into a sort-of pulse shape.
+			Each wave cycle start at 100% amplitude, then ramps down to 0% by
+			midway through the period, then remains at 0% until the end of the
+			cycle.
+		</td>
+	</tr>
+
+
+	<tr>
+		<td class="syx">
+			WINDOW&nbsp;101<br>
+			DOUBLESAW<br>
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/icons/wd101.png"
+				alt="Window 101 Icon"
+			>
+		</td>
+		<td>
+			<a href="https://media.kasploosh.com/audio/cz/11800-spelunking/window/demo/wv110_wd101.ogg">
+				&#9835;
+			</a>
+		</td>
+		<td class="img">
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/demo/wv110_wd101.png"
+				alt="Window 101 Acting On Wave 110"
+			>
+		</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td>
+			Only available using sysex.<br>
+			<span class="syx">WAVE 110</span> is trimmed into a double saw wave.
+			Notice that this saw shape happens TWICE for every cycle of the wave.
+			Each wave cycle starts at 0% amplitude, ramps up to 100% by midway
+			through the period, immediately drops to 0%, and then repeats for the
+			second half of the period.
+		</td>
+	</tr>
+
+
+	<tr>
+		<td class="syx">
+			WINDOW&nbsp;110<br>
+			DOUBLESAW<br>
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/icons/wd110.png"
+				alt="Window 110 Icon"
+			>
+		</td>
+		<td>
+			<a href="https://media.kasploosh.com/audio/cz/11800-spelunking/window/demo/wv110_wd110.ogg">
+				&#9835;
+			</a>
+		</td>
+		<td class="img">
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/demo/wv110_wd110.png"
+				alt="Window 110 Acting On Wave 110"
+			>
+		</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td>
+			Only available using sysex.<br>
+			Same function as <span class="syx">WINDOW 101</span>.
+		</td>
+	</tr>
+
+
+	<tr>
+		<td class="syx">
+			WINDOW&nbsp;111<br>
+			DOUBLESAW<br>
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/icons/wd111.png"
+				alt="Window 111 Icon"
+			>
+		</td>
+		<td>
+			<a href="https://media.kasploosh.com/audio/cz/11800-spelunking/window/demo/wv110_wd111.ogg">
+				&#9835;
+			</a>
+		</td>
+		<td class="img">
+			<img
+				src="https://media.kasploosh.com/img/cz/11800-spelunking/window/demo/wv110_wd111.png"
+				alt="Window 111 Acting On Wave 110"
+			>
+		</td>
+		<td><span class="icon cz_sysex"></span></td>
+		<td>
+			Only available using sysex.<br>
+			Same function as <span class="syx">WINDOW 101</span>.
+		</td>
+	</tr>
+
+</table>
+
+<h3 class="clear">Key for this table</h3>
+
+<dl class="table_key">
+	<dt><span class="icon cz_panel"></span></dt>
+	<dd>This option is available through the front panel.</dd>
+	<dt><span class="icon cz_sysex"></span></dt>
+	<dd>This option is only available through sysex.</dd>
+</dl>
+
+<h2>Summary</h2>
+
+<p>
+The window function works by shaping each and every cycle of the wave with
+a mini amp envelope. It takes a wave and trims it into different patterns
+down at the cycle level. There are two novel window functions availabe
+via sysex.
+</p>
+
+
+<nav class="section"><h2>Section Navigation</h2><div><img src="https://media.kasploosh.com/img/cz/11800-spelunking/thumbnail.png" alt=""><ul><li><a href="/cz/11800-spelunking/">Casio CZ-1 Spelunking</a><ul><li><a href="/cz/11800-spelunking/1-which_bits/">Which Bits?</a></li><li><a href="/cz/11800-spelunking/2-basic_waves/">Your Basic Waveforms</a></li><li><a href="/cz/11800-spelunking/3-combo_waves/">The Truth About Combination Waves</a></li><li><span>Window Function Explained</span></li><li><a href="/cz/11800-spelunking/5-window-single/">Window Function And Single Waves</a></li><li><a href="/cz/11800-spelunking/6-window-combo/">Window Function And Combination Waves</a></li><li><a href="/cz/11800-spelunking/7-window-unique/">Unique Wave-Window Combinations</a></li><li><a href="/cz/11800-spelunking/8-modulation/">Types Of Modulation</a></li></ul></li></ul></div></nav>
+
+
+
+
+				</section>
+
+				<section class="debug">
+
+11809.74600
+
+				</section>
+
+				<footer class="article">
+
+
+				</footer>
+
+			</article>
+
+			<nav class="footer">
+
+<ul class="footer_nav">
+<li><a href="/contact/">Contact</a></li>
+<li><a href="/about_me/">About</a></li>
+<li><a href="/privacy/">Privacy</a></li>
+</ul>
+
+			</nav>
+
+			<footer class="main">
+
+<p>Project date: 2007-12-17 00:15:14 utc</p>
+<p>Page created: 2007-12-17 00:15:14 utc</p>
+<p>Page last edited: 2019-07-13 18:43:20 utc</p>
+<p>© 2026 Michael Rickard</p>
+
+			</footer>
+
+		  </div><!-- max_width -->
+	</body>
+</html>

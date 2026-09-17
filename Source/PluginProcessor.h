@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_core/juce_core.h>
 #include <memory>
 #include "Utils/PerformanceMonitor.h"
@@ -18,8 +19,7 @@
 #include <juce_dsp/juce_dsp.h> // Required for LadderFilter
 #include "DSP/Modulation/LFO.h"
 #include "Core/AudioThreadSnapshot.h"
-// #include "UI/LCDStateManager.h" // Removed to prevent circular dependency
-namespace CZ101 { namespace UI { class LCDStateManager; } }
+// Removed LCDStateManager forward declaration
 
 // Command Pattern for Thread Safety
 enum class InitSection { WAVEFORM, DCO, DCW, DCA, VIBRATO, OCTAVE, ALL, SYSTEM_ALL };
@@ -104,6 +104,7 @@ public:
     struct VisTripleBuffer {
         static constexpr int SIZE = 4096;
         std::array<std::array<float, SIZE>, 3> buffers;
+        std::array<int, 3> sampleCounts { 256, 256, 256 };
         std::atomic<int> backIndex { 0 }; // owned by Audio Thread
         std::atomic<int> midIndex { 1 };  // shared
         std::atomic<int> frontIndex { 2 }; // owned by UI Thread
@@ -114,16 +115,25 @@ public:
     // CASIO CZ COMMAND QUEUE (Thread-Safe UI -> Audio)
     void scheduleEnvelopeUpdate(const EnvelopeUpdateCommand& cmd);
 
+    // Thread-safe MIDI injection from UI
+    void addUIMidiMessage(const juce::MidiMessage& message)
+    {
+        uiMidiCollector.addMessageToQueue(message);
+        const juce::SpinLock::ScopedLockType sl(uiMidiLock);
+        uiMidiDirectQueue.push_back(message);
+    }
+
     // Callbacks
     std::function<void()> requestAudioSettings; // For Standalone Audio/MIDI Settings
     
     // Audit Fix 10.6: Compare Logic
     void toggleCompareMode(bool enable);
     bool isCompareMode() const noexcept { return isCompareEnabled; }
+    
+    int getLastMidiNotePlayed() const noexcept { return lastMidiNotePlayed.load(std::memory_order_relaxed); }
 
     // --- UI State Management ---
-    std::unique_ptr<CZ101::UI::LCDStateManager> lcdStateManager;
-    CZ101::UI::LCDStateManager& getLCDStateManager() { return *lcdStateManager; }
+    // LCDStateManager removed for WebUI
 
 private:
     // ...
@@ -131,9 +141,13 @@ private:
     VisTripleBuffer visTripleBuffer; // Audit Fix 1.3: Waveform Triple Buffer
     CZ101::Core::VoiceManager voiceManager;
     CZ101::MIDI::MIDIProcessor midiProcessor;
+    juce::MidiMessageCollector uiMidiCollector; // Thread-safe queue for UI MIDI
+    juce::SpinLock uiMidiLock;
+    std::vector<juce::MidiMessage> uiMidiDirectQueue;
     juce::UndoManager undoManager; // Added UndoManager (Must be before Parameters)
     CZ101::State::Parameters parameters;
     CZ101::State::PresetManager presetManager;
+    std::atomic<int> lastMidiNotePlayed {-1};
     CZ101::MIDI::SysExManager sysExManager;
     bool isCompareEnabled = false; // Audit Fix 10.6
     
@@ -181,6 +195,14 @@ private:
     juce::CriticalSection sysExLock; // Protects the pendingSysExPreset unique_ptr
     std::unique_ptr<CZ101::State::Preset> pendingSysExPreset;
     std::atomic<bool> hasPendingSysEx { false };    
+
+    // Outgoing SysEx queue
+    juce::CriticalSection midiOutputLock;
+    juce::MidiBuffer midiOutputQueue;
+    
+    // Dump Request trigger
+    std::atomic<bool> hasPendingDumpRequest { false };
+    std::atomic<int> pendingDumpSlotId { -1 };
 
     // Audit Fix: Lock-free POD Swap for audio thread
     static constexpr int PRESET_FIFO_SIZE = 4;

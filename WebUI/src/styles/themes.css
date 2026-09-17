@@ -1,0 +1,65 @@
+/* ─── Theme visual effects (DesignTokens Palette.effect) ─── */
+/* Scanlines (Retro Beige, Neon Retro, Retro Terminal) */
+html.theme-effect-scanlines body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.22) 3px,
+    rgba(0, 0, 0, 0) 4px
+  );
+  mix-blend-mode: multiply;
+}
+
+html.theme-effect-scanlines .lcd-display {
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.35);
+}
+
+/* Glass (Apple Silicon): frosted panels */
+html.theme-effect-glass body {
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(0, 122, 255, 0.08), transparent 60%),
+    radial-gradient(ellipse at 80% 90%, rgba(88, 86, 214, 0.08), transparent 60%);
+}
+
+html.theme-effect-glass .control-panel,
+html.theme-effect-glass .lcd-controls,
+html.theme-effect-glass .synth-container {
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  background: color-mix(in srgb, var(--bg-panel) 55%, transparent);
+}
+
+html.theme-effect-glass .lcd-display {
+  border-color: color-mix(in srgb, var(--border-light) 70%, var(--color-accent));
+}
+
+/* Light-family themes: soften the heavy dark shadows */
+html.theme-effect-glass .synth-container,
+html.theme-effect-glass body {
+  box-shadow: none;
+}
+
+/* Drag & drop affordance (native filesDropped parity): while a file is over
+   the window, dim the app and show a centered drop hint. */
+body.drag-over::after {
+  content: "DROP BANK / PATCH (.syx .json)";
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 22px;
+  letter-spacing: 2px;
+  border: 3px dashed var(--omega-accent, #00e5ff);
+  pointer-events: none;
+}

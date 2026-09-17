@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>CZ How To Transfer Sysex</title>
+
+		<meta charset="utf-8">
+		<meta name="author" content="Michael Rickard">
+		<meta name="dcterms.dateCopyrighted" content="2005 to 2026">
+		<meta name="description" content="How to information, and tutorials, for transferring sysex from a Casio CZ to a personal computer, and from a personal computer to a Casio CZ.">
+		<meta name="DC.date" content="2012-09-20 18:17:52 utc">
+		<meta name="DC.date.created" content="2012-09-20 18:17:52 utc">
+		<meta name="DC.date.modified" content="2019-07-14 05:18:54 utc">
+		<meta name="generator" content="Text Editor">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<link rel="icon" href="https://media.kasploosh.com/img/favicons/kasploosh.ico">
+		<link rel="canonical" href="https://www.kasploosh.com/cz/13549-how_to_transfer_sysex/">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/main.css?v=20200729">
+		<link rel="stylesheet" type="text/css" href="https://media.kasploosh.com/css/pages/cz.css">
+	</head>
+
+	<body>
+
+		<div class="max_width">
+
+			<header class="main">
+<img src="https://media.kasploosh.com/img/logos/flag-15517.gif"> kasploosh.com
+			</header>
+
+			<nav class="main">
+
+<label for="toggle_nav" id="toggle_nav_label"><span></span><span class="text">Tap For Menu</span><span></span></label>
+<input type="checkbox" id="toggle_nav" name="toggle_nav" value="toggle_nav">
+
+<ul class="main_nav">
+<li><a href="https://www.kasploosh.com/">Home</a></li>
+<li><a href="https://www.kasploosh.com/art/">Art</a></li>
+<li><a href="https://www.kasploosh.com/stories/">Stories</a></li>
+<li><a href="https://www.kasploosh.com/cz/">CZ</a></li>
+<li><a href="https://www.kasploosh.com/make_stuff/">Make Stuff</a></li>
+<li><a href="https://www.kasploosh.com/software/">Software</a></li>
+<li><a href="https://www.kasploosh.com/music/">Music</a></li>
+<li><a href="https://www.kasploosh.com/videos/">Videos</a></li>
+<li><a href="https://www.kasploosh.com/mike_date/">By Mike Date</a></li>
+<li><a href="https://www.kasploosh.com/date/">By Date</a></li>
+<li><a href="https://www.kasploosh.com/tag/">By Tag</a></li>
+<li><a href="https://www.kasploosh.com/search/">By Search</a></li>
+</ul>
+
+			</nav>
+
+
+			<article class="main">
+				<header class="article">
+
+					<div class="breadcrumbs">
+
+
+					</div><!-- breadcrumbs -->
+
+				</header>
+
+
+				<section class="article">
+
+
+<h1>CZ How To Transfer Sysex</h1>
+
+<p class="article_date">2012-09-20</p>
+
+
+
+<div class="photo right">
+	<img
+		src="https://media.kasploosh.com/img/cz/13549-how_to_transfer_sysex/cz_to_computer.png"
+		alt="cz_to_computer.png"
+	>
+	<p>amigos</p>
+</div>
+
+<p>This set of articles is intended to provide comprehensive instructions for transferring sysex between a personal computer and a Casio CZ.</p>
+
+<p>Throughout this tutorial section, the model <em>CZ-101</em> is used to stand in for CZ-101, CZ-1000, CZ-3000, and CZ-5000. It is used to make a distinction between the <em>CZ-1</em> which is the only one that functions differently.
+
+<h2>Linux Topics</h2>
+
+<p>The <a href="http://linux.die.net/man/1/amidi">amidi</a> utility is part of the <a href="http://www.alsa-project.org/main/index.php/Main_Page">ALSA</a> suite of programs. The proper name for it is <a href="http://www.alsa-project.org/alsa-doc/alsa-lib/rawmidi.html">ALSA RawMidi Utility</a>. amidi is used to send raw MIDI communication (like sysex) to devices connected to your computer.</p>
+
+<table class="border">
+	<tr><th>Tool</th><th>Model</th><th>Direction</th><th>Tutorial</th></tr>
+	<tr><td>amidi</td><td>CZ-1</td><td>Send</td><td><a href="./amidi-cz1-send/">Send a sysex file to a CZ-1 using amidi.</a></td></tr>
+	<tr><td>amidi</td><td>CZ-1</td><td>Receive</td><td><a href="./amidi-cz1-receive/">Retrieve sounds from a CZ-1 using amidi.</a></td></tr>
+	<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>
+	<tr><td>amidi</td><td>CZ-101</td><td>Send</td><td><a href="./amidi-cz101-send/">Send a sysex file to a CZ-101 using amidi.</a></td></tr>
+	<tr><td>amidi</td><td>CZ-101</td><td>Receive</td><td><a href="./amidi-cz101-receive/">Retrieve sounds from a CZ-101 using amidi.</a></td></tr>
+</table>
+
+<h2>Windows Topics</h2>
+
+<p><a href="http://www.midiox.com/">MIDI-OX</a> is a popular Windows application for communicating with MIDI devices.</p>
+
+<table class="border">
+	<tr><th>Tool</th><th>Model</th><th>Direction</th><th>Tutorial</th></tr>
+	<tr><td>MIDI-OX</td><td>CZ-1</td><td>Send</td><td><a href="./midiox-cz1-send/">Send a sysex file to a CZ-1 using MIDI-OX.</a></td></tr>
+	<tr><td>MIDI-OX</td><td>CZ-1</td><td>Receive</td><td><a href="./midiox-cz1-receive/">Retrieve sounds from a CZ-1 using MIDI-OX.</a></td></tr>
+	<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>
+	<tr><td>MIDI-OX</td><td>CZ-101</td><td>Send</td><td><a href="./midiox-cz101-send/">Send a sysex file to a CZ-101 using MIDI-OX.</a></td></tr>
+	<tr><td>MIDI-OX</td><td>CZ-101</td><td>Receive</td><td><a href="./midiox-cz101-receive/">Retrieve sounds from a CZ-101 using MIDI-OX.</a></td></tr>
+</table>
+
+<nav class="section"><h2>Section Navigation</h2><div><img src="https://media.kasploosh.com/img/cz/13549-how_to_transfer_sysex/thumbnail.png" alt=""><ul><li><span>CZ How To Transfer Sysex</span><ul><li><a href="/cz/13549-how_to_transfer_sysex/amidi-cz1-receive/">Receive Sysex From CZ-1 Using amidi</a></li><li><a href="/cz/13549-how_to_transfer_sysex/amidi-cz1-send/">Send Sysex To CZ-1 Using amidi</a></li><li><a href="/cz/13549-how_to_transfer_sysex/amidi-cz101-receive/">Receive Sysex From CZ-101 Using amidi</a></li><li><a href="/cz/13549-how_to_transfer_sysex/amidi-cz101-send/">Send Sysex To CZ-101 Using amidi</a></li><li><a href="/cz/13549-how_to_transfer_sysex/midiox-cz1-receive/">Receive Sysex From CZ-1 Using MIDI-OX</a></li><li><a href="/cz/13549-how_to_transfer_sysex/midiox-cz1-send/">Send Sysex To CZ-1 Using MIDI-OX</a></li><li><a href="/cz/13549-how_to_transfer_sysex/midiox-cz101-receive/">Receive Sysex From CZ-101 Using MIDI-OX</a></li><li><a href="/cz/13549-how_to_transfer_sysex/midiox-cz101-send/">Send Sysex To CZ-101 Using MIDI-OX</a></li></ul></li></ul></div></nav>
+
+
+
+
+				</section>
+
+				<section class="debug">
+
+13549.49782
+
+				</section>
+
+				<footer class="article">
+
+
+				</footer>
+
+			</article>
+
+			<nav class="footer">
+
+<ul class="footer_nav">
+<li><a href="/contact/">Contact</a></li>
+<li><a href="/about_me/">About</a></li>
+<li><a href="/privacy/">Privacy</a></li>
+</ul>
+
+			</nav>
+
+			<footer class="main">
+
+<p>Project date: 2012-09-20 18:17:52 utc</p>
+<p>Page created: 2012-09-20 18:17:52 utc</p>
+<p>Page last edited: 2019-07-14 05:18:54 utc</p>
+<p>© 2026 Michael Rickard</p>
+
+			</footer>
+
+		  </div><!-- max_width -->
+	</body>
+</html>

@@ -1,0 +1,28 @@
+Moog-Like  - Indeed, a classic sound.
+---------
+
+Line Select 1+1
+Detune: +  Octave: 0  Note: 00  Fine: 07
+Vibrato: Wave 4  Delay: 00  Rate: 49  Depth: 59
+Octave: Range 0
+
+DCO1: Waveform First:2  Second:2
+      Step1- Rate:00  Level:00  END
+
+DCW1: Key Follow: 0
+      Step1- Rate:78  Level:48
+      Step2- Rate:50  Level:75
+      Step3- Rate:37  Level:83  SUS
+      Step4- Rate:41  Level:00  END
+
+DCA1: Key Folloe: 0
+      Step1- Rate:84  Level:87  SUS
+      Step2- Rate:39  Level:00  END
+
+
+*DCO2, DCW2, and DCA2 contain no step data whatsoever.  These  parameters
+should be left as originally initialized, or duplicate
+ the first set of parameters, and change the line select to 1+2
+ for a richer sound.
+
+

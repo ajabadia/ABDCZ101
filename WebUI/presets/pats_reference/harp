@@ -1,0 +1,19 @@
+Tone Name: HARP
+line select: 1
+detune: + 0 0 0         (+/-, octave, note, fine)
+vibrato: 1 0 0 0        (wave, delay, rate, depth)
+octave: 0
+dco1 wave: 2 0
+dco1 env: 50/0/e        (rate/level{/sustain|end})*
+dcw1 keyfollow: 9
+dcw1 env: 99/99, 50/0/e
+dca1 keyfollow: 9
+dca1 env: 90/99, 20/0/e
+
+comment: gut or nylon harp, pluck envelope on dcw/dca
+
+This is a reasonable approximation of a gut-strung or nylon-
+strung harp.  It is done on dcx1, only, so it is 
+octophonic - I find this valuable because of the longish
+sustain (from 99 to 0 @ 20.)
+

@@ -8,8 +8,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
-    auto waveChoices = juce::StringArray{"1: Saw", "2: Square", "3: Pulse", "4: Dbl Sine", "5: SawPulse", "6: Reso 1", "7: Reso 2", "8: Reso 3"};
-    auto waveChoices2 = juce::StringArray{"0: None", "1: Saw", "2: Square", "3: Pulse", "4: Dbl Sine", "5: SawPulse", "6: Reso 1", "7: Reso 2", "8: Reso 3"};
+    auto waveChoices = juce::StringArray{"1: Saw", "2: Square", "3: Pulse", "4: Null", "5: Dbl Sine", "6: SawPulse", "7: MultiSine", "8: Pulse 2"};
+    auto waveChoices2 = juce::StringArray{"0: None", "1: Saw", "2: Square", "3: Pulse", "4: Null", "5: Dbl Sine", "6: SawPulse", "7: MultiSine", "8: Pulse 2"};
+    auto windowChoices = juce::StringArray{"0: None", "1: Saw", "2: Triangle", "3: Trapezoid", "4: Pulse", "5: Dbl Saw"};
     auto lfoWaveChoices = juce::StringArray{"Triangle", "Saw Up", "Saw Down", "Square"};
     auto lineSelChoices = juce::StringArray{"Line 1", "Line 2", "Line 1+1'", "Line 1+2"};
     auto keyFollowChoices = juce::StringArray{"OFF", "FIX", "VAR"};
@@ -19,21 +20,24 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
         auto group = std::make_unique<juce::AudioProcessorParameterGroup>("oscillators", "Oscillators", "|");
         group->addChild(std::make_unique<juce::AudioParameterChoice>(ParameterIDs::lineSelect, "Line Select", lineSelChoices, 2));
         group->addChild(std::make_unique<juce::AudioParameterChoice>(ParameterIDs::osc1Waveform, "Osc 1 Waveform", waveChoices, 0));
+        group->addChild(std::make_unique<juce::AudioParameterChoice>(ParameterIDs::osc1Window, "Osc 1 Window", windowChoices, 0));
         group->addChild(std::make_unique<juce::AudioParameterChoice>(ParameterIDs::osc1Waveform2, "Osc 1 Second Wave", waveChoices2, 0));
         group->addChild(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::osc1Level, "Osc 1 Level", 0.0f, 1.0f, 1.0f));
         group->addChild(std::make_unique<juce::AudioParameterChoice>(ParameterIDs::osc2Waveform, "Osc 2 Waveform", waveChoices, 0));
+        group->addChild(std::make_unique<juce::AudioParameterChoice>(ParameterIDs::osc2Window, "Osc 2 Window", windowChoices, 0));
         group->addChild(std::make_unique<juce::AudioParameterChoice>(ParameterIDs::osc2Waveform2, "Osc 2 Second Wave", waveChoices2, 0));
         group->addChild(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::osc2Level, "Osc 2 Level", 0.0f, 1.0f, 0.0f));
         group->addChild(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::osc2Detune, "Osc 2 Detune (Legacy)", -12.0f, 12.0f, 0.0f));
+        group->addChild(std::make_unique<juce::AudioParameterInt>(ParameterIDs::octave, "Octave", -1, 1, 0));
         group->addChild(std::make_unique<juce::AudioParameterInt>(ParameterIDs::detuneOct, "Detune Octave", -3, 3, 0));
         group->addChild(std::make_unique<juce::AudioParameterInt>(ParameterIDs::detuneCoarse, "Detune Coarse", -12, 12, 0));
         group->addChild(std::make_unique<juce::AudioParameterInt>(ParameterIDs::detuneFine, "Detune Fine", -50, 50, 0));
         // Audit Fix [2.4]: Tone Mix (0.0=Line1, 0.5=Both, 1.0=Line2)
         group->addChild(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::lineMix, "Line Mix", 0.0f, 1.0f, 0.5f));
         group->addChild(std::make_unique<juce::AudioParameterBool>(ParameterIDs::hardSync, "Hard Sync", false));
-        group->addChild(std::make_unique<juce::AudioParameterBool>(ParameterIDs::ringMod, "Ring Mod", false));
-        group->addChild(std::make_unique<juce::AudioParameterBool>(ParameterIDs::noiseMod, "Noise Mod", false)); // Audit Fix
-        group->addChild(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::glideTime, "Portamento Time", 0.0f, 1.0f, 0.0f));
+        group->addChild(std::make_unique<juce::AudioParameterChoice>(ParameterIDs::lineMod, "Line Modulation", 
+            juce::StringArray{ "Off", "Ring 1", "Noise 1", "Ring 2", "Ring 3", "Noise 2" }, 0));
+        group->addChild(std::make_unique<juce::AudioParameterBool>(ParameterIDs::modSpecial, "Mod Special (Line 1 Mute)", false));        group->addChild(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::glideTime, "Portamento Time", 0.0f, 1.0f, 0.0f));
         layout.add(std::move(group));
     }
 
@@ -76,6 +80,23 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
         group->addChild(std::make_unique<juce::AudioParameterChoice>(ParameterIDs::keyFollowDco, "Key Follow DCO", keyFollowChoices, 2));
         group->addChild(std::make_unique<juce::AudioParameterChoice>(ParameterIDs::keyFollowDcw, "Key Follow DCW", keyFollowChoices, 0));
         group->addChild(std::make_unique<juce::AudioParameterChoice>(ParameterIDs::keyFollowDca, "Key Follow DCA", keyFollowChoices, 0));
+        
+        // CZ-1 Velocity Sensitivities (Per-Line)
+        group->addChild(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::line1VeloPitch, "Line 1 Velo -> Pitch", 0.0f, 15.0f, 0.0f));
+        group->addChild(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::line1VeloDcw, "Line 1 Velo -> DCW", 0.0f, 15.0f, 0.0f));
+        group->addChild(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::line1VeloDca, "Line 1 Velo -> DCA", 0.0f, 15.0f, 0.0f));
+        group->addChild(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::line2VeloPitch, "Line 2 Velo -> Pitch", 0.0f, 15.0f, 0.0f));
+        group->addChild(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::line2VeloDcw, "Line 2 Velo -> DCW", 0.0f, 15.0f, 0.0f));
+        group->addChild(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::line2VeloDca, "Line 2 Velo -> DCA", 0.0f, 15.0f, 0.0f));
+
+        // CZ-1 Key Follow per-line (0-9)
+        group->addChild(std::make_unique<juce::AudioParameterInt>(ParameterIDs::line1KfPitch, "Line 1 KF Pitch", 0, 9, 0));
+        group->addChild(std::make_unique<juce::AudioParameterInt>(ParameterIDs::line1KfDcw, "Line 1 KF DCW", 0, 9, 0));
+        group->addChild(std::make_unique<juce::AudioParameterInt>(ParameterIDs::line1KfDca, "Line 1 KF DCA", 0, 9, 0));
+        group->addChild(std::make_unique<juce::AudioParameterInt>(ParameterIDs::line2KfPitch, "Line 2 KF Pitch", 0, 9, 0));
+        group->addChild(std::make_unique<juce::AudioParameterInt>(ParameterIDs::line2KfDcw, "Line 2 KF DCW", 0, 9, 0));
+        group->addChild(std::make_unique<juce::AudioParameterInt>(ParameterIDs::line2KfDca, "Line 2 KF DCA", 0, 9, 0));
+
         layout.add(std::move(group));
     }
 
@@ -116,8 +137,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
         group->addChild(std::make_unique<juce::AudioParameterBool>(ParameterIDs::systemPrg, "SysEx Data Interchange", false));
         group->addChild(std::make_unique<juce::AudioParameterBool>(ParameterIDs::bypass, "Bypass", false));
         // Audit Fix [2.2a]: Unified Operation Mode
-        // 0: Classic 101, 1: Classic 5000, 2: Modern
-        group->addChild(std::make_unique<juce::AudioParameterChoice>(ParameterIDs::operationMode, "Operation Mode", juce::StringArray{"Classic 101", "Classic 5000", "Modern"}, 0));
+        // 0: Classic 101, 1: Classic 5000, 2: Classic CZ-1, 3: Modern
+        group->addChild(std::make_unique<juce::AudioParameterChoice>(ParameterIDs::operationMode, "Operation Mode", juce::StringArray{"Classic 101", "Classic 5000", "Classic CZ-1", "Modern"}, 0));
         group->addChild(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::masterVolume, "Master Volume", 0.0f, 1.0f, 1.0f));
         
         group->addChild(std::make_unique<juce::AudioParameterInt>(ParameterIDs::midiChannel, "MIDI Channel", 1, 16, 1));

@@ -1,0 +1,30 @@
+
+
+Name: Chunky Blocks
+
+line    mod     detune          vibrato         octave
+1+1'    ring    - 3 03 08       1 00 38 15      -1
+
+DCO 1
+wave 
+2 1
+rate    level
+99      62
+76      00e
+
+DCW 1
+key 
+0
+rate    level
+99      83
+51      00e
+
+DCA 1
+key 
+6
+rate    level
+99      99
+52      00e
+
+Comments: Use tone mix if you're using this patch for bass line.
+Also, I'm not sure if the detune is supposed to be "-".

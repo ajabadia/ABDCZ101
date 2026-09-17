@@ -1,0 +1,40 @@
+Name: Space Shots
+
+line    mod     detune          vibrato         octave
+1+1'   off/off  - 0 00 06       3 0 35 93       (whatever you like best)
+
+DCO 1
+wave 
+8 0
+rate    level
+99      33
+33      0       END
+
+DCW 1
+key 
+0
+rate    level
+99      99
+46      99
+37      52      SUS
+26      0       END
+
+DCA 1
+key 
+0
+rate    level
+99      50
+77      99
+67      91      SUS
+79      92
+26      0       END
+
+
+Comments: 
+This sounds kind of like the laser fire in a cheap video game.
+To change the number of shots fired each time you push a key,
+change the rate of DCA 1, STEP 5.   
+To vary the speed at which shots are fired, vary the vibrato 
+rate (most effective if you do this while playing.) 
+
+------------------------------------------------------------------

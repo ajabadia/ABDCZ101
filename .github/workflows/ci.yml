@@ -44,14 +44,18 @@ jobs:
     - name: Build
       run: cmake --build build --config Release
 
-    # 4. Run Unit Tests (SysEx)
+    # 4. Run Unit Tests (SysEx + Snapshot DSP)
     - name: Run Unit Tests
       shell: bash
       run: |
         if [ "$RUNNER_OS" == "Windows" ]; then
           ./build/Release/CZ101SysExTest.exe
+          ./build/Release/CZ101SysExRoundTripTest.exe
+          ./build/Release/CZ101SnapshotDSPTest.exe
         else
           ./build/CZ101SysExTest
+          ./build/CZ101SysExRoundTripTest
+          ./build/CZ101SnapshotDSPTest
         fi
 
     # 5. Run Offline Golden Master Verification

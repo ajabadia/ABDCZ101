@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ABD CZ-101 Phase Distortion Emulator</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23000'/%3E%3Cpath d='M6 22V10l8 6V10l8 6V10l4 3v9' fill='none' stroke='%2300ffcc' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#0d0f12">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./src/styles/base.css">
+  <link rel="stylesheet" href="./src/styles/lcd.css">
+  <link rel="stylesheet" href="./src/styles/panels.css">
+  <link rel="stylesheet" href="./src/styles/controls.css">
+  <link rel="stylesheet" href="./src/styles/keyboard.css">
+  <link rel="stylesheet" href="./src/styles/envelopes.css">
+  <link rel="stylesheet" href="./src/styles/midi.css">
+  <link rel="stylesheet" href="./src/styles/menu.css">
+  <link rel="stylesheet" href="./src/styles/bankManager.css">
+  <link rel="stylesheet" href="./src/styles/overlays.css">
+  <link rel="stylesheet" href="./src/styles/themes.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <script src="juce.js"></script>
+  <script>
+    window.getJuceBackend = function() {
+      if (window.__JUCE__ && window.__JUCE__.backend) return window.__JUCE__.backend;
+      if (window.Juce && window.Juce.backend) return window.Juce.backend;
+      return null;
+    };
+    window.logToCpp = function(msg) {
+      console.log('[WebUI]', msg);
+      try {
+        const backend = window.getJuceBackend ? window.getJuceBackend() : ((window.__JUCE__ && window.__JUCE__.backend) || (window.Juce && window.Juce.backend));
+        if (backend) {
+          if (typeof backend.jsLog === 'function') backend.jsLog(String(msg));
+          if (typeof backend.emitEvent === 'function') backend.emitEvent('jsLog', String(msg));
+        }
+      } catch (e) {}
+    };
+    window.addEventListener('error', function(e) {
+      window.logToCpp('JS ERROR: ' + e.message + ' (' + e.filename + ':' + e.lineno + ')');
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      window.logToCpp('JS UNHANDLED: ' + (e.reason ? (e.reason.message || e.reason) : 'unknown'));
+    });
+  </script>
+</head>
+<body>
+  <div class="synth-container">
+    <div class="synth-panel-left">
+    </div>
+    
+    <div class="synth-panel-center">
+      <!-- Screws in the central panel -->
+      <img src="./dist/screw_1.png" class="screw screw-top-left" alt="" />
+      <img src="./dist/screw_1.png" class="screw screw-bottom-left" alt="" />
+      <img src="./dist/screw_1.png" class="screw screw-top-right" alt="" />
+      <img src="./dist/screw_1.png" class="screw screw-bottom-right" alt="" />
+      
+      <!-- Menu Bar (native PluginEditor MenuBar: File / Edit / Mode / View / Help) -->
+      <nav class="menu-bar" id="menu-bar" aria-label="Main menu">
+        <button type="button" class="menu-trigger" data-menu="File">File</button>
+        <button type="button" class="menu-trigger" data-menu="Edit">Edit</button>
+        <button type="button" class="menu-trigger" data-menu="Mode">Mode</button>
+        <button type="button" class="menu-trigger" data-menu="View">View</button>
+        <button type="button" class="menu-trigger" data-menu="Help">Help</button>
+        <div class="menu-dropdown" id="menu-dropdown" hidden></div>
+      </nav>
+
+    <!-- Brand Title (spanning full-width at the top, above screens) -->
+    <div class="brand">
+      <h1>ABD CZ-<span id="brand-model-num" style="color: var(--color-accent);">101</span> Phase Distortion Synthesizer</h1>
+    </div>
+
+    <!-- Header / LCD Section -->
+    <header class="synth-header">
+      
+      <!-- Retro LCD Display with Keypad -->
+      <div class="lcd-container">
+        <!-- The 8-icon matrix (2x4 grid) will be moved to the right of the LCD -->
+
+        <div class="lcd-controls">
+          <!-- Row 1: BNK, MDL, UP, space, CMP -->
+          <button id="btn-lcd-bnk" class="lcd-btn lcd-btn-bnk" title="Bank Browser (▲/▼ banks, ◀/▶ patches)">BNK</button>
+          <button id="btn-lcd-mdl" class="lcd-btn lcd-btn-mdl" title="Model Browser (▲/▶ next, ▼/◀ previous)">MDL</button>
+          <button id="btn-lcd-val-up" class="lcd-btn" title="Value Up">▲</button>
+          <div class="keypad-spacer"></div>
+          <button id="btn-lcd-compare" class="lcd-btn" title="Compare Preset">CMP</button>
+
+          <!-- Row 2: SET, LEFT, DOWN, RIGHT, WRT -->
+          <button id="btn-lcd-set" class="lcd-btn lcd-btn-set" title="Settings / System Setup (same as Edit > Settings)">SET</button>
+          <button id="btn-lcd-cur-left" class="lcd-btn" title="Cursor Left">◀</button>
+          <button id="btn-lcd-val-down" class="lcd-btn" title="Value Down">▼</button>
+          <button id="btn-lcd-cur-right" class="lcd-btn" title="Cursor Right">▶</button>
+          <button id="btn-lcd-write" class="lcd-btn" title="Write/Store">WRT</button>
+        </div>
+
+        <div class="lcd-display" id="lcd-display">
+          <div class="lcd-line-1" id="lcd-line1">ABD CZ-101 READY</div>
+          <div class="lcd-line-2" id="lcd-line2">SELECT A PATCH...</div>
+          <div class="lcd-mode-badge" id="lcd-mode-badge"></div>
+          <span class="lcd-bnk-badge" id="lcd-bnk-badge" style="display: none;">
+            <span class="lcd-bnk-badge-row lcd-bnk-model" id="lcd-bnk-model"></span>
+            <span class="lcd-bnk-badge-row" id="lcd-bnk-pos"></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Oscilloscope Visualizer -->
+        <div class="oscilloscope-container">
+          <canvas id="oscilloscope" width="200" height="60"></canvas>
+        </div>
+
+        <div class="global-keypad">
+          <button type="button" id="btn-random" class="lcd-btn" title="Randomize Patch (native RNDM)">RNDM</button>
+          <button type="button" id="btn-panic" class="lcd-btn lcd-btn-danger" title="All Notes Off (native ALL OFF)">ALL OFF</button>
+          
+          <div class="midi-status-container">
+            <span id="midi-activity-led" class="midi-activity-led" title="MIDI Activity"></span>
+            <span id="midi-status-badge" style="font-family: 'Share Tech Mono', monospace; font-size: 8.5px; line-height: 1;">MIDI: OFFLINE</span>
+          </div>
+          <button id="btn-init-audio" class="lcd-btn lcd-btn-audio">START AUDIO</button>
+          
+          <span id="midi-learn-badge" class="midi-learn-badge" style="display: none;">MIDI CC MAPS: 0</span>
+          <input type="file" id="input-sysex" accept=".syx,.sysex" style="display: none;">
+        </div>
+      </div>
+    </header>
+
+    <!-- Full width LCD for SysEx display & Graphics -->
+    <div class="full-width-lcd-container" style="padding: 0 15px; margin-bottom: 15px;">
+        <div class="lcd-display sysex-lcd" id="sysex-lcd-display" style="width: 100%; height: auto; min-height: 52px; flex-direction: row; justify-content: space-between; align-items: center; padding: 6px 12px; gap: 12px; box-sizing: border-box;">
+          
+          <!-- The 8-icon matrix (1x8 grid) on the left -->
+          <div class="lcd-graphics-matrix" style="flex-shrink: 0;">
+            <div class="lcd-graphic-box wave-sprite" data-label="O1-1" id="mini-box-osc1-1"></div>
+            <div class="lcd-graphic-box wave-sprite" data-label="O1-2" id="mini-box-osc1-2"></div>
+            <div class="lcd-graphic-box wave-sprite" data-label="O2-1" id="mini-box-osc2-1"></div>
+            <div class="lcd-graphic-box wave-sprite" data-label="O2-2" id="mini-box-osc2-2"></div>
+            <div class="lcd-graphic-box env-sprite" data-label="LFO"><canvas id="mini-canvas-lfo" width="36" height="28"></canvas></div>
+            <div class="lcd-graphic-box env-sprite" data-label="DCA"><canvas id="mini-canvas-dca" width="36" height="28"></canvas></div>
+            <div class="lcd-graphic-box env-sprite" data-label="DCW"><canvas id="mini-canvas-dcw" width="36" height="28"></canvas></div>
+            <div class="lcd-graphic-box env-sprite" data-label="PITCH"><canvas id="mini-canvas-pitch" width="36" height="28"></canvas></div>
+          </div>
+          
+          <!-- Sysex hex content in the middle with scroll and monospace styling -->
+          <div id="sysex-hex-content" style="flex: 1; min-width: 0; max-height: 42px; overflow-y: auto; overflow-x: hidden; font-family: 'Share Tech Mono', monospace; font-size: 0.68rem; line-height: 1.25; letter-spacing: 0.75px; color: var(--color-lcd-text); background: rgba(0, 0, 0, 0.04); border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 3px; padding: 4px 8px; word-break: break-all; user-select: text;">
+            F0 44 00 00 ... F7
+          </div>
+
+          <!-- Copy Button on the right -->
+          <button id="btn-copy-sysex" class="lcd-btn" style="flex-shrink: 0; min-width: 95px; height: 32px; font-size: 0.7rem; font-weight: bold; letter-spacing: 0.5px;">COPY SYSEX</button>
+        </div>
+    </div>
+
+    <!-- Main Control Surface -->
+    <main class="control-surface">
+      <!-- Section: General (compact — full controls live in the slide-out drawer) -->
+      <section class="control-panel panel-global">
+        <div class="panel-heading">
+          <h3><span>GENERAL</span></h3>
+          <div class="panel-buttons">
+            <button type="button" id="btn-edit-sys" class="btn-panel-edit" title="Open SYSTEM settings">SYS</button>
+            <button type="button" id="btn-edit-voice" class="btn-panel-edit" title="Open VOICE ENGINE settings">VOICE</button>
+            <button type="button" id="btn-edit-ctrl" class="btn-panel-edit" title="Open PERFORMANCE CONTROLS">CTRL</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Oscillators & Detuning (compact — full controls live in the slide-out drawer) -->
+      <section class="control-panel panel-oscillators">
+        <div class="panel-heading">
+          <h3><span>DCO OSCILLATORS</span></h3>
+          <div class="panel-buttons">
+            <button type="button" id="btn-edit-dco" class="btn-panel-edit" title="Open DCO OSCILLATOR 1 settings">OSC 1</button>
+            <button type="button" id="btn-edit-dco-osc2" class="btn-panel-edit" title="Open DCO OSCILLATOR 2 settings">OSC 2</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: LFO / Vibrato (compact — full controls live in the slide-out drawer) -->
+      <section class="control-panel panel-lfo">
+        <div class="panel-heading">
+          <h3><span>LFO / VIBRATO</span></h3>
+          <button type="button" id="btn-edit-lfo" class="btn-panel-edit" title="Open LFO / VIBRATO settings">EDIT</button>
+        </div>
+      </section>
+
+      <!-- Section: Envelopes (compact — full editors live in the slide-out drawer) -->
+      <section class="control-panel panel-envelopes">
+        <div class="panel-heading">
+          <h3><span>ENVELOPES</span></h3>
+          <div class="panel-buttons">
+            <button type="button" id="btn-edit-env-dca" class="btn-panel-edit" title="Open DCA ENVELOPE editor">DCA</button>
+            <button type="button" id="btn-edit-env-dcw" class="btn-panel-edit" title="Open DCW ENVELOPE editor">DCW</button>
+            <button type="button" id="btn-edit-env-pitch" class="btn-panel-edit" title="Open PITCH ENVELOPE editor">PITCH</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Arpeggiator (compact — full controls live in the slide-out drawer) -->
+      <section class="control-panel panel-arp">
+        <div class="panel-heading">
+          <h3><span>ARPEGGIATOR</span></h3>
+          <button type="button" id="btn-edit-arp" class="btn-panel-edit" title="Open ARPEGGIATOR settings">EDIT</button>
+        </div>
+      </section>
+
+      <!-- Advanced Mode Only sections (last) -->
+
+      <!-- Section: Modulation Matrix (full matrix lives in the slide-out drawer) -->
+      <section class="control-panel panel-modulation">
+        <div class="panel-heading">
+          <h3><span>MODULATION ROUTINGS</span></h3>
+          <button type="button" id="btn-edit-mod" class="btn-panel-edit" title="Open MODULATION MATRIX">EDIT <span id="mod-edit-active-count" class="panel-edit-badge" hidden>0</span></button>
+        </div>
+      </section>
+
+      <!-- Section: Filters (compact — full controls live in the slide-out drawer) -->
+      <section class="control-panel panel-filters" id="panel-filters">
+        <div class="panel-heading">
+          <h3><span>FILTERS</span></h3>
+          <div class="filters-btn-group" style="display: flex; gap: 5px;">
+            <button type="button" id="btn-edit-filter-lpf" class="btn-panel-edit" title="Open LOW-PASS FILTER settings" data-mode="modern">LPF</button>
+            <button type="button" id="btn-edit-filter-hpf" class="btn-panel-edit" title="Open HIGH-PASS FILTER settings" data-mode="modern">HPF</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Effects (compact — full controls live in the slide-out drawer) -->
+      <section class="control-panel panel-effects" id="panel-effects">
+        <div class="panel-heading">
+          <h3><span>EFFECTS</span></h3>
+          <div class="effects-btn-group" style="display: flex; gap: 5px;">
+            <button type="button" id="btn-edit-fx-chorus" class="btn-panel-edit" title="Open CHORUS settings" data-mode="chorus modern">CHORUS</button>
+            <button type="button" id="btn-edit-fx-drive" class="btn-panel-edit" title="Open DRIVE settings" data-mode="modern">DRIVE</button>
+            <button type="button" id="btn-edit-fx-delay" class="btn-panel-edit" title="Open DELAY settings" data-mode="modern">DELAY</button>
+            <button type="button" id="btn-edit-fx-reverb" class="btn-panel-edit" title="Open REVERB settings" data-mode="modern">REVERB</button>
+          </div>
+        </div>
+        <div id="effects-classic-msg" style="display: none; text-align: center; padding: 8px 0; color: var(--text-secondary); font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; letter-spacing: 1px;">EFFECTS DISABLED IN CLASSIC 101 MODE</div>
+      </section>
+    </main>
+
+    <!-- Virtual Keyboard Section -->
+    <footer class="synth-keyboard-container" style="display: flex; gap: 20px; align-items: center; justify-content: center; width: 100%; position: relative; z-index: 10;">
+      <div class="virtual-wheels" style="display: flex; gap: 15px; margin-right: 10px; transform: scale(1.3); transform-origin: bottom center;">
+        <div class="wheel-wrapper" style="display: flex; flex-direction: column; align-items: center;">
+          <label style="font-size: 10px; color: #8a9fc4; margin-bottom: 5px; font-family: 'Outfit', sans-serif;">PITCH</label>
+          <div class="wheel-sprite-container" id="pitch-wheel-sprite" style="position: relative; width: 18px; height: 76px; background-image: url('./dist/bender.png'); background-position: 0px -3800px; background-repeat: no-repeat;">
+            <input type="range" id="virtual-pitch-bend" min="-8192" max="8191" value="0" step="1" style="position: absolute; top: 0; left: 0; width: 18px; height: 76px; writing-mode: vertical-lr; direction: rtl; margin: 0; cursor: pointer; opacity: 0; z-index: 2;">
+          </div>
+        </div>
+        <div class="wheel-wrapper" style="display: flex; flex-direction: column; align-items: center;">
+          <label style="font-size: 10px; color: #8a9fc4; margin-bottom: 5px; font-family: 'Outfit', sans-serif;">MOD</label>
+          <div class="wheel-sprite-container" id="mod-wheel-sprite" style="position: relative; width: 18px; height: 76px; background-image: url('./dist/bender.png'); background-position: 0px 0px; background-repeat: no-repeat;">
+            <input type="range" id="virtual-mod-wheel" min="0" max="127" value="0" step="1" style="position: absolute; top: 0; left: 0; width: 18px; height: 76px; writing-mode: vertical-lr; direction: rtl; margin: 0; cursor: pointer; opacity: 0; z-index: 2;">
+          </div>
+        </div>
+      </div>
+      <div class="octave-controls" style="display: flex; flex-direction: column; gap: 20px; margin-right: 15px;">
+        <button id="octave-up-btn" class="octave-btn">
+          OCT +
+          <div class="octave-led" id="octave-up-led"></div>
+        </button>
+        <button id="octave-down-btn" class="octave-btn">
+          OCT -
+          <div class="octave-led" id="octave-down-led"></div>
+        </button>
+      </div>
+      <div class="keyboard" id="keyboard" style="flex-grow: 1;"></div>
+    </footer>
+    
+    </div> <!-- end synth-panel-center -->
+    
+    <div class="synth-panel-right">
+    </div>
+  </div>
+
+  <!-- Slide-out settings drawer (reusable across blocks). Each block keeps a
+       compact title + EDIT button on the surface; its full controls live in a
+       <div class="drawer-section" data-drawer-section="..."> here. openBlockDrawer()
+       shows the matching section and slides the panel in. -->
+  <div class="block-drawer" id="block-drawer" aria-hidden="true">
+    <div class="block-drawer-header">
+      <span class="block-drawer-title" id="block-drawer-title">SETTINGS</span>
+      <button type="button" class="block-drawer-close" id="btn-block-drawer-close" title="Close (Esc)">✕</button>
+    </div>
+    <div class="block-drawer-body" id="block-drawer-body">
+
+      <!-- ─── GENERAL: SYS (panel-sys) ─── -->
+      <div class="drawer-section" data-drawer-section="sys">
+        <div class="drawer-col">
+          <div class="drawer-section-title">OUTPUT</div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="MASTER_VOLUME">Master Volume</label>
+              <input type="range" id="MASTER_VOLUME" min="0" max="1" step="0.01" value="1.0">
+              <span class="param-val" id="val-MASTER_VOLUME">1.0</span>
+            </div>
+            <div class="param">
+              <label for="MASTER_TUNE">Master Tune</label>
+              <input type="range" id="MASTER_TUNE" min="-50" max="50" step="1" value="0">
+              <span class="param-val" id="val-MASTER_TUNE">0 cents</span>
+            </div>
+          </div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="OVERSAMPLING_QUALITY">Quality</label>
+              <select id="OVERSAMPLING_QUALITY" class="synth-select">
+                <option value="0" selected>1x (Eco)</option>
+                <option value="1">2x (High)</option>
+                <option value="2">4x (Ultra)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="drawer-col">
+          <div class="drawer-section-title">AUDIO OUTPUT</div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="audio-output-device">Output Device</label>
+              <select id="audio-output-device" class="synth-select">
+                <option value="default" selected>System default</option>
+              </select>
+            </div>
+            <div class="param">
+              <label for="btn-refresh-audio-devices">&nbsp;</label>
+              <button type="button" id="btn-refresh-audio-devices" class="btn-glow btn-small">REFRESH</button>
+            </div>
+          </div>
+
+          <div class="drawer-section-title">SYSTEM</div>
+          <div class="grid-2col">
+            <div class="param">
+              <button id="PROTECT_SWITCH" class="btn-toggle active" style="padding: 6px 4px; font-size: 0.75rem; width: 100%;">Protect</button>
+            </div>
+            <div class="param">
+              <button id="HARDWARE_NOISE" class="btn-toggle active" style="padding: 6px 4px; font-size: 0.75rem; width: 100%;">Noise</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── GENERAL: VOICE ENGINE (panel-voice) ─── -->
+      <div class="drawer-section" data-drawer-section="voice">
+        <div class="drawer-col">
+          <div class="drawer-section-title">MODEL</div>
+          <div class="param">
+            <label for="OPERATION_MODE">Operation Mode</label>
+            <select id="OPERATION_MODE" class="synth-select">
+              <option value="0">Classic CZ-101 (4 voice)</option>
+              <option value="1">Classic CZ-1 (Velocity &amp; Chorus)</option>
+              <option value="2">Classic CZ-5000 (8 voice)</option>
+              <option value="3">Modern Mode (16 voice)</option>
+            </select>
+          </div>
+
+          <div class="drawer-section-title">VOICE</div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="LINE_SELECT">Line Select</label>
+              <select id="LINE_SELECT" class="synth-select">
+                <option value="0">Line 1</option>
+                <option value="1">Line 2</option>
+                <option value="2">Line 1+1'</option>
+                <option value="3">Line 1+2</option>
+              </select>
+            </div>
+            <div class="param">
+              <label for="LINE_MIX">Line Mix</label>
+              <input type="range" id="LINE_MIX" min="0" max="1" step="0.01" value="0.5">
+              <span class="param-val" id="val-LINE_MIX">0.5</span>
+            </div>
+          </div>
+
+          <!-- VINTAGE KEY FOLLOW: mode selectors (OFF/FIX/VAR) are LCD-only now.
+               The free modulation matrix replaces the old fixed hardware routes.
+               LCD menu edits these via sendParameter (no DOM control needed). -->
+        </div>
+
+        <div class="drawer-col">
+          <!-- Modern Macro Modifiers (hidden unless Operation Mode = Modern) -->
+          <div id="modern-macros-panel">
+            <div class="drawer-section-title">MODERN MACROS</div>
+            <div class="grid-2col">
+              <div class="param">
+                <label for="MACRO_BRILLIANCE" style="font-size: 0.7rem;">Brilliance</label>
+                <input type="range" id="MACRO_BRILLIANCE" min="0" max="1" step="0.01" value="0.5">
+                <span class="param-val" id="val-MACRO_BRILLIANCE" style="font-size: 0.65rem;">0.5</span>
+              </div>
+              <div class="param">
+                <label for="MACRO_TONE" style="font-size: 0.7rem;">Tone</label>
+                <input type="range" id="MACRO_TONE" min="0" max="1" step="0.01" value="0.5">
+                <span class="param-val" id="val-MACRO_TONE" style="font-size: 0.65rem;">0.5</span>
+              </div>
+            </div>
+            <div class="grid-2col">
+              <div class="param">
+                <label for="MACRO_CONTOUR" style="font-size: 0.7rem;">Contour</label>
+                <input type="range" id="MACRO_CONTOUR" min="0" max="1" step="0.01" value="0.5">
+                <span class="param-val" id="val-MACRO_CONTOUR" style="font-size: 0.65rem;">0.5</span>
+              </div>
+              <div class="param">
+                <label for="MACRO_SPACE" style="font-size: 0.7rem;">Space</label>
+                <input type="range" id="MACRO_SPACE" min="0" max="1" step="0.01" value="0.0">
+                <span class="param-val" id="val-MACRO_SPACE" style="font-size: 0.65rem;">0.0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── GENERAL: CTRL PERFORMANCE (panel-ctrl) ─── -->
+      <div class="drawer-section" data-drawer-section="ctrl">
+        <div class="drawer-col">
+          <div class="drawer-section-title">MIDI</div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="MIDI_CH">MIDI Ch</label>
+              <select id="MIDI_CH" class="synth-select">
+                <option value="1" selected>Ch 1</option>
+                <option value="2">Ch 2</option>
+                <option value="3">Ch 3</option>
+                <option value="4">Ch 4</option>
+                <option value="5">Ch 5</option>
+                <option value="6">Ch 6</option>
+                <option value="7">Ch 7</option>
+                <option value="8">Ch 8</option>
+                <option value="9">Ch 9</option>
+                <option value="10">Ch 10</option>
+                <option value="11">Ch 11</option>
+                <option value="12">Ch 12</option>
+                <option value="13">Ch 13</option>
+                <option value="14">Ch 14</option>
+                <option value="15">Ch 15</option>
+                <option value="16">Ch 16</option>
+              </select>
+            </div>
+            <div class="param">
+              <label for="KEY_TRANSPOSE">Transpose</label>
+              <select id="KEY_TRANSPOSE" class="synth-select">
+                <option value="-12">-12 st</option>
+                <option value="-11">-11 st</option>
+                <option value="-10">-10 st</option>
+                <option value="-9">-9 st</option>
+                <option value="-8">-8 st</option>
+                <option value="-7">-7 st</option>
+                <option value="-6">-6 st</option>
+                <option value="-5">-5 st</option>
+                <option value="-4">-4 st</option>
+                <option value="-3">-3 st</option>
+                <option value="-2">-2 st</option>
+                <option value="-1">-1 st</option>
+                <option value="0" selected>0 st</option>
+                <option value="1">+1 st</option>
+                <option value="2">+2 st</option>
+                <option value="3">+3 st</option>
+                <option value="4">+4 st</option>
+                <option value="5">+5 st</option>
+                <option value="6">+6 st</option>
+                <option value="7">+7 st</option>
+                <option value="8">+8 st</option>
+                <option value="9">+9 st</option>
+                <option value="10">+10 st</option>
+                <option value="11">+11 st</option>
+                <option value="12">+12 st</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="drawer-col">
+          <div class="drawer-section-title">PERFORMANCE</div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="GLIDE">Portamento (Glide)</label>
+              <input type="range" id="GLIDE" min="0" max="1" step="0.01" value="0.0">
+              <span class="param-val" id="val-GLIDE">0.0</span>
+            </div>
+            <div class="param">
+              <label for="PITCH_BEND_RANGE">Bend Range</label>
+              <select id="PITCH_BEND_RANGE" class="synth-select">
+                <option value="0">0 st</option>
+                <option value="1">1 st</option>
+                <option value="2" selected>2 st</option>
+                <option value="3">3 st</option>
+                <option value="4">4 st</option>
+                <option value="5">5 st</option>
+                <option value="6">6 st</option>
+                <option value="7">7 st</option>
+                <option value="8">8 st</option>
+                <option value="9">9 st</option>
+                <option value="10">10 st</option>
+                <option value="11">11 st</option>
+                <option value="12">12 st</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── DCO OSCILLATORS (panel-oscillators) ─── -->
+      <!-- ─── DCO OSCILLATOR 1 (panel-oscillators) ─── -->
+      <div class="drawer-section" data-drawer-section="dco-osc1">
+        <div class="drawer-col" style="grid-column: span 2; max-width: 460px; margin: 0 auto; width: 100%;">
+          <div class="drawer-section-title">OSCILLATOR 1</div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="OSC1_WAVEFORM">Wave</label>
+              <select id="OSC1_WAVEFORM" class="synth-select"></select>
+            </div>
+            <div class="param">
+              <label for="OSC1_WAVEFORM2">Wave 2</label>
+              <select id="OSC1_WAVEFORM2" class="synth-select"></select>
+            </div>
+            <div class="param">
+              <label for="OSC1_WINDOW">Window</label>
+              <select id="OSC1_WINDOW" class="synth-select"></select>
+            </div>
+          </div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="OSC1_LEVEL">Level</label>
+              <input type="range" id="OSC1_LEVEL" min="0" max="1" step="0.01" value="1.0">
+              <span class="param-val" id="val-OSC1_LEVEL">1.0</span>
+            </div>
+          </div>
+
+          <div class="drawer-section-title">GLOBAL MODIFIERS (OSC 1 & OSC 2)</div>
+          <div class="grid-2col">
+            <div class="param">
+              <button id="HARD_SYNC" class="btn-toggle" style="padding: 6px 4px; font-size: 0.75rem; width: 100%;">Sync</button>
+            </div>
+            <div class="param">
+              <select id="LINE_MODULATION" class="synth-select"></select>
+            </div>
+          </div>
+          <div class="param">
+            <button id="MOD_SPECIAL" class="btn-toggle" style="padding: 6px 4px; font-size: 0.75rem; width: 100%;">Mod Special (Mute L1)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── DCO OSCILLATOR 2 (panel-oscillators) ─── -->
+      <div class="drawer-section" data-drawer-section="dco-osc2">
+        <div class="drawer-col" style="grid-column: span 2; max-width: 460px; margin: 0 auto; width: 100%;">
+          <div class="drawer-section-title">OSCILLATOR 2</div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="OSC2_WAVEFORM">Wave</label>
+              <select id="OSC2_WAVEFORM" class="synth-select"></select>
+            </div>
+            <div class="param">
+              <label for="OSC2_WAVEFORM2">Wave 2</label>
+              <select id="OSC2_WAVEFORM2" class="synth-select"></select>
+            </div>
+            <div class="param">
+              <label for="OSC2_WINDOW">Window</label>
+              <select id="OSC2_WINDOW" class="synth-select"></select>
+            </div>
+          </div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="OSC2_LEVEL">Level</label>
+              <input type="range" id="OSC2_LEVEL" min="0" max="1" step="0.01" value="0.0">
+              <span class="param-val" id="val-OSC2_LEVEL">0.0</span>
+            </div>
+          </div>
+
+          <div class="drawer-section-title">OSCILLATOR 2 DETUNE</div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="DETUNE_COARSE">Coarse</label>
+              <input type="range" id="DETUNE_COARSE" min="-12" max="12" step="1" value="0">
+              <span class="param-val" id="val-DETUNE_COARSE">0 st</span>
+            </div>
+            <div class="param">
+              <label for="DETUNE_FINE">Fine</label>
+              <input type="range" id="DETUNE_FINE" min="-99" max="99" step="1" value="0">
+              <span class="param-val" id="val-DETUNE_FINE">0 cents</span>
+            </div>
+          </div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="OSC2_DETUNE">Osc 2 Detune</label>
+              <input type="range" id="OSC2_DETUNE" min="-12" max="12" step="0.1" value="0">
+              <span class="param-val" id="val-OSC2_DETUNE">0 st</span>
+            </div>
+            <div class="param">
+              <label for="DETUNE_OCT">Detune Oct</label>
+              <select id="DETUNE_OCT" class="synth-select">
+                <option value="-1">-1 oct</option>
+                <option value="0" selected>0 oct</option>
+                <option value="1">+1 oct</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="OCTAVE">Octave</label>
+              <select id="OCTAVE" class="synth-select">
+                <option value="-1">-1</option>
+                <option value="0" selected>0</option>
+                <option value="1">+1</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── ARPEGGIATOR (panel-arp) ─── -->
+      <div class="drawer-section" data-drawer-section="arp">
+        <div class="drawer-col">
+          <div class="drawer-section-title">PLAYBACK</div>
+          <div class="grid-2col">
+            <div class="param">
+              <button id="ARP_ENABLED" class="btn-toggle" style="padding: 6px 4px; font-size: 0.75rem; width: 100%;">Arpeggiator On</button>
+            </div>
+            <div class="param">
+              <button id="ARP_LATCH" class="btn-toggle" style="padding: 6px 4px; font-size: 0.75rem; width: 100%;">Latch</button>
+            </div>
+          </div>
+
+          <div class="drawer-section-title">PATTERN</div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="ARP_PATTERN">Pattern</label>
+              <select id="ARP_PATTERN" class="synth-select">
+                <option value="0">Up</option>
+                <option value="1">Down</option>
+                <option value="2">UpDown</option>
+                <option value="3">Random</option>
+                <option value="4">As Played</option>
+              </select>
+            </div>
+            <div class="param">
+              <label for="ARP_RATE">Rate</label>
+              <select id="ARP_RATE" class="synth-select">
+                <option value="0">1/4</option>
+                <option value="1">1/8</option>
+                <option value="2" selected>1/16</option>
+                <option value="3">1/32</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="drawer-col">
+          <div class="drawer-section-title">TIMING</div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="ARP_OCTAVE">Octaves</label>
+              <input type="range" id="ARP_OCTAVE" min="1" max="4" step="1" value="1">
+              <span class="param-val" id="val-ARP_OCTAVE">1</span>
+            </div>
+            <div class="param">
+              <label for="ARP_BPM">Sync BPM</label>
+              <input type="range" id="ARP_BPM" min="30" max="300" step="1" value="120">
+              <span class="param-val" id="val-ARP_BPM">120</span>
+            </div>
+          </div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="ARP_GATE">Gate</label>
+              <input type="range" id="ARP_GATE" min="0.05" max="1" step="0.01" value="0.8">
+              <span class="param-val" id="val-ARP_GATE">0.8</span>
+            </div>
+            <div class="param">
+              <label for="ARP_SWING">Swing</label>
+              <input type="range" id="ARP_SWING" min="0" max="1" step="0.01" value="0.0">
+              <span class="param-val" id="val-ARP_SWING">0.0</span>
+            </div>
+          </div>
+          <div class="param">
+            <label for="ARP_SWING_MODE">Swing Mode</label>
+            <select id="ARP_SWING_MODE" class="synth-select">
+              <option value="0">Off</option>
+              <option value="1">1/8</option>
+              <option value="2">1/16</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── LFO / VIBRATO (panel-lfo) ─── -->
+      <div class="drawer-section" data-drawer-section="lfo">
+        <div class="drawer-col">
+          <div class="drawer-section-title">WAVEFORM</div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="LFO_WAVE">Waveform</label>
+              <select id="LFO_WAVE" class="synth-select">
+                <option value="0">Triangle</option>
+                <option value="1">Saw Up</option>
+                <option value="2">Saw Down</option>
+                <option value="3">Square</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="drawer-col">
+          <div class="drawer-section-title">MODULATION</div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="LFO_RATE">LFO Rate</label>
+              <input type="range" id="LFO_RATE" min="0.1" max="30" step="0.1" value="5.0">
+              <span class="param-val" id="val-LFO_RATE">5.0 Hz</span>
+            </div>
+            <div class="param">
+              <label for="LFO_DEPTH">Depth</label>
+              <input type="range" id="LFO_DEPTH" min="0" max="1" step="0.01" value="0.0">
+              <span class="param-val" id="val-LFO_DEPTH">0.0</span>
+            </div>
+          </div>
+          <div class="grid-2col">
+            <div class="param">
+              <label for="LFO_DELAY">Delay</label>
+              <input type="range" id="LFO_DELAY" min="0" max="2" step="0.01" value="0.0">
+              <span class="param-val" id="val-LFO_DELAY">0.0 s</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── FILTERS: LPF ─── -->
+      <div class="drawer-section" data-drawer-section="filters-lpf">
+        <div class="drawer-col">
+          <div class="drawer-section-title">LOW-PASS FILTER</div>
+          <div class="grid-2col">
+            <div class="param" data-mode="modern">
+              <label for="MODERN_LPF_CUTOFF">Cutoff</label>
+              <input type="range" id="MODERN_LPF_CUTOFF" min="0" max="1" step="0.001" value="1.0">
+              <span class="param-val" id="val-MODERN_LPF_CUTOFF">20000 Hz</span>
+            </div>
+            <div class="param" data-mode="modern">
+              <label for="MODERN_LPF_RESO">Resonance</label>
+              <input type="range" id="MODERN_LPF_RESO" min="0" max="1" step="0.01" value="0.0">
+              <span class="param-val" id="val-MODERN_LPF_RESO">0.0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── FILTERS: HPF ─── -->
+      <div class="drawer-section" data-drawer-section="filters-hpf">
+        <div class="drawer-col">
+          <div class="drawer-section-title">HIGH-PASS FILTER</div>
+          <div class="grid-2col">
+            <div class="param" data-mode="modern">
+              <label for="MODERN_HPF_CUTOFF">Cutoff</label>
+              <input type="range" id="MODERN_HPF_CUTOFF" min="0" max="1" step="0.001" value="0.0">
+              <span class="param-val" id="val-MODERN_HPF_CUTOFF">20 Hz</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── EFFECTS: CHORUS ─── -->
+      <div class="drawer-section" data-drawer-section="effects-chorus">
+        <div class="drawer-col">
+          <div class="drawer-section-title">CHORUS</div>
+          <div class="grid-2col">
+            <div class="param" data-mode="chorus modern">
+              <label for="CHORUS_MIX">Mix</label>
+              <input type="range" id="CHORUS_MIX" min="0" max="1" step="0.01" value="0.3">
+              <span class="param-val" id="val-CHORUS_MIX">0.3</span>
+            </div>
+            <div class="param" data-mode="chorus modern">
+              <label for="CHORUS_RATE">Rate</label>
+              <input type="range" id="CHORUS_RATE" min="0.1" max="10" step="0.01" value="0.5">
+              <span class="param-val" id="val-CHORUS_RATE">0.5 Hz</span>
+            </div>
+          </div>
+          <div class="grid-2col">
+            <div class="param" data-mode="chorus modern">
+              <label for="CHORUS_DEPTH">Depth</label>
+              <input type="range" id="CHORUS_DEPTH" min="0" max="1" step="0.01" value="0.2">
+              <span class="param-val" id="val-CHORUS_DEPTH">0.2</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── EFFECTS: DRIVE ─── -->
+      <div class="drawer-section" data-drawer-section="effects-drive">
+        <div class="drawer-col">
+          <div class="drawer-section-title">DRIVE</div>
+          <div class="grid-2col">
+            <div class="param" data-mode="modern">
+              <label for="DRIVE_MIX">Mix</label>
+              <input type="range" id="DRIVE_MIX" min="0" max="1" step="0.01" value="0.0">
+              <span class="param-val" id="val-DRIVE_MIX">0.0</span>
+            </div>
+            <div class="param" data-mode="modern">
+              <label for="DRIVE_AMOUNT">Amount</label>
+              <input type="range" id="DRIVE_AMOUNT" min="0" max="1" step="0.01" value="0.0">
+              <span class="param-val" id="val-DRIVE_AMOUNT">0.0</span>
+            </div>
+            <div class="param" data-mode="modern">
+              <label for="DRIVE_COLOR">Tone</label>
+              <input type="range" id="DRIVE_COLOR" min="0" max="1" step="0.01" value="0.5">
+              <span class="param-val" id="val-DRIVE_COLOR">0.5</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── EFFECTS: DELAY ─── -->
+      <div class="drawer-section" data-drawer-section="effects-delay">
+        <div class="drawer-col">
+          <div class="drawer-section-title">DELAY</div>
+          <div class="grid-2col">
+            <div class="param" data-mode="modern">
+              <label for="DELAY_MIX">Mix</label>
+              <input type="range" id="DELAY_MIX" min="0" max="1" step="0.01" value="0.0">
+              <span class="param-val" id="val-DELAY_MIX">0.0</span>
+            </div>
+            <div class="param" data-mode="modern">
+              <label for="DELAY_TIME">Time</label>
+              <input type="range" id="DELAY_TIME" min="0" max="2" step="0.01" value="0.5">
+              <span class="param-val" id="val-DELAY_TIME">0.5 s</span>
+            </div>
+            <div class="param" data-mode="modern">
+              <label for="DELAY_FEEDBACK">Feedback</label>
+              <input type="range" id="DELAY_FEEDBACK" min="0" max="0.95" step="0.01" value="0.3">
+              <span class="param-val" id="val-DELAY_FEEDBACK">0.3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── EFFECTS: REVERB ─── -->
+      <div class="drawer-section" data-drawer-section="effects-reverb">
+        <div class="drawer-col">
+          <div class="drawer-section-title">REVERB</div>
+          <div class="grid-2col">
+            <div class="param" data-mode="modern">
+              <label for="REVERB_MIX">Mix</label>
+              <input type="range" id="REVERB_MIX" min="0" max="1" step="0.01" value="0.2">
+              <span class="param-val" id="val-REVERB_MIX">0.2</span>
+            </div>
+            <div class="param" data-mode="modern">
+              <label for="REVERB_SIZE">Size</label>
+              <input type="range" id="REVERB_SIZE" min="0" max="1" step="0.01" value="0.5">
+              <span class="param-val" id="val-REVERB_SIZE">0.5</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── MODULATION ROUTINGS (panel-modulation): free 8-slot matrix ─── -->
+      <div class="drawer-section" data-drawer-section="mod" data-mode="modern">
+        <div class="drawer-section-title">MOD MATRIX — 8 FREE SLOTS</div>
+
+        <div id="mod-matrix" class="mod-matrix"></div>
+      </div>
+
+      <!-- ─── DCA ENVELOPE (panel-env-dca) ─── -->
+      <div class="drawer-section" data-drawer-section="env-dca">
+
+        <div class="env-line-container">
+          <div class="drawer-section-title" style="border: none; margin: 0; padding: 0;">LINE 1</div>
+          <div class="graph-row">
+            <canvas id="canvas-env-dca-line1" class="env-canvas" width="180" height="55" style="cursor: crosshair;"></canvas>
+          </div>
+          <div class="env-controls" style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-secondary);">
+              <span>Active Node: <strong id="lbl-node-env-dca-line1" style="color: var(--text-primary);">1</strong>/8</span>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button id="btn-copy-env-dca-line1" class="btn-graph-action" title="Copy this envelope line to the clipboard">COPY</button>
+                <button id="btn-paste-env-dca-line1" class="btn-graph-action" title="Paste the clipboard into this envelope line">PASTE</button>
+                <button id="btn-sus-env-dca-line1" class="btn-glow" style="padding: 2px 6px; font-size: 0.65rem;">SUS</button>
+                <button id="btn-end-env-dca-line1" class="btn-glow" style="padding: 2px 6px; font-size: 0.65rem;">END</button>
+              </div>
+            </div>
+            <div class="grid-2col">
+              <div class="param">
+                <label style="font-size: 0.65rem;">Rate</label>
+                <input type="range" id="slider-rate-env-dca-line1" min="0" max="1" step="0.01" value="0.5">
+                <span class="param-val" id="val-rate-env-dca-line1" style="font-size: 0.6rem;">0.5</span>
+              </div>
+              <div class="param">
+                <label style="font-size: 0.65rem;">Level</label>
+                <input type="range" id="slider-level-env-dca-line1" min="0" max="1" step="0.01" value="0.8">
+                <span class="param-val" id="val-level-env-dca-line1" style="font-size: 0.6rem;">0.8</span>
+              </div>
+            </div>
+            <div class="grid-2col" data-mode="cz1 modern" style="margin-top: 4px;">
+              <div class="param">
+                <label for="LINE1_VELO_DCA" style="font-size: 0.65rem;">Velocity Sens.</label>
+                <input type="range" id="LINE1_VELO_DCA" min="0" max="15" step="1" value="0">
+                <span class="param-val" id="val-LINE1_VELO_DCA" style="font-size: 0.6rem;">0</span>
+              </div>
+              <div class="param">
+                <label for="LINE1_KF_DCA" style="font-size: 0.65rem;">Key Follow</label>
+                <input type="range" id="LINE1_KF_DCA" min="0" max="9" step="1" value="0">
+                <span class="param-val" id="val-LINE1_KF_DCA" style="font-size: 0.6rem;">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="env-line-container">
+          <div class="drawer-section-title" style="border: none; margin: 0; padding: 0;">LINE 2</div>
+          <div class="graph-row">
+            <canvas id="canvas-env-dca-line2" class="env-canvas" width="180" height="55" style="cursor: crosshair;"></canvas>
+          </div>
+          <div class="env-controls" style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-secondary);">
+              <span>Active Node: <strong id="lbl-node-env-dca-line2" style="color: var(--text-primary);">1</strong>/8</span>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button id="btn-copy-env-dca-line2" class="btn-graph-action" title="Copy this envelope line to the clipboard">COPY</button>
+                <button id="btn-paste-env-dca-line2" class="btn-graph-action" title="Paste the clipboard into this envelope line">PASTE</button>
+                <button id="btn-sus-env-dca-line2" class="btn-glow" style="padding: 2px 6px; font-size: 0.65rem;">SUS</button>
+                <button id="btn-end-env-dca-line2" class="btn-glow" style="padding: 2px 6px; font-size: 0.65rem;">END</button>
+              </div>
+            </div>
+            <div class="grid-2col">
+              <div class="param">
+                <label style="font-size: 0.65rem;">Rate</label>
+                <input type="range" id="slider-rate-env-dca-line2" min="0" max="1" step="0.01" value="0.5">
+                <span class="param-val" id="val-rate-env-dca-line2" style="font-size: 0.6rem;">0.5</span>
+              </div>
+              <div class="param">
+                <label style="font-size: 0.65rem;">Level</label>
+                <input type="range" id="slider-level-env-dca-line2" min="0" max="1" step="0.01" value="0.8">
+                <span class="param-val" id="val-level-env-dca-line2" style="font-size: 0.6rem;">0.8</span>
+              </div>
+            </div>
+            <div class="grid-2col" data-mode="cz1 modern" style="margin-top: 4px;">
+              <div class="param">
+                <label for="LINE2_VELO_DCA" style="font-size: 0.65rem;">Velocity Sens.</label>
+                <input type="range" id="LINE2_VELO_DCA" min="0" max="15" step="1" value="0">
+                <span class="param-val" id="val-LINE2_VELO_DCA" style="font-size: 0.6rem;">0</span>
+              </div>
+              <div class="param">
+                <label for="LINE2_KF_DCA" style="font-size: 0.65rem;">Key Follow</label>
+                <input type="range" id="LINE2_KF_DCA" min="0" max="9" step="1" value="0">
+                <span class="param-val" id="val-LINE2_KF_DCA" style="font-size: 0.6rem;">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── DCW ENVELOPE (panel-env-dcw) ─── -->
+      <div class="drawer-section" data-drawer-section="env-dcw">
+
+        <div class="env-line-container">
+          <div class="drawer-section-title" style="border: none; margin: 0; padding: 0;">LINE 1</div>
+          <div class="graph-row">
+            <canvas id="canvas-env-dcw-line1" class="env-canvas" width="180" height="55" style="cursor: crosshair;"></canvas>
+          </div>
+          <div class="env-controls" style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-secondary);">
+              <span>Active Node: <strong id="lbl-node-env-dcw-line1" style="color: var(--text-primary);">1</strong>/8</span>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button id="btn-copy-env-dcw-line1" class="btn-graph-action" title="Copy this envelope line to the clipboard">COPY</button>
+                <button id="btn-paste-env-dcw-line1" class="btn-graph-action" title="Paste the clipboard into this envelope line">PASTE</button>
+                <button id="btn-sus-env-dcw-line1" class="btn-glow" style="padding: 2px 6px; font-size: 0.65rem;">SUS</button>
+                <button id="btn-end-env-dcw-line1" class="btn-glow" style="padding: 2px 6px; font-size: 0.65rem;">END</button>
+              </div>
+            </div>
+            <div class="grid-2col">
+              <div class="param">
+                <label style="font-size: 0.65rem;">Rate</label>
+                <input type="range" id="slider-rate-env-dcw-line1" min="0" max="1" step="0.01" value="0.5">
+                <span class="param-val" id="val-rate-env-dcw-line1" style="font-size: 0.6rem;">0.5</span>
+              </div>
+              <div class="param">
+                <label style="font-size: 0.65rem;">Level</label>
+                <input type="range" id="slider-level-env-dcw-line1" min="0" max="1" step="0.01" value="0.8">
+                <span class="param-val" id="val-level-env-dcw-line1" style="font-size: 0.6rem;">0.8</span>
+              </div>
+            </div>
+            <div class="grid-2col" data-mode="cz1 modern" style="margin-top: 4px;">
+              <div class="param">
+                <label for="LINE1_VELO_DCW" style="font-size: 0.65rem;">Velocity Sens.</label>
+                <input type="range" id="LINE1_VELO_DCW" min="0" max="15" step="1" value="0">
+                <span class="param-val" id="val-LINE1_VELO_DCW" style="font-size: 0.6rem;">0</span>
+              </div>
+              <div class="param">
+                <label for="LINE1_KF_DCW" style="font-size: 0.65rem;">Key Follow</label>
+                <input type="range" id="LINE1_KF_DCW" min="0" max="9" step="1" value="0">
+                <span class="param-val" id="val-LINE1_KF_DCW" style="font-size: 0.6rem;">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="env-line-container">
+          <div class="drawer-section-title" style="border: none; margin: 0; padding: 0;">LINE 2</div>
+          <div class="graph-row">
+            <canvas id="canvas-env-dcw-line2" class="env-canvas" width="180" height="55" style="cursor: crosshair;"></canvas>
+          </div>
+          <div class="env-controls" style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-secondary);">
+              <span>Active Node: <strong id="lbl-node-env-dcw-line2" style="color: var(--text-primary);">1</strong>/8</span>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button id="btn-copy-env-dcw-line2" class="btn-graph-action" title="Copy this envelope line to the clipboard">COPY</button>
+                <button id="btn-paste-env-dcw-line2" class="btn-graph-action" title="Paste the clipboard into this envelope line">PASTE</button>
+                <button id="btn-sus-env-dcw-line2" class="btn-glow" style="padding: 2px 6px; font-size: 0.65rem;">SUS</button>
+                <button id="btn-end-env-dcw-line2" class="btn-glow" style="padding: 2px 6px; font-size: 0.65rem;">END</button>
+              </div>
+            </div>
+            <div class="grid-2col">
+              <div class="param">
+                <label style="font-size: 0.65rem;">Rate</label>
+                <input type="range" id="slider-rate-env-dcw-line2" min="0" max="1" step="0.01" value="0.5">
+                <span class="param-val" id="val-rate-env-dcw-line2" style="font-size: 0.6rem;">0.5</span>
+              </div>
+              <div class="param">
+                <label style="font-size: 0.65rem;">Level</label>
+                <input type="range" id="slider-level-env-dcw-line2" min="0" max="1" step="0.01" value="0.8">
+                <span class="param-val" id="val-level-env-dcw-line2" style="font-size: 0.6rem;">0.8</span>
+              </div>
+            </div>
+            <div class="grid-2col" data-mode="cz1 modern" style="margin-top: 4px;">
+              <div class="param">
+                <label for="LINE2_VELO_DCW" style="font-size: 0.65rem;">Velocity Sens.</label>
+                <input type="range" id="LINE2_VELO_DCW" min="0" max="15" step="1" value="0">
+                <span class="param-val" id="val-LINE2_VELO_DCW" style="font-size: 0.6rem;">0</span>
+              </div>
+              <div class="param">
+                <label for="LINE2_KF_DCW" style="font-size: 0.65rem;">Key Follow</label>
+                <input type="range" id="LINE2_KF_DCW" min="0" max="9" step="1" value="0">
+                <span class="param-val" id="val-LINE2_KF_DCW" style="font-size: 0.6rem;">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PITCH ENVELOPE (panel-env-pitch) ─── -->
+      <div class="drawer-section" data-drawer-section="env-pitch">
+        <div class="env-line-container">
+          <div class="drawer-section-title" style="border: none; margin: 0; padding: 0;">LINE 1</div>
+          <div class="graph-row">
+            <canvas id="canvas-env-pitch-line1" class="env-canvas" width="180" height="55" style="cursor: crosshair;"></canvas>
+          </div>
+          <div class="env-controls" style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-secondary);">
+              <span>Active Node: <strong id="lbl-node-env-pitch-line1" style="color: var(--text-primary);">1</strong>/8</span>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button id="btn-copy-env-pitch-line1" class="btn-graph-action" title="Copy this envelope line to the clipboard">COPY</button>
+                <button id="btn-paste-env-pitch-line1" class="btn-graph-action" title="Paste the clipboard into this envelope line">PASTE</button>
+                <button id="btn-sus-env-pitch-line1" class="btn-glow" style="padding: 2px 6px; font-size: 0.65rem;">SUS</button>
+                <button id="btn-end-env-pitch-line1" class="btn-glow" style="padding: 2px 6px; font-size: 0.65rem;">END</button>
+              </div>
+            </div>
+            <div class="grid-2col">
+              <div class="param">
+                <label style="font-size: 0.65rem;">Rate</label>
+                <input type="range" id="slider-rate-env-pitch-line1" min="0" max="1" step="0.01" value="0.5">
+                <span class="param-val" id="val-rate-env-pitch-line1" style="font-size: 0.6rem;">0.5</span>
+              </div>
+              <div class="param">
+                <label style="font-size: 0.65rem;">Level</label>
+                <input type="range" id="slider-level-env-pitch-line1" min="0" max="1" step="0.01" value="0.8">
+                <span class="param-val" id="val-level-env-pitch-line1" style="font-size: 0.6rem;">0.8</span>
+              </div>
+            </div>
+            <div class="grid-2col" data-mode="cz1 modern" style="margin-top: 4px;">
+              <div class="param">
+                <label for="LINE1_VELO_PITCH" style="font-size: 0.65rem;">Velocity Sens.</label>
+                <input type="range" id="LINE1_VELO_PITCH" min="0" max="15" step="1" value="0">
+                <span class="param-val" id="val-LINE1_VELO_PITCH" style="font-size: 0.6rem;">0</span>
+              </div>
+              <div class="param">
+                <label for="LINE1_KF_PITCH" style="font-size: 0.65rem;">Key Follow</label>
+                <input type="range" id="LINE1_KF_PITCH" min="0" max="9" step="1" value="0">
+                <span class="param-val" id="val-LINE1_KF_PITCH" style="font-size: 0.6rem;">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="env-line-container">
+          <div class="drawer-section-title" style="border: none; margin: 0; padding: 0;">LINE 2</div>
+          <div class="graph-row">
+            <canvas id="canvas-env-pitch-line2" class="env-canvas" width="180" height="55" style="cursor: crosshair;"></canvas>
+          </div>
+          <div class="env-controls" style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-secondary);">
+              <span>Active Node: <strong id="lbl-node-env-pitch-line2" style="color: var(--text-primary);">1</strong>/8</span>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button id="btn-copy-env-pitch-line2" class="btn-graph-action" title="Copy this envelope line to the clipboard">COPY</button>
+                <button id="btn-paste-env-pitch-line2" class="btn-graph-action" title="Paste the clipboard into this envelope line">PASTE</button>
+                <button id="btn-sus-env-pitch-line2" class="btn-glow" style="padding: 2px 6px; font-size: 0.65rem;">SUS</button>
+                <button id="btn-end-env-pitch-line2" class="btn-glow" style="padding: 2px 6px; font-size: 0.65rem;">END</button>
+              </div>
+            </div>
+            <div class="grid-2col">
+              <div class="param">
+                <label style="font-size: 0.65rem;">Rate</label>
+                <input type="range" id="slider-rate-env-pitch-line2" min="0" max="1" step="0.01" value="0.5">
+                <span class="param-val" id="val-rate-env-pitch-line2" style="font-size: 0.6rem;">0.5</span>
+              </div>
+              <div class="param">
+                <label style="font-size: 0.65rem;">Level</label>
+                <input type="range" id="slider-level-env-pitch-line2" min="0" max="1" step="0.01" value="0.8">
+                <span class="param-val" id="val-level-env-pitch-line2" style="font-size: 0.6rem;">0.8</span>
+              </div>
+            </div>
+            <div class="grid-2col" data-mode="cz1 modern" style="margin-top: 4px;">
+              <div class="param">
+                <label for="LINE2_VELO_PITCH" style="font-size: 0.65rem;">Velocity Sens.</label>
+                <input type="range" id="LINE2_VELO_PITCH" min="0" max="15" step="1" value="0">
+                <span class="param-val" id="val-LINE2_VELO_PITCH" style="font-size: 0.6rem;">0</span>
+              </div>
+              <div class="param">
+                <label for="LINE2_KF_PITCH" style="font-size: 0.65rem;">Key Follow</label>
+                <input type="range" id="LINE2_KF_PITCH" min="0" max="9" step="1" value="0">
+                <span class="param-val" id="val-LINE2_KF_PITCH" style="font-size: 0.6rem;">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Future blocks: <div class="drawer-section" data-drawer-section="...">...</div> -->
+    </div>
+  </div>
+  <div class="block-drawer-backdrop" id="block-drawer-backdrop" hidden></div>
+
+  <!-- About dialog (native AboutDialog) -->
+  <div id="about-modal" class="modal-overlay" hidden>
+    <div class="modal-box">
+      <h3>ABD CZ-101</h3>
+      <p class="modal-sub">Phase Distortion Synthesizer — WebView2 / Web</p>
+      <p>Authentic CZ-101 / CZ-5000 / Modern engine (WASM, shared with the C++ core).</p>
+      <p id="about-build"></p>
+      <button type="button" id="btn-about-close" class="btn-glow">CLOSE</button>
+    </div>
+  </div>
+
+  <!-- Bank Manager overlay. Inspired by the ABDEEP dual-container manager:
+       a bank LIBRARY (multiple named banks, each tagged with its model) with
+       search, CRUD, import/export and a 64-slot grid (right-click context menu
+       Move Up / Move Down / Move to Position / Rename / Delete). -->
+  <div id="bank-manager-modal" class="modal-overlay" hidden>
+    <div class="modal-box bank-manager-box">
+      <div class="bank-manager-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="margin: 0;">BANK MANAGER <span id="bank-model-badge" class="bank-model-badge"></span></h3>
+        <button type="button" id="btn-bank-close" class="btn-glow" style="padding: 4px 10px; min-width: auto;">✕</button>
+      </div>
+
+      <div class="bank-manager-grid">
+        
+        <!-- Left Column: Banks -->
+        <div class="bank-manager-col bank-manager-col-left">
+          <div class="bank-mgr-toolbar" style="margin-bottom: 8px;">
+            <select id="bank-model-filter" class="synth-select" title="Filter banks by synth model" style="width: 100%;">
+              <option value="">ALL MODELS</option>
+            </select>
+          </div>
+          
+          <div class="bank-chip-list" id="bank-chip-list">
+             <!-- Rendered by JS -->
+          </div>
+
+          <div class="bank-mgr-toolbar bank-mgr-toolbar-bottom" style="margin-top: 8px; justify-content: space-between;">
+            <button type="button" id="btn-bank-new" class="btn-glow" title="Create a new user bank">NEW</button>
+            <button type="button" id="btn-bank-rename" class="btn-glow" title="Rename this bank">RENAME</button>
+            <button type="button" id="btn-bank-delete" class="btn-glow btn-header-danger" title="Delete this bank">DEL</button>
+          </div>
+        </div>
+
+        <!-- Right Column: Patches -->
+        <div class="bank-manager-col bank-manager-col-right">
+          <div class="bank-mgr-toolbar" style="margin-bottom: 8px;">
+            <input type="text" id="bank-search-input" class="bank-search-input" placeholder="🔍 Search patches in bank…" style="flex: 1;">
+            <button type="button" id="bank-search-clear" class="btn-glow" title="Clear search" style="min-width: auto; padding: 4px 8px;">✕</button>
+            <div style="width: 15px;"></div>
+            <button type="button" id="btn-bank-import" class="btn-glow" title="Import a bank (.syx / .json)">IMPORT</button>
+            <button type="button" id="btn-bank-export" class="btn-glow" title="Export this bank">EXPORT</button>
+            <input type="file" id="input-bank-import" accept=".syx,.sysex,.json" style="display: none;">
+          </div>
+          
+          <div class="bank-manager-list" id="bank-slot-list"></div>
+          
+          <!-- Active preset controls at bottom -->
+          <div class="bank-mgr-toolbar bank-active-preset" style="margin-top: 8px; flex-wrap: nowrap;">
+            <span class="bank-mgr-label">ACTIVE</span>
+            <button id="btn-preset-prev" class="btn-preset-nav" type="button" title="Previous preset" aria-label="Previous preset">&lt;</button>
+            <select id="select-preset-slot" class="synth-select" style="flex: 1; min-width: 0; max-width: 180px;">
+              <!-- Populated dynamically -->
+            </select>
+            <button id="btn-preset-next" class="btn-preset-nav" type="button" title="Next preset" aria-label="Next preset">&gt;</button>
+            <input type="text" id="input-preset-name" class="bank-name-input" value="Init User 1" style="flex: 1; min-width: 80px;">
+            <input type="file" id="input-bank-file" accept=".json" style="display: none;">
+          </div>
+        </div>
+
+      </div>
+
+      <div class="bank-manager-actions" style="margin-top: 10px;">
+        <span id="bank-mgr-status" class="bank-mgr-status"></span>
+      </div>
+      
+      <!-- Hidden legacy elements required by existing JS -->
+      <select id="bank-select" class="synth-select" style="display: none;"></select>
+    </div>
+  </div>
+
+  <!-- Name Editor overlay (native NameEditorOverlay: RENAME PRESET title, centered
+       text editor, SAVE/CANCEL buttons, Enter saves / Escape cancels) -->
+  <div id="name-editor-modal" class="modal-overlay" hidden>
+    <div class="name-editor-box">
+      <h3 id="name-editor-title">RENAME PRESET</h3>
+      <input type="text" id="name-editor-input" maxlength="10" autocomplete="off" spellcheck="false">
+      <div class="name-editor-actions">
+        <button type="button" id="btn-name-editor-cancel" class="btn-glow">CANCEL</button>
+        <button type="button" id="btn-name-editor-save" class="btn-glow">SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context menu (native PopupMenu) -->
+  <div id="bank-context-menu" class="bank-context-menu" hidden></div>
+
+  <script type="module" src="./src/app.js"></script>
+
+  <!-- Unregister service worker and clear stale cache in plugin/app -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        for (let name of names) caches.delete(name);
+      });
+    }
+  </script>
+</body>
+</html>

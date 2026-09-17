@@ -1,0 +1,25 @@
+Name: OIL-DRUM / JARS / TOY PIANO
+>From: J. Peter Alfke <alfke@cit-vax.UUCP>
+
+Comments:  Sound depends on what octave you play at.  Very nice ringy metallic
+          sounds; the piano in particular is *perfect*.
+          Then plug in distortion [I'm using an Arion Metal Master] and get
+          twisted wicked sounds with intense feedback sustain.  Twiddle the
+          pitch-bend knob and be your own Jimi Hendrix or Thurston Moore!
+          [Based on Casio Synth. Harp]
+
+Line: 1+1'      Mod: Ring       Detune: +0 5 18   Vibrato: none
+Octave: +1
+
+DCO 1:  Wave 2 0
+                99  99
+                67  00
+                    END
+DCW 1:  Key 0
+                99  55
+                99  00
+                    END
+DCA 1:  Key 7
+                99  31  16
+                99  98  00
+                        END

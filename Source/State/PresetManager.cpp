@@ -1,8 +1,7 @@
-﻿#include "PresetManager.h"
+#include "PresetManager.h"
 #include "Parameters.h"
 #include "ParameterIDs.h"
 #include "../Core/VoiceManager.h"
-// JuceHeader is now included in PresetManager.h
 
 namespace CZ101 {
 namespace State {
@@ -10,8 +9,7 @@ namespace State {
 PresetManager::PresetManager(Parameters* parameters, Core::VoiceManager* vm)
     : parameters(parameters), voiceManager(vm)
 {
-    // Validate pointers
-    jassert(parameters != nullptr);
+    // Validate pointers (parameters can be null in headless/WASM context)
     jassert(voiceManager != nullptr);
 
     createFactoryPresets();
@@ -21,6 +19,7 @@ PresetManager::PresetManager(Parameters* parameters, Core::VoiceManager* vm)
 PresetManager::~PresetManager() = default;
 
 void PresetManager::addListener(Listener* l) { listeners.add(l); }
+
 void PresetManager::removeListener(Listener* l) { listeners.remove(l); }
 
 void PresetManager::setCompareMode(bool enabled)
@@ -89,6 +88,8 @@ void PresetManager::loadPreset(int index, bool updateVoice)
         
         if (updateVoice && voiceManager)
         {
+            voiceManager->allSoundOff();
+            
             applyEnvelopeToVoice(pToLoad.pitchEnv, 0, 1);
             applyEnvelopeToVoice(pToLoad.dcwEnv, 1, 1);
             applyEnvelopeToVoice(pToLoad.dcaEnv, 2, 1);
@@ -114,6 +115,8 @@ void PresetManager::loadPresetFromStruct(const Preset& p, bool updateVoice, bool
     
     if (updateVoice && voiceManager)
     {
+        voiceManager->allSoundOff();
+        
         applyEnvelopeToVoice(p.pitchEnv, 0, 1);
         applyEnvelopeToVoice(p.dcwEnv, 1, 1);
         applyEnvelopeToVoice(p.dcaEnv, 2, 1);
@@ -135,15 +138,28 @@ void PresetManager::applyPresetToProcessor(const Preset& p)
 {
     if (parameters)
     {
-        for (const auto& pair : p.parameters)
+        for (const auto& [paramId, param] : parameters->getParameterMap())
         {
-            const auto& paramId = pair.first;
-            const auto& value = pair.second;
-            
-            if (auto* param = parameters->getParameter(paramId))
+            if (param != nullptr)
             {
-                float normalized = param->convertTo0to1(value);
-                param->setValueNotifyingHost(normalized);
+                auto it = p.parameters.find(paramId.toStdString());
+                if (it != p.parameters.end())
+                {
+                    float normalized = param->convertTo0to1(it->second);
+                    param->setValueNotifyingHost(normalized);
+                }
+                else
+                {
+                    // Ensure filters are fully open by default for classic presets/imports
+                    if (paramId == ParameterIDs::lpfCutoff)
+                        param->setValueNotifyingHost(param->convertTo0to1(20000.0f));
+                    else if (paramId == ParameterIDs::lpfReso)
+                        param->setValueNotifyingHost(param->convertTo0to1(0.0f));
+                    else if (paramId == ParameterIDs::hpfCutoff)
+                        param->setValueNotifyingHost(param->convertTo0to1(20.0f));
+                    else
+                        param->setValueNotifyingHost(param->getDefaultValue());
+                }
             }
         }
     }
@@ -172,7 +188,7 @@ void PresetManager::applyEnvelopeToVoice(const EnvelopeData& env, int type, int 
     }
 }
 
-void PresetManager::copyStateFromProcessor()
+void PresetManager::copyStateFromProcessor(bool notifyListeners)
 {
     {
         const juce::ScopedWriteLock swl(presetLock);
@@ -230,17 +246,21 @@ void PresetManager::copyStateFromProcessor()
     }
     
     // Notify Listeners OUTSIDE the lock
-    listeners.call([this](Listener& l) { l.presetLoaded(currentPresetIndex); });
+    if (notifyListeners) {
+        listeners.call([this](Listener& l) { l.presetLoaded(currentPresetIndex); });
+    }
 }
 
 void PresetManager::savePreset(int index, const std::string& name)
 {
     {
         const juce::ScopedWriteLock sl(presetLock);
+        copyStateFromProcessor(false); // Don't trigger a reload on the UI
+        currentPreset.name = name; // Update the in-memory active patch name
+        
         if (index >= 0 && index < static_cast<int>(presets.size()))
         {
             presets[index] = currentPreset;
-            presets[index].name = name;
         }
     }
     
@@ -248,902 +268,6 @@ void PresetManager::savePreset(int index, const std::string& name)
     listeners.call(&Listener::bankUpdated);
 }
 
-// Helper to init default envelopes
-static void initEnvelopes(Preset& p)
-{
-    // Initialize all envelope stages to a default state
-    for(int i=0; i<8; ++i) {
-        p.dcwEnv.rates[i] = 0.5f; p.dcwEnv.levels[i] = 1.0f; // Timbre open
-        p.dcaEnv.rates[i] = 0.5f; p.dcaEnv.levels[i] = 1.0f; // Volume up
-        p.pitchEnv.rates[i] = 0.5f; p.pitchEnv.levels[i] = 0.5f; // Pitch center
-    }
-    p.dcwEnv.sustainPoint = 2; p.dcwEnv.endPoint = 3;
-    p.dcaEnv.sustainPoint = 2; p.dcaEnv.endPoint = 3;
-    p.pitchEnv.sustainPoint = 2; p.pitchEnv.endPoint = 3;
-}
-
-void PresetManager::createFactoryPresets()
-{
-    const juce::ScopedWriteLock swl(presetLock);
-    presets.clear();
-    
-    // --- PRESTIGIOUS USER CONTRIBUTIONS ---
-    // Patch 1: Moog-Like (Classic Bass/Lead)
-    {
-        Preset p;
-        p.name = "Moog-Like";
-        p.author = "User";
-        initEnvelopes(p);
-        
-        p.parameters[ParameterIDs::osc1Waveform.toStdString()] = 1.0f; // Saw
-        p.parameters[ParameterIDs::osc1Level.toStdString()] = 1.0f;
-        p.parameters[ParameterIDs::osc2Waveform.toStdString()] = 1.0f; 
-        p.parameters[ParameterIDs::osc2Level.toStdString()] = 1.0f;
-        p.parameters[ParameterIDs::osc2Detune.toStdString()] = -7.0f; 
-        
-        // DCW
-         p.dcwEnv.levels[0] = 0.48f; p.dcwEnv.rates[0] = 0.78f;
-         p.dcwEnv.levels[1] = 0.75f; p.dcwEnv.rates[1] = 0.5f;
-         p.dcwEnv.levels[2] = 0.83f; p.dcwEnv.rates[2] = 0.37f;
-        p.dcwEnv.sustainPoint = 2;
-         p.dcwEnv.levels[3] = 0.0f; p.dcwEnv.rates[3] = 0.41f;
-        p.dcwEnv.endPoint = 3;
-
-        // DCA
-        p.dcaEnv.levels[0] = 0.87f; p.dcaEnv.rates[0] = 0.84f;
-        p.dcaEnv.sustainPoint = 0; 
-        p.dcaEnv.levels[1] = 0.0f; p.dcaEnv.rates[1] = 0.39f;
-        p.dcaEnv.endPoint = 1;
-        
-        p.parameters[ParameterIDs::lfoWaveform.toStdString()] = 3.0f; 
-        p.parameters[ParameterIDs::lfoRate.toStdString()] = 0.49f;
-        p.parameters[ParameterIDs::lfoDepth.toStdString()] = 0.59f;
-
-        presets.push_back(p);
-    }
-
-    // Patch 2: Polyanalogue (Juno-106)
-    {
-        Preset p;
-        p.name = "Polyanalogue";
-        p.author = "User";
-        initEnvelopes(p);
-
-        p.parameters[ParameterIDs::osc1Waveform.toStdString()] = 1.0f;
-        p.parameters[ParameterIDs::osc1Level.toStdString()] = 0.5f;
-        p.parameters[ParameterIDs::osc2Waveform.toStdString()] = 1.0f; 
-        p.parameters[ParameterIDs::osc2Level.toStdString()] = 0.5f;
-        p.parameters[ParameterIDs::osc2Detune.toStdString()] = 6.0f; 
-
-        // DCW
-        p.dcwEnv.levels[0] = 0.99f; p.dcwEnv.rates[0] = 0.99f; 
-        p.dcwEnv.levels[1] = 0.96f; p.dcwEnv.rates[1] = 0.4f;
-        p.dcwEnv.levels[2] = 0.52f; p.dcwEnv.rates[2] = 0.3f;
-        p.dcwEnv.sustainPoint = 2;
-        p.dcwEnv.levels[3] = 0.0f; p.dcwEnv.rates[3] = 0.3f;
-        p.dcwEnv.endPoint = 3;
-
-        // DCA
-        p.dcaEnv.levels[0] = 0.5f; p.dcaEnv.rates[0] = 1.0f; 
-        p.dcaEnv.levels[1] = 0.99f; p.dcaEnv.rates[1] = 0.77f; 
-        p.dcaEnv.levels[2] = 0.91f; p.dcaEnv.rates[2] = 0.67f;
-        p.dcaEnv.sustainPoint = 2; 
-        p.dcaEnv.levels[3] = 0.59f; p.dcaEnv.rates[3] = 0.79f;
-        p.dcaEnv.levels[4] = 0.0f; p.dcaEnv.rates[4] = 0.33f;
-        p.dcaEnv.endPoint = 4;
-
-        presets.push_back(p);
-    }
-    
-    // Patch 3: Sonic Bubbles (FX)
-    {
-        Preset p;
-        p.name = "Sonic Bubbles";
-        p.author = "User";
-        initEnvelopes(p);
-
-        p.parameters[ParameterIDs::lfoWaveform.toStdString()] = 1.0f; 
-        p.parameters[ParameterIDs::lfoDepth.toStdString()] = 1.0f; 
-        p.parameters[ParameterIDs::lfoRate.toStdString()] = 0.6f; 
-
-        p.pitchEnv.levels[0] = 0.5f; p.pitchEnv.rates[0] = 0.5f; 
-        p.pitchEnv.levels[1] = 0.0f; p.pitchEnv.rates[1] = 0.5f;
-        
-        presets.push_back(p);
-    }
-
-    createBassPreset();
-    createStringPreset();
-    createBrassPreset();
-    createLeadPreset();
-    createBellsPreset(); 
-    
-    // Fill rest with Init
-    for (int i = 5; i < 64; ++i)
-    {
-        Preset p;
-        p.name = "Init User " + std::to_string(i);
-        initEnvelopes(p);
-        
-        // Defaults
-        p.parameters[ParameterIDs::osc1Waveform.toStdString()] = 0.0f; p.parameters[ParameterIDs::osc1Level.toStdString()] = 1.0f;
-        p.parameters[ParameterIDs::osc2Waveform.toStdString()] = 0.0f; p.parameters[ParameterIDs::osc2Level.toStdString()] = 0.0f;
-        p.parameters[ParameterIDs::osc2Detune.toStdString()] = 0.0f;
-        
-        p.parameters[ParameterIDs::dcwAttack.toStdString()] = 0.0f; p.parameters[ParameterIDs::dcwDecay.toStdString()] = 0.0f; p.parameters[ParameterIDs::dcwSustain.toStdString()] = 1.0f; p.parameters[ParameterIDs::dcwRelease.toStdString()] = 0.0f;
-        p.parameters[ParameterIDs::dcaAttack.toStdString()] = 0.0f; p.parameters[ParameterIDs::dcaDecay.toStdString()] = 0.0f; p.parameters[ParameterIDs::dcaSustain.toStdString()] = 1.0f; p.parameters[ParameterIDs::dcaRelease.toStdString()] = 0.0f;
-        
-        p.parameters[ParameterIDs::lpfCutoff.toStdString()] = 20000.0f; p.parameters[ParameterIDs::lpfReso.toStdString()] = 0.1f;
-        p.parameters[ParameterIDs::lfoRate.toStdString()] = 1.0f;
-        p.parameters[ParameterIDs::delayMix.toStdString()] = 0.0f; p.parameters[ParameterIDs::reverbMix.toStdString()] = 0.0f;
-        p.parameters[ParameterIDs::hardSync.toStdString()] = 0.0f;
-        p.parameters[ParameterIDs::ringMod.toStdString()] = 0.0f;
-        p.parameters[ParameterIDs::glideTime.toStdString()] = 0.0f;
-        
-        // Audit Fix 3.2: Initialize "Phantom" Parameters
-        p.parameters[ParameterIDs::lineSelect.toStdString()] = 1.0f; // Default Line 1
-        p.parameters[ParameterIDs::systemPrg.toStdString()] = 0.0f;
-        p.parameters[ParameterIDs::protectSwitch.toStdString()] = 0.0f;
-        
-        // Chorus
-        p.parameters[ParameterIDs::chorusRate.toStdString()] = 0.5f;
-        p.parameters[ParameterIDs::chorusDepth.toStdString()] = 2.0f;
-        p.parameters[ParameterIDs::chorusMix.toStdString()] = 0.0f;
-
-        presets.push_back(p);
-    }
-}
-
-void PresetManager::createBassPreset()
-{
-    Preset p;
-    p.name = "CZ Bass";
-    initEnvelopes(p);
-    
-    // ===== OSCILLATORS (NORMALIZED) =====
-    p.parameters[ParameterIDs::osc1Waveform.toStdString()] = 1.0f;      // Saw
-    p.parameters[ParameterIDs::osc1Level.toStdString()] = 0.6f;         // âœ… 60% (normalized)
-    p.parameters[ParameterIDs::osc2Waveform.toStdString()] = 2.0f;      // Square
-    p.parameters[ParameterIDs::osc2Level.toStdString()] = 0.4f;         // âœ… 40% (normalized)
-    // Total: 0.6 + 0.4 = 1.0 âœ…
-    
-    p.parameters[ParameterIDs::osc2Detune.toStdString()] = -10.0f;      // -10 cents
-    
-    // ===== ENVELOPES (Explicit for 8-stage engine) =====
-    // Pitch: Flat
-    p.pitchEnv.rates[0] = 0.99f; p.pitchEnv.levels[0] = 0.5f;
-    p.pitchEnv.sustainPoint = 0; p.pitchEnv.endPoint = 0;
-
-    // DCW: Pluck (Filter)
-    p.dcwEnv.rates[0] = 0.95f; p.dcwEnv.levels[0] = 0.9f;  // Attack
-    p.dcwEnv.rates[1] = 0.5f;  p.dcwEnv.levels[1] = 0.2f;  // Decay to Sustain
-    p.dcwEnv.rates[2] = 0.99f; p.dcwEnv.levels[2] = 0.2f;  // Sustain
-    p.dcwEnv.rates[3] = 0.6f;  p.dcwEnv.levels[3] = 0.0f;  // Release
-    p.dcwEnv.sustainPoint = 2; p.dcwEnv.endPoint = 3;
-
-    // DCA: Pluck (Amp)
-    p.dcaEnv.rates[0] = 0.99f; p.dcaEnv.levels[0] = 1.0f;  // Instant Attack
-    p.dcaEnv.rates[1] = 0.6f;  p.dcaEnv.levels[1] = 0.5f;  // Decay
-    p.dcaEnv.rates[2] = 0.99f; p.dcaEnv.levels[2] = 0.5f;  // Sustain
-    p.dcaEnv.rates[3] = 0.6f;  p.dcaEnv.levels[3] = 0.0f;  // Release
-    p.dcaEnv.sustainPoint = 2; p.dcaEnv.endPoint = 3;
-
-    // Also set legacy params for display
-    p.parameters[ParameterIDs::dcwAttack.toStdString()] = 0.01f; p.parameters[ParameterIDs::dcwDecay.toStdString()] = 0.2f; p.parameters[ParameterIDs::dcwSustain.toStdString()] = 0.2f; p.parameters[ParameterIDs::dcwRelease.toStdString()] = 0.1f;
-    p.parameters[ParameterIDs::dcaAttack.toStdString()] = 0.001f; p.parameters[ParameterIDs::dcaDecay.toStdString()] = 0.2f; p.parameters[ParameterIDs::dcaSustain.toStdString()] = 0.5f; p.parameters[ParameterIDs::dcaRelease.toStdString()] = 0.15f;
-    
-    // ===== FILTER =====
-    p.parameters[ParameterIDs::lpfCutoff.toStdString()] = 2000.0f;   // 2000 Hz
-    p.parameters[ParameterIDs::lpfReso.toStdString()] = 0.5f;   // 50% Q
-    
-    // ===== LFO =====
-    p.parameters[ParameterIDs::lfoRate.toStdString()] = 0.5f;           // 0.5 Hz
-    p.parameters[ParameterIDs::lfoDepth.toStdString()] = 0.0f;          // No vibrato
-    
-    // ===== EFFECTS =====
-    p.parameters[ParameterIDs::delayTime.toStdString()] = 0.3f;         // âœ… 300ms
-    p.parameters[ParameterIDs::delayFeedback.toStdString()] = 0.3f;     // 30%
-    p.parameters[ParameterIDs::delayMix.toStdString()] = 0.08f;         // âœ… 8% wet
-    
-    p.parameters[ParameterIDs::chorusRate.toStdString()] = 0.5f;        // 0.5 Hz
-    p.parameters[ParameterIDs::chorusDepth.toStdString()] = 2.0f;       // 2ms
-    p.parameters[ParameterIDs::chorusMix.toStdString()] = 0.0f;         // Off
-    
-    p.parameters[ParameterIDs::reverbSize.toStdString()] = 0.3f;        // Small room
-    p.parameters[ParameterIDs::reverbMix.toStdString()] = 0.08f;        // âœ… 8% wet
-    
-    p.parameters[ParameterIDs::hardSync.toStdString()] = 0.0f;          // Off
-    p.parameters[ParameterIDs::ringMod.toStdString()] = 0.0f;           // Off
-    p.parameters[ParameterIDs::glideTime.toStdString()] = 0.0f;         // No portamento
-    
-    presets.push_back(p);
-}
-
-void PresetManager::createStringPreset()
-{
-    Preset p;
-    p.name = "Vintage Strings";
-    initEnvelopes(p);
-    
-    // ===== OSCILLATORS (NORMALIZED) =====
-    p.parameters[ParameterIDs::osc1Waveform.toStdString()] = 1.0f;      // Saw
-    p.parameters[ParameterIDs::osc1Level.toStdString()] = 0.5f;         // âœ… 50% (normalized)
-    p.parameters[ParameterIDs::osc2Waveform.toStdString()] = 1.0f;      // Saw
-    p.parameters[ParameterIDs::osc2Level.toStdString()] = 0.5f;         // âœ… 50% (normalized)
-    // Total: 0.5 + 0.5 = 1.0 âœ…
-    
-    p.parameters[ParameterIDs::osc2Detune.toStdString()] = 12.0f;       // +1 octava
-    
-    // ===== ENVELOPES (Explicit for 8-stage engine) =====
-    // Pitch: Flat
-    p.pitchEnv.rates[0] = 0.99f; p.pitchEnv.levels[0] = 0.5f;
-    p.pitchEnv.sustainPoint = 0; p.pitchEnv.endPoint = 0;
-
-    // DCW: Slow Bow
-    p.dcwEnv.rates[0] = 0.3f;  p.dcwEnv.levels[0] = 1.0f;  // Slow Attack
-    p.dcwEnv.rates[1] = 0.99f; p.dcwEnv.levels[1] = 0.7f;  // Decay/Sustain
-    p.dcwEnv.rates[2] = 0.99f; p.dcwEnv.levels[2] = 0.7f;  // Sustain
-    p.dcwEnv.rates[3] = 0.4f;  p.dcwEnv.levels[3] = 0.0f;  // Slow Release
-    p.dcwEnv.sustainPoint = 2; p.dcwEnv.endPoint = 3;
-
-    // DCA: Slow Bow
-    p.dcaEnv.rates[0] = 0.3f;  p.dcaEnv.levels[0] = 1.0f;  // Slow Attack
-    p.dcaEnv.rates[1] = 0.99f; p.dcaEnv.levels[1] = 0.8f;  // Decay/Sustain
-    p.dcaEnv.rates[2] = 0.99f; p.dcaEnv.levels[2] = 0.8f;  // Sustain
-    p.dcaEnv.rates[3] = 0.4f;  p.dcaEnv.levels[3] = 0.0f;  // Slow Release
-    p.dcaEnv.sustainPoint = 2; p.dcaEnv.endPoint = 3;
-
-    // Legacy Params for display
-    p.parameters[ParameterIDs::dcwAttack.toStdString()] = 0.3f; p.parameters[ParameterIDs::dcwDecay.toStdString()] = 0.4f; p.parameters[ParameterIDs::dcwSustain.toStdString()] = 0.7f; p.parameters[ParameterIDs::dcwRelease.toStdString()] = 0.5f;
-    p.parameters[ParameterIDs::dcaAttack.toStdString()] = 0.4f; p.parameters[ParameterIDs::dcaDecay.toStdString()] = 0.3f; p.parameters[ParameterIDs::dcaSustain.toStdString()] = 0.8f; p.parameters[ParameterIDs::dcaRelease.toStdString()] = 0.6f;
-    
-    // ===== FILTER =====
-    p.parameters[ParameterIDs::lpfCutoff.toStdString()] = 8000.0f;   // Open
-    p.parameters[ParameterIDs::lpfReso.toStdString()] = 0.3f;   // 30% Q
-    
-    // ===== LFO (VIBRATO) =====
-    p.parameters[ParameterIDs::lfoRate.toStdString()] = 4.5f;           // âœ… 4.5 Hz
-    p.parameters[ParameterIDs::lfoDepth.toStdString()] = 0.08f;         // âœ… Subtle vibrato
-    
-    // ===== EFFECTS =====
-    p.parameters[ParameterIDs::delayTime.toStdString()] = 0.25f;        // âœ… 250ms
-    p.parameters[ParameterIDs::delayFeedback.toStdString()] = 0.4f;     // 40%
-    p.parameters[ParameterIDs::delayMix.toStdString()] = 0.3f;          // âœ… 30% wet (longer tail)
-    
-    p.parameters[ParameterIDs::chorusRate.toStdString()] = 0.6f;        // 0.6 Hz
-    p.parameters[ParameterIDs::chorusDepth.toStdString()] = 3.0f;       // 3ms
-    p.parameters[ParameterIDs::chorusMix.toStdString()] = 0.15f;        // âœ… 15% light chorus
-    
-    p.parameters[ParameterIDs::reverbSize.toStdString()] = 0.7f;        // Large room
-    p.parameters[ParameterIDs::reverbMix.toStdString()] = 0.4f;         // âœ… 40% wet (lush)
-    
-    p.parameters[ParameterIDs::hardSync.toStdString()] = 0.0f;
-    p.parameters[ParameterIDs::ringMod.toStdString()] = 0.0f;
-    p.parameters[ParameterIDs::glideTime.toStdString()] = 0.0f;
-    
-    presets.push_back(p);
-}
-
-void PresetManager::createBrassPreset()
-{
-    Preset p;
-    p.name = "Synth Brass";
-    initEnvelopes(p);
-    
-    p.parameters[ParameterIDs::osc1Waveform.toStdString()] = 1.0f; p.parameters[ParameterIDs::osc1Level.toStdString()] = 1.0f;
-    p.parameters[ParameterIDs::osc2Waveform.toStdString()] = 3.0f; p.parameters[ParameterIDs::osc2Level.toStdString()] = 0.6f; // Triangle for body
-    p.parameters[ParameterIDs::osc2Detune.toStdString()] = 7.0f; // Slight detune
-    
-    // Pitch Envelope (Brass Attack: slight drop-up)
-    // Stage 0: Fast drop to slightly fla (-2 semitones approx)
-    p.pitchEnv.rates[0] = 0.9f; p.pitchEnv.levels[0] = 0.48f; 
-    // Stage 1: Rise to slightly sharp (overshoot)
-    p.pitchEnv.rates[1] = 0.6f; p.pitchEnv.levels[1] = 0.52f;
-    // Stage 2: Settle to Unison
-    p.pitchEnv.rates[2] = 0.4f; p.pitchEnv.levels[2] = 0.5f;
-    // Stage 3: Sustain at Unison
-    p.pitchEnv.rates[3] = 0.99f;p.pitchEnv.levels[3] = 0.5f;
-    p.pitchEnv.sustainPoint = 3;
-    p.pitchEnv.endPoint = 3;
-
-    // DCW (Brass Swell)
-    // Stage 0: Sharp attack
-    p.dcwEnv.rates[0] = 0.85f; p.dcwEnv.levels[0] = 0.9f; 
-    // Stage 1: Decay slightly to body
-    p.dcwEnv.rates[1] = 0.7f;  p.dcwEnv.levels[1] = 0.7f;
-    // Stage 2: Swell up a bit (breath)
-    p.dcwEnv.rates[2] = 0.4f;  p.dcwEnv.levels[2] = 0.85f;
-    // Stage 3: Sustain
-    p.dcwEnv.rates[3] = 0.99f; p.dcwEnv.levels[3] = 0.85f;
-    p.dcwEnv.sustainPoint = 3;
-    p.dcwEnv.endPoint = 4; // Use stage 4 for release
-    
-    // Stage 4: Release
-    p.dcwEnv.rates[4] = 0.6f; p.dcwEnv.levels[4] = 0.0f;
-    
-    // DCA (Standard ADSR-ish)
-    p.dcaEnv.rates[0] = 0.85f; p.dcaEnv.levels[0] = 1.0f;
-    p.dcaEnv.rates[1] = 0.7f;  p.dcaEnv.levels[1] = 0.9f;
-    p.dcaEnv.rates[2] = 0.99f; p.dcaEnv.levels[2] = 0.9f;
-    p.dcaEnv.rates[3] = 0.6f;  p.dcaEnv.levels[3] = 0.0f;
-    p.dcaEnv.sustainPoint = 2;
-    p.dcaEnv.endPoint = 3;
-    
-    // UI Params (Approximate for display)
-    p.parameters[ParameterIDs::dcwAttack.toStdString()] = 0.2f; p.parameters[ParameterIDs::dcwDecay.toStdString()] = 0.3f; p.parameters[ParameterIDs::dcwSustain.toStdString()] = 0.8f; p.parameters[ParameterIDs::dcwRelease.toStdString()] = 0.4f;
-    p.parameters[ParameterIDs::dcaAttack.toStdString()] = 0.1f; p.parameters[ParameterIDs::dcaDecay.toStdString()] = 0.2f; p.parameters[ParameterIDs::dcaSustain.toStdString()] = 0.9f; p.parameters[ParameterIDs::dcaRelease.toStdString()] = 0.4f;
-
-    // Filter
-    p.parameters[ParameterIDs::lpfCutoff.toStdString()] = 5000.0f;
-    p.parameters[ParameterIDs::lpfReso.toStdString()] = 0.6f;
-
-    // LFO
-    p.parameters[ParameterIDs::lfoRate.toStdString()] = 0.5f;
-    
-    // Effects
-    p.parameters[ParameterIDs::delayTime.toStdString()] = 0.0f; p.parameters[ParameterIDs::delayFeedback.toStdString()] = 0.0f; p.parameters[ParameterIDs::delayMix.toStdString()] = 0.0f;
-    p.parameters[ParameterIDs::reverbSize.toStdString()] = 0.6f; p.parameters[ParameterIDs::reverbMix.toStdString()] = 0.3f;
-    
-    p.parameters[ParameterIDs::hardSync.toStdString()] = 0.0f;
-    p.parameters[ParameterIDs::ringMod.toStdString()] = 0.0f;
-    p.parameters[ParameterIDs::glideTime.toStdString()] = 0.0f;
-
-    presets.push_back(p);
-}
-
-void PresetManager::createLeadPreset()
-{
-    Preset p;
-    p.name = "Solo Lead";
-    initEnvelopes(p);
-    
-    p.parameters[ParameterIDs::osc1Waveform.toStdString()] = 2.0f; p.parameters[ParameterIDs::osc1Level.toStdString()] = 1.0f;
-    p.parameters[ParameterIDs::osc2Waveform.toStdString()] = 2.0f; p.parameters[ParameterIDs::osc2Level.toStdString()] = 0.6f;
-    p.parameters[ParameterIDs::osc2Detune.toStdString()] = 0.0f;
-    
-    // DCW: Open
-    p.dcwEnv.rates[0] = 0.99f; p.dcwEnv.levels[0] = 1.0f;
-    p.dcwEnv.rates[1] = 0.99f; p.dcwEnv.levels[1] = 1.0f; // Sustain High
-    p.dcwEnv.rates[2] = 0.99f; p.dcwEnv.levels[2] = 1.0f;
-    p.dcwEnv.rates[3] = 0.5f;  p.dcwEnv.levels[3] = 0.0f;
-    
-    // DCA
-    p.dcaEnv.rates[0] = 0.99f; p.dcaEnv.levels[0] = 1.0f; // Click attack
-    p.dcaEnv.rates[1] = 0.9f;  p.dcaEnv.levels[1] = 1.0f;
-    p.dcaEnv.rates[2] = 0.99f; p.dcaEnv.levels[2] = 1.0f;
-    p.dcaEnv.rates[3] = 0.7f;  p.dcaEnv.levels[3] = 0.0f;
-    
-    p.parameters[ParameterIDs::dcwAttack.toStdString()] = 0.0f; p.parameters[ParameterIDs::dcwDecay.toStdString()] = 0.0f; p.parameters[ParameterIDs::dcwSustain.toStdString()] = 1.0f; p.parameters[ParameterIDs::dcwRelease.toStdString()] = 0.1f;
-    p.parameters[ParameterIDs::dcaAttack.toStdString()] = 0.001f; p.parameters[ParameterIDs::dcaDecay.toStdString()] = 0.1f; p.parameters[ParameterIDs::dcaSustain.toStdString()] = 1.0f; p.parameters[ParameterIDs::dcaRelease.toStdString()] = 0.2f;
-    
-    // Filter
-    p.parameters[ParameterIDs::lpfCutoff.toStdString()] = 20000.0f;
-    p.parameters[ParameterIDs::lpfReso.toStdString()] = 0.1f;
-
-    // LFO
-    p.parameters[ParameterIDs::lfoRate.toStdString()] = 4.0f;
-    
-    // Effects
-    p.parameters[ParameterIDs::delayTime.toStdString()] = 0.4f; p.parameters[ParameterIDs::delayFeedback.toStdString()] = 0.5f; p.parameters[ParameterIDs::delayMix.toStdString()] = 0.4f;
-    p.parameters[ParameterIDs::reverbSize.toStdString()] = 0.4f; p.parameters[ParameterIDs::reverbMix.toStdString()] = 0.2f;
-    
-    p.parameters[ParameterIDs::hardSync.toStdString()] = 1.0f; // ENABLE HARD SYNC FOR LEAD
-    p.parameters[ParameterIDs::ringMod.toStdString()] = 0.0f;
-    p.parameters[ParameterIDs::glideTime.toStdString()] = 0.2f; // ENABLE GLIDE FOR LEAD!
-    p.parameters[ParameterIDs::chorusRate.toStdString()] = 0.5f; p.parameters[ParameterIDs::chorusDepth.toStdString()] = 2.0f; p.parameters[ParameterIDs::chorusMix.toStdString()] = 0.0f;
-p.parameters[ParameterIDs::chorusRate.toStdString()] = 0.5f; p.parameters[ParameterIDs::chorusDepth.toStdString()] = 2.0f; p.parameters[ParameterIDs::chorusMix.toStdString()] = 0.0f;
-
-    presets.push_back(p);
-}
-
-void PresetManager::createBellsPreset()
-{
-    Preset p;
-    p.name = "Digital Bells";
-    initEnvelopes(p);
-    
-    p.parameters[ParameterIDs::osc1Waveform.toStdString()] = 0.0f; p.parameters[ParameterIDs::osc1Level.toStdString()] = 1.0f;
-    p.parameters[ParameterIDs::osc2Waveform.toStdString()] = 0.0f; p.parameters[ParameterIDs::osc2Level.toStdString()] = 1.0f;
-    p.parameters[ParameterIDs::osc2Detune.toStdString()] = 350.0f; // Detune for bell
-    
-    // DCW: Short
-    p.dcwEnv.rates[0] = 0.99f; p.dcwEnv.levels[0] = 1.0f;
-    p.dcwEnv.rates[1] = 0.4f;  p.dcwEnv.levels[1] = 0.0f; // Long decay to 0
-    p.dcwEnv.rates[2] = 0.99f; p.dcwEnv.levels[2] = 0.0f; // Hold 0
-    p.dcwEnv.rates[3] = 0.5f;  p.dcwEnv.levels[3] = 0.0f;
-    p.dcwEnv.sustainPoint = 2; // Sustain silence
-    
-    // DCA
-    p.dcaEnv.rates[0] = 0.99f; p.dcaEnv.levels[0] = 1.0f;
-    p.dcaEnv.rates[1] = 0.3f;  p.dcaEnv.levels[1] = 0.0f; // Long decay
-    p.dcaEnv.rates[2] = 0.99f; p.dcaEnv.levels[2] = 0.0f;
-    p.dcaEnv.rates[3] = 0.5f;  p.dcaEnv.levels[3] = 0.0f;
-    
-    p.parameters[ParameterIDs::dcwAttack.toStdString()] = 0.0f; p.parameters[ParameterIDs::dcwDecay.toStdString()] = 0.8f; p.parameters[ParameterIDs::dcwSustain.toStdString()] = 0.0f; p.parameters[ParameterIDs::dcwRelease.toStdString()] = 0.5f;
-    p.parameters[ParameterIDs::dcaAttack.toStdString()] = 0.0f; p.parameters[ParameterIDs::dcaDecay.toStdString()] = 1.5f; p.parameters[ParameterIDs::dcaSustain.toStdString()] = 0.0f; p.parameters[ParameterIDs::dcaRelease.toStdString()] = 1.0f;
-
-    // Filter
-    p.parameters[ParameterIDs::lpfCutoff.toStdString()] = 12000.0f;
-    p.parameters[ParameterIDs::lpfReso.toStdString()] = 0.2f;
-
-    // LFO
-    p.parameters[ParameterIDs::lfoRate.toStdString()] = 6.0f;
-    
-    // Effects
-    p.parameters[ParameterIDs::delayTime.toStdString()] = 0.0f; p.parameters[ParameterIDs::delayFeedback.toStdString()] = 0.0f; p.parameters[ParameterIDs::delayMix.toStdString()] = 0.0f;
-    p.parameters[ParameterIDs::reverbSize.toStdString()] = 0.9f; p.parameters[ParameterIDs::reverbMix.toStdString()] = 0.4f; // Spacey
-    
-    p.parameters[ParameterIDs::hardSync.toStdString()] = 0.0f;
-    p.parameters[ParameterIDs::ringMod.toStdString()] = 1.0f; // ENABLE RING MOD FOR BELLS
-    p.parameters[ParameterIDs::glideTime.toStdString()] = 0.0f;
-
-    presets.push_back(p);
-}
-
-void PresetManager::renamePreset(int index, const std::string& newName)
-{
-    const juce::ScopedWriteLock sl(presetLock);
-    if (index >= 0 && index < static_cast<int>(presets.size()))
-    {
-        presets[index].name = newName;
-        
-        // If we are renaming the currently active preset, update the currentPreset state too
-        if (index == currentPresetIndex)
-        {
-            currentPreset.name = newName;
-        }
-        
-        autoSaveUserBank();
-    }
-}
-
-void PresetManager::autoSaveUserBank()
-{
-    juce::File defaultsDir = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
-                                .getChildFile("CZ101Emulator");
-                                
-    if (!defaultsDir.exists()) 
-        defaultsDir.createDirectory();
-    
-    saveBank(defaultsDir.getChildFile(USER_BANK_FILENAME));
-}
-
-void PresetManager::saveBank(const juce::File& file)
-{
-    const juce::ScopedReadLock sl(presetLock);
-    juce::Array<juce::var> bankArray;
-    
-    for (const auto& preset : presets) {
-        juce::DynamicObject::Ptr obj = new juce::DynamicObject();
-        
-        // Name & params (EXISTENTE)
-        obj->setProperty("name", juce::String(preset.name));
-        if (!preset.author.empty()) obj->setProperty("author", juce::String(preset.author));
-
-        juce::DynamicObject::Ptr paramsObj = new juce::DynamicObject();
-        for (const auto& [id, val] : preset.parameters) {
-            paramsObj->setProperty(juce::Identifier(id), val);
-        }
-        obj->setProperty("params", juce::var(paramsObj.get()));
-        
-        // Helper to serialize Env (Audit Fix 5.1: Int Serialization x10000)
-        auto serializeEnv = [&](const EnvelopeData& env, const juce::String& name) {
-            juce::DynamicObject::Ptr envObj = new juce::DynamicObject();
-            juce::Array<juce::var> ratesArray, levelsArray;
-            for (int i = 0; i < 8; ++i) {
-                ratesArray.add(static_cast<int>(env.rates[i] * 10000.0f));
-                levelsArray.add(static_cast<int>(env.levels[i] * 10000.0f));
-            }
-            envObj->setProperty("rates", ratesArray);
-            envObj->setProperty("levels", levelsArray);
-            envObj->setProperty("sustainPoint", env.sustainPoint);
-            envObj->setProperty("endPoint", env.endPoint);
-            obj->setProperty(name, juce::var(envObj.get()));
-        };
-
-        serializeEnv(preset.dcwEnv, "dcwEnv");
-        serializeEnv(preset.dcaEnv, "dcaEnv");
-        serializeEnv(preset.pitchEnv, "pitchEnv");
-        
-        // Serialize Line 2 Envelopes? If structure matches data member
-        serializeEnv(preset.dcwEnv2, "dcwEnv2"); // User didn't ask but we should consistency? 
-        // Wait, original code didn't save Env2?
-        // Checking original saveBank...
-        // Original code only saved `dcwEnv`, `dcaEnv`, `pitchEnv`?
-        // Ah, original code (Step 4336) lines 641-683 ONLY Saved Line 1 Envelopes!
-        // But Line 2 envelopes exist in Preset struct (env2).
-        // If I change format, I should add them if they are used.
-        // HOWEVER, fixing 5.1 implies *existing* logic. I will stick to existing + the fix.
-        // Wait, if I don't save Line 2, dual line patches lose data?
-        // This is a bug from before. I should fix it.
-        serializeEnv(preset.dcaEnv2, "dcaEnv2");
-        serializeEnv(preset.pitchEnv2, "pitchEnv2");
-        
-        bankArray.add(juce::var(obj.get()));
-    }
-    
-    // Audit Fix 5.2: Wrap in Versioned Object
-    juce::DynamicObject::Ptr root = new juce::DynamicObject();
-    root->setProperty("version", 1);
-    root->setProperty("presets", bankArray);
-    
-    juce::String jsonString = juce::JSON::toString(juce::var(root), true);
-    if (!file.replaceWithText(jsonString))
-    {
-        juce::Logger::writeToLog("Error: Failed to save bank to " + file.getFullPathName());
-    }
-}
-
-void PresetManager::savePresetToFile(int index, const juce::File& file)
-{
-    if (index < 0 || index >= (int)presets.size()) return;
-    
-    // Ensure data is fresh
-    if (index == currentPresetIndex) copyStateFromProcessor();
-    
-    const auto& preset = presets[index];
-    juce::DynamicObject::Ptr obj = new juce::DynamicObject();
-    obj->setProperty("name", juce::String(preset.name));
-    obj->setProperty("author", juce::String(preset.author));
-    
-    juce::DynamicObject::Ptr paramsObj = new juce::DynamicObject();
-    for (auto const& [key, val] : preset.parameters) {
-        paramsObj->setProperty(juce::Identifier(key), val);
-    }
-    obj->setProperty("params", paramsObj.get());
-    
-    auto serializeEnv = [&](const EnvelopeData& env, const juce::String& propertyName) {
-        juce::DynamicObject::Ptr envObj = new juce::DynamicObject();
-        juce::Array<juce::var> rates, levels;
-        for (int i = 0; i < 8; ++i) {
-            rates.add(env.rates[i]);
-            levels.add(env.levels[i]);
-        }
-        envObj->setProperty("rates", rates);
-        envObj->setProperty("levels", levels);
-        envObj->setProperty("sustainPoint", env.sustainPoint);
-        envObj->setProperty("endPoint", env.endPoint);
-        obj->setProperty(propertyName, envObj.get());
-    };
-    
-    serializeEnv(preset.dcwEnv, "dcwEnv");
-    serializeEnv(preset.dcaEnv, "dcaEnv");
-    serializeEnv(preset.pitchEnv, "pitchEnv");
-    serializeEnv(preset.dcwEnv2, "dcwEnv2");
-    serializeEnv(preset.dcaEnv2, "dcaEnv2");
-    serializeEnv(preset.pitchEnv2, "pitchEnv2");
-    
-    juce::DynamicObject::Ptr root = new juce::DynamicObject();
-    root->setProperty("version", 1);
-    root->setProperty("type", "single_patch");
-    root->setProperty("preset", obj.get());
-    
-    juce::String jsonString = juce::JSON::toString(juce::var(root), true);
-    file.replaceWithText(jsonString);
-}
-
-void PresetManager::loadPresetFromFile(const juce::File& file)
-{
-    if (!file.existsAsFile()) return;
-    juce::var data = juce::JSON::parse(file);
-    if (!data.isObject() || !data.hasProperty("preset")) return;
-    
-    int version = data["version"];
-    const auto& presetVar = data["preset"];
-    
-    Preset p;
-    p.name = presetVar["name"].toString().toStdString();
-    p.author = presetVar["author"].toString().toStdString();
-    
-    if (auto* paramsObj = presetVar["params"].getDynamicObject()) {
-        auto props = paramsObj->getProperties();
-        for (auto& prop : props) {
-            p.parameters[prop.name.toString().toUpperCase().toStdString()] = static_cast<float>(prop.value);
-        }
-    }
-    
-    auto loadEnv = [&](const juce::var& envVar, EnvelopeData& env) {
-        if (auto* obj = envVar.getDynamicObject()) {
-            auto rates = obj->getProperty("rates");
-            auto levels = obj->getProperty("levels");
-            if (rates.isArray() && levels.isArray()) {
-                for (int k=0; k<8; ++k) {
-                    env.rates[k] = static_cast<float>(rates[k]);
-                    env.levels[k] = static_cast<float>(levels[k]);
-                }
-            }
-            env.sustainPoint = static_cast<int>(obj->getProperty("sustainPoint"));
-            env.endPoint = static_cast<int>(obj->getProperty("endPoint"));
-        }
-    };
-    
-    loadEnv(presetVar["dcwEnv"], p.dcwEnv);
-    loadEnv(presetVar["dcaEnv"], p.dcaEnv);
-    loadEnv(presetVar["pitchEnv"], p.pitchEnv);
-    loadEnv(presetVar["dcwEnv2"], p.dcwEnv2);
-    loadEnv(presetVar["dcaEnv2"], p.dcaEnv2);
-    loadEnv(presetVar["pitchEnv2"], p.pitchEnv2);
-    
-    loadPresetFromStruct(p);
-}
-
-void PresetManager::loadBank(const juce::File& file)
-{
-    if (!file.existsAsFile()) return;
-    
-    juce::Logger::writeToLog("PresetManager: Parsing JSON...");
-    juce::var data = juce::JSON::parse(file);
-    juce::Logger::writeToLog("PresetManager: JSON Parsed");
-    
-    juce::var presetsArray;
-    int version = 0;
-
-    if (data.isObject() && data.hasProperty("presets")) {
-        version = data["version"];
-        presetsArray = data["presets"];
-    } else if (data.isArray()) {
-        presetsArray = data; 
-    } else {
-        return;
-    }
-
-    if (!presetsArray.isArray()) return;
-    
-    std::vector<Preset> newPresets;
-    juce::Logger::writeToLog("PresetManager: Loading " + juce::String(presetsArray.size()) + " presets");
-    
-    for (int i = 0; i < presetsArray.size(); ++i) {
-        if (i >= 64) break;
-        
-        const auto& presetVar = presetsArray[i];
-        if (presetVar.isObject()) {
-            Preset p;
-            p.name = presetVar["name"].toString().toStdString();
-            if (presetVar.hasProperty("author"))
-                p.author = presetVar["author"].toString().toStdString();
-            
-            // Params
-            if (auto* paramsObj = presetVar["params"].getDynamicObject()) {
-                auto props = paramsObj->getProperties();
-                for (auto& prop : props) {
-                    p.parameters[prop.name.toString().toUpperCase().toStdString()] = static_cast<float>(prop.value);
-                }
-            }
-            
-            // Helper to load 8-stage
-            auto loadEnv = [&](const juce::var& envVar, EnvelopeData& env) {
-                if (auto* obj = envVar.getDynamicObject()) {
-                    auto rates = obj->getProperty("rates");
-                    auto levels = obj->getProperty("levels");
-                    
-                    if (rates.isArray() && levels.isArray()) {
-                        for (int k=0; k<8; ++k) {
-                            float r = static_cast<float>(rates[k]);
-                            float l = static_cast<float>(levels[k]);
-                            
-                            // Audit Fix 5.1: Use Version check for scaled values
-                            if (version >= 1 || r > 100.0f) r /= 10000.0f; 
-                            if (version >= 1 || l > 10.0f) l /= 10000.0f; 
-
-                            env.rates[k] = r;
-                            env.levels[k] = l;
-                        }
-                    }
-                    env.sustainPoint = static_cast<int>(obj->getProperty("sustainPoint"));
-                    env.endPoint = static_cast<int>(obj->getProperty("endPoint"));
-                }
-            };
-            
-            loadEnv(presetVar["dcwEnv"], p.dcwEnv);
-            loadEnv(presetVar["dcaEnv"], p.dcaEnv);
-            loadEnv(presetVar["pitchEnv"], p.pitchEnv);
-            
-            // Also load line 2 if present
-            if (presetVar.hasProperty("dcwEnv2")) loadEnv(presetVar["dcwEnv2"], p.dcwEnv2);
-            if (presetVar.hasProperty("dcaEnv2")) loadEnv(presetVar["dcaEnv2"], p.dcaEnv2);
-            if (presetVar.hasProperty("pitchEnv2")) loadEnv(presetVar["pitchEnv2"], p.pitchEnv2);
-            
-            newPresets.push_back(p);
-        }
-    }
-    
-    while (newPresets.size() < 64) {
-        newPresets.push_back(Preset("Init User " + std::to_string(newPresets.size() + 1)));
-    }
-    
-    {
-        const juce::ScopedWriteLock swl(presetLock);
-        presets = std::move(newPresets);
-        currentPresetIndex = 0; 
-    }
-    
-    juce::Logger::writeToLog("PresetManager: Bank applied, loading preset 0");
-    loadPreset(currentPresetIndex);
-}
-
-void PresetManager::resetToFactory()
-{
-    // Clear existing presets and recreate factory defaults
-    presets.clear();
-    createFactoryPresets();
-
-    // Ensure we have at least one preset and set it as active
-    if (!presets.empty())
-    {
-        currentPresetIndex = 0;
-        currentPreset = presets[0];
-        applyPresetToProcessor(currentPreset);
-    }
-}
-
-
-
-std::unique_ptr<juce::XmlElement> PresetManager::exportEnvelopesToXml()
-{
-    auto root = std::make_unique<juce::XmlElement>("Envelopes");
-    
-    auto addEnv = [&](const EnvelopeData& env, const juce::String& type, int line) {
-        auto* e = root->createNewChildElement("Envelope");
-        e->setAttribute("type", type);
-        e->setAttribute("line", line);
-        
-        juce::String rates, levels;
-        for (int i=0; i<8; ++i) {
-            rates += juce::String(env.rates[i], 4) + ",";
-            levels += juce::String(env.levels[i], 4) + ",";
-        }
-        e->setAttribute("rates", rates.dropLastCharacters(1));
-        e->setAttribute("levels", levels.dropLastCharacters(1));
-        e->setAttribute("sustain", env.sustainPoint);
-        e->setAttribute("end", env.endPoint);
-    };
-
-    addEnv(currentPreset.pitchEnv, "Pitch", 1);
-    addEnv(currentPreset.dcwEnv, "DCW", 1);
-    addEnv(currentPreset.dcaEnv, "DCA", 1);
-    
-    addEnv(currentPreset.pitchEnv2, "Pitch", 2);
-    addEnv(currentPreset.dcwEnv2, "DCW", 2);
-    addEnv(currentPreset.dcaEnv2, "DCA", 2);
-
-    return root;
-}
-
-void PresetManager::importEnvelopesFromXml(const juce::XmlElement& xml)
-{
-    if (!xml.hasTagName("Envelopes")) return;
-    
-    for (auto* e : xml.getChildIterator())
-    {
-        if (e->hasTagName("Envelope"))
-        {
-            int line = e->getIntAttribute("line");
-            juce::String type = e->getStringAttribute("type");
-            
-            EnvelopeData* target = nullptr;
-            if (line == 1) {
-                if (type == "Pitch") target = &currentPreset.pitchEnv;
-                else if (type == "DCW") target = &currentPreset.dcwEnv;
-                else if (type == "DCA") target = &currentPreset.dcaEnv;
-            } else if (line == 2) {
-                if (type == "Pitch") target = &currentPreset.pitchEnv2;
-                else if (type == "DCW") target = &currentPreset.dcwEnv2;
-                else if (type == "DCA") target = &currentPreset.dcaEnv2;
-            }
-            
-            if (target)
-            {
-                juce::StringArray rates = juce::StringArray::fromTokens(e->getStringAttribute("rates"), ",", "");
-                juce::StringArray levels = juce::StringArray::fromTokens(e->getStringAttribute("levels"), ",", "");
-                
-                for(int i=0; i<8; ++i) {
-                    if (i < rates.size()) target->rates[i] = rates[i].getFloatValue();
-                    if (i < levels.size()) target->levels[i] = levels[i].getFloatValue();
-                }
-                target->sustainPoint = e->getIntAttribute("sustain");
-                target->endPoint = e->getIntAttribute("end");
-            }
-        }
-    }
-    
-    // Apply immediately
-    applyPresetToProcessor(currentPreset); // APVTS
-    loadPresetFromStruct(currentPreset); // Full refresh
-}
-
-
-int PresetManager::addPreset(const Preset& p)
-{
-    int newIndex = -1;
-    {
-        const juce::ScopedWriteLock sl(presetLock);
-        presets.push_back(p);
-        newIndex = (int)presets.size() - 1;
-    } 
-    
-    autoSaveUserBank();
-    listeners.call(&Listener::bankUpdated);
-    return newIndex;
-}
-
-void PresetManager::deletePreset(int index)
-{
-    bool shouldNotify = false;
-    {
-        const juce::ScopedWriteLock sl(presetLock);
-        if (index >= 0 && index < (int)presets.size())
-        {
-            presets.erase(presets.begin() + index);
-            
-            if (presets.empty())
-            {
-                Preset init;
-                init.name = "Init";
-                presets.push_back(init);
-            }
-            
-            if (currentPresetIndex >= (int)presets.size())
-                currentPresetIndex = (int)presets.size() - 1;
-                
-            shouldNotify = true;
-        }
-    } 
-    
-    if (shouldNotify)
-    {
-        autoSaveUserBank();
-        listeners.call(&Listener::bankUpdated);
-    }
-}
-
-void PresetManager::movePreset(int fromIndex, int toIndex)
-{
-    bool changed = false;
-    {
-        const juce::ScopedWriteLock sl(presetLock);
-        int size = (int)presets.size();
-        if (fromIndex >= 0 && fromIndex < size && toIndex >= 0 && toIndex < size)
-        {
-            if (fromIndex != toIndex)
-            {
-                auto p = presets[fromIndex];
-                presets.erase(presets.begin() + fromIndex);
-                presets.insert(presets.begin() + toIndex, p);
-                
-                if (currentPresetIndex == fromIndex)
-                    currentPresetIndex = toIndex;
-                else if (fromIndex < currentPresetIndex && toIndex >= currentPresetIndex)
-                    currentPresetIndex--;
-                else if (fromIndex > currentPresetIndex && toIndex <= currentPresetIndex)
-                    currentPresetIndex++;
-                    
-                changed = true;
-            }
-        }
-    }
-
-    if (changed)
-    {
-        autoSaveUserBank();
-        listeners.call(&Listener::bankUpdated);
-    }
-}
-
-
-// Audit Fix: Thread-safe accessors
-int PresetManager::getNumPresets() const
-{
-    const juce::ScopedReadLock sl(presetLock);
-    return (int)presets.size();
-}
-
-std::string PresetManager::getPresetName(int index) const
-{
-    const juce::ScopedReadLock sl(presetLock);
-    if (index >= 0 && index < (int)presets.size())
-        return presets[index].name;
-    return "";
-}
 
 } // namespace State
 } // namespace CZ101

@@ -3,6 +3,7 @@
 #include "AudioThreadSnapshot.h" // Required for parameter snapshot definition
 #include "../DSP/Modulation/LFO.h"
 #include <algorithm>
+#include <cmath>
 
 namespace CZ101 {
 namespace Core {
@@ -84,17 +85,52 @@ void VoiceManager::setVoiceLimit(int limit) noexcept
     maxActiveVoices = std::min(limit, (int)MAX_VOICES);
 }
 
+// Unified operation-mode switch (0 = Classic 101, 1 = Classic 5000, 2 = Modern).
+// The WASM bridge drives the same mapping so both engines stay in sync.
+void VoiceManager::setOperationMode(int opMode) noexcept
+{
+    if (opMode == cachedOpMode) return;
+    cachedOpMode = opMode;
+
+    if (opMode <= 0)
+    {
+        setSynthModel(DSP::MultiStageEnvelope::Model::CZ101);
+        setVoiceLimit(4);   // Classic CZ-101 (4 voice)
+    }
+    else if (opMode == 1)
+    {
+        setSynthModel(DSP::MultiStageEnvelope::Model::CZ5000);
+        setVoiceLimit(8);   // Classic CZ-1 (8 voice, velocity)
+    }
+    else if (opMode == 2)
+    {
+        setSynthModel(DSP::MultiStageEnvelope::Model::CZ5000);
+        setVoiceLimit(8);   // Classic CZ-5000 (8 voice, chorus)
+    }
+    else
+    {
+        setSynthModel(DSP::MultiStageEnvelope::Model::CZ5000);
+        setVoiceLimit(16);  // Modern (16 voice)
+    }
+}
+
+void VoiceManager::setToneRateScale(float scale) noexcept
+{
+    applyToAllVoices([scale](Voice& v) { v.setToneRateScale(scale); });
+}
+
 void VoiceManager::setSampleRate(double sampleRate) noexcept
 {
     applyToAllVoices([sampleRate](Voice& v) { v.setSampleRate(sampleRate); });
     referenceVoice.setSampleRate(sampleRate); // Audit Fix: Initialize reference voice to prevent div-by-zero
 }
 
-void VoiceManager::setOsc1Waveforms(int fIdx, int sIdx) noexcept
+void VoiceManager::setOsc1Waveforms(int fIdx, int sIdx, int wIdx) noexcept
 {
     auto f = static_cast<DSP::PhaseDistOscillator::CzWaveform>(fIdx);
     auto s = static_cast<DSP::PhaseDistOscillator::CzWaveform>(sIdx);
-    applyToAllVoices([f, s](Voice& v) { v.setOsc1Waveforms(f, s); });
+    auto w = static_cast<DSP::PhaseDistOscillator::CzWindow>(wIdx);
+    applyToAllVoices([f, s, w](Voice& v) { v.setOsc1Waveforms(f, s, w); });
 }
 
 void VoiceManager::setOsc1Level(float level) noexcept
@@ -102,11 +138,12 @@ void VoiceManager::setOsc1Level(float level) noexcept
     applyToAllVoices([level](Voice& v) { v.setOsc1Level(level); });
 }
 
-void VoiceManager::setOsc2Waveforms(int fIdx, int sIdx) noexcept
+void VoiceManager::setOsc2Waveforms(int fIdx, int sIdx, int wIdx) noexcept
 {
     auto f = static_cast<DSP::PhaseDistOscillator::CzWaveform>(fIdx);
     auto s = static_cast<DSP::PhaseDistOscillator::CzWaveform>(sIdx);
-    applyToAllVoices([f, s](Voice& v) { v.setOsc2Waveforms(f, s); });
+    auto w = static_cast<DSP::PhaseDistOscillator::CzWindow>(wIdx);
+    applyToAllVoices([f, s, w](Voice& v) { v.setOsc2Waveforms(f, s, w); });
 }
 
 void VoiceManager::setOsc2Level(float level) noexcept
@@ -158,7 +195,8 @@ int VoiceManager::getPitchSustainPoint(int line) const noexcept { return referen
 int VoiceManager::getPitchEndPoint(int line) const noexcept { return referenceVoice.getPitchEndPoint(line); }
 
 void VoiceManager::setHardSync(bool e) noexcept { applyToAllVoices([e](Voice& v){ v.setHardSync(e); }); }
-void VoiceManager::setRingMod(bool e) noexcept { applyToAllVoices([e](Voice& v){ v.setRingMod(e); }); }
+void VoiceManager::setLineModulation(int m) noexcept { applyToAllVoices([m](Voice& v){ v.setLineModulation(m); }); }
+void VoiceManager::setModSpecial(bool e) noexcept { applyToAllVoices([e](Voice& v){ v.setModSpecial(e); }); }
 void VoiceManager::setGlideTime(float s) noexcept { applyToAllVoices([s](Voice& v){ v.setGlideTime(s); }); }
 void VoiceManager::setMasterTune(float s) noexcept { applyToAllVoices([s](Voice& v){ v.setMasterTune(s); }); }
 void VoiceManager::setMasterVolume(float l) noexcept { applyToAllVoices([l](Voice& v){ v.setMasterVolume(l); }); }
@@ -179,6 +217,9 @@ void VoiceManager::setLFODelay(float s) noexcept { applyToAllVoices([s](Voice& v
 
 // Phase 5.1: Oversampling
 void VoiceManager::setOversamplingFactor(int factor) noexcept { applyToAllVoices([factor](Voice& v){ v.setOversamplingFactor(factor); }); }
+
+// Phase 9: Authentic Hardware Noise Emulation
+void VoiceManager::setHardwareNoiseEnabled(bool enabled) noexcept { applyToAllVoices([enabled](Voice& v){ v.setHardwareNoiseEnabled(enabled); }); }
 
 // Renamed internal helper
 void VoiceManager::startInternalVoice(int midiNote, float velocity) noexcept
@@ -218,7 +259,7 @@ void VoiceManager::noteOff(int midiNote) noexcept
 }
 
 void VoiceManager::allNotesOff() noexcept { for (auto& voice : voices) voice.noteOff(); }
-
+void VoiceManager::allSoundOff() noexcept { for (auto& voice : voices) voice.reset(); }
 void VoiceManager::renderNextBlock(float* outputL, float* outputR, int numSamples) noexcept
 {
     // Arpeggiator Processing
@@ -237,14 +278,29 @@ void VoiceManager::renderNextBlock(float* outputL, float* outputR, int numSample
 
     for (int i = 0; i < numSamples; ++i)
     {
-        float sample = 0.0f;
+        float l = 0.0f;
+        float r = 0.0f;
         // Limit processing to maxActiveVoices
         for (int v = 0; v < maxActiveVoices; ++v)
-            if (voices[v].isActive())
-                sample += voices[v].renderNextSample();
+        {
+            if (!voices[v].isActive()) continue;
+            float s = voices[v].renderNextSample();
+            const float pan = voices[v].getPan();
+            // Free-matrix pan (dest 7): equal-power panner. Center is kept
+            // identical to the legacy mono-sum path (L = R = sample).
+            if (pan <= 0.001f)            { l += s; }
+            else if (pan >= 0.999f)       { r += s; }
+            else if (std::abs(pan - 0.5f) < 0.001f) { l += s; r += s; }
+            else
+            {
+                const float ang = pan * juce::MathConstants<float>::halfPi;
+                l += s * std::cos(ang);
+                r += s * std::sin(ang);
+            }
+        }
         
-        outputL[i] = sample;
-        outputR[i] = sample;
+        outputL[i] = l;
+        outputR[i] = r;
     }
 }
 
@@ -296,6 +352,12 @@ void VoiceManager::applySnapshot(const ParameterSnapshot* snapshot) noexcept
     
     // Global parameters affecting logic
     maxActiveVoices = snapshot->system.voiceLimit;
+
+    // Switch the envelope model + voice-stealing strategy when the operation
+    // mode changed (no-op otherwise). Previously the native plugin never called
+    // setSynthModel, so CZ5000/Modern modes kept the CZ101 envelope curves and
+    // the oldest-note stealing strategy.
+    setOperationMode(snapshot->system.opMode);
     
     // Propagate to all voices
     applyToAllVoices([snapshot](Voice& v) { 

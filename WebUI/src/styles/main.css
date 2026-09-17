@@ -1,0 +1,21 @@
+/* main.css — aggregate stylesheet (legacy entry point).
+ * index.html now loads the partials directly via <link> (see below for the
+ * canonical cascade order). This file is kept so code that imports a single
+ * stylesheet (test suite, programmatic use) still gets all rules.
+ *
+ * Canonical cascade order (same as index.html):
+ *   base → lcd → panels → controls → keyboard → envelopes → midi →
+ *   menu → bankManager → overlays → themes
+ */
+
+@import './base.css';
+@import './lcd.css';
+@import './panels.css';
+@import './controls.css';
+@import './keyboard.css';
+@import './envelopes.css';
+@import './midi.css';
+@import './menu.css';
+@import './bankManager.css';
+@import './overlays.css';
+@import './themes.css';
