@@ -9,6 +9,13 @@ obj/
 *.lib
 *.pdb
 
+# Artefactos WASM y copias regeneradas del build (ver wasm/build_wasm.bat)
+WebUI/wasm/
+wasm/juce_shim/juce_core/
+
+# Perfiles de prueba de Chrome (CDP)
+.cdp_prof3/
+
 # Visual Studio
 .vs/
 *.user
