@@ -44,12 +44,13 @@ body {
   flex-direction: row;
   border: none;
   border-radius: var(--radius-lg);
-  width: 100%;
-  max-width: 1409px; /* scaled from 2818px (50%) */
-  aspect-ratio: 2818 / 1536;
+  /* Tamaño de diseño FIJO: el fit del paquete compartido (fitStage) escala y
+     centra este lienzo contra el viewport; el transform ya no lo toca CSS. */
+  width: 1409px;
+  height: 768px;   /* 1409 / (2818/1536) = 768 */
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(15px);
-  transform-origin: center center;
+  transform-origin: top left;
   overflow: hidden; /* round corners for the whole synth */
 }
 
@@ -103,32 +104,9 @@ body.is-plugin {
 }
 
 body.is-plugin .synth-container {
-  width: 1409px;
-  max-width: none;
-  flex-shrink: 0;
-  height: auto;
-  aspect-ratio: 2818 / 1536; /* Enforce natural synth proportions */
+  /* El diseño es fijo y el fit (fitStage) cubre el viewport entero: el modo
+     plugin no necesita overrides de tamaño ni de transform. */
   border-radius: 0;
   border: none;
   box-shadow: none;
-  transform: none; /* override media queries */
-  margin: auto;
-}
-
-@media (max-height: 900px) {
-  .synth-container {
-    transform: scale(0.9);
-  }
-}
-
-@media (max-height: 800px) {
-  .synth-container {
-    transform: scale(0.8);
-  }
-}
-
-@media (max-height: 700px) {
-  .synth-container {
-    transform: scale(0.7);
-  }
 }

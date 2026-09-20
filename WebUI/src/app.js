@@ -1062,21 +1062,16 @@ navbarApi = createNavbar({
 // Upgrade sliders to filmstrip faders
 initFilmstrips();
 
-// Setup Auto-Scaling for the UI
-function scaleUI() {
-  const container = document.querySelector('.synth-container');
-  if (!container) return;
-  const windowW = window.innerWidth;
-  const windowH = window.innerHeight;
-  const targetW = 1409;
-  const targetH = 768; // 1409 / (2818/1536) ≈ 768
+// Fit del lienzo de diseño (1409x768) al viewport: la pieza compartida de la
+// suite (computeFit: escala acotada + centrado; mountFitStage: resize con
+// desuscripción). Sustituye al scaleUI artesanal, que no acotaba ni centraba.
+const detachFitStage = mountFitStage(document.querySelector('.synth-container'), {
+  width: 1409,
+  height: 768,
+  minScale: 0.25,
+  maxScale: 3,
+});
 
-  // Calculate scale to fit within the window, maintaining aspect ratio
-  const scaleW = windowW / targetW;
-  const scaleH = windowH / targetH;
-  const scale = Math.min(scaleW, scaleH);
-
-  container.style.transform = `scale(${scale})`;
-}
-window.addEventListener('resize', scaleUI);
-scaleUI();
+// Test hooks de la casa (mismo patrón que el resto de subsistemas).
+window.__czTestHooks__ = window.__czTestHooks__ || {};
+window.__czTestHooks__.detachFitStage = detachFitStage;
