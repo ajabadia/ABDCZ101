@@ -92,23 +92,28 @@ EMSCRIPTEN_KEEPALIVE void wasm_process(float* outputL, float* outputR, int numSa
     // audio rendering thread, so gWasmSnapshot needs no locking.
     if (gEffectsPrepared)
     {
-        float* channelData[2] = { outputL, outputR };
-        juce::AudioBuffer<float> buffer(channelData, 2, numSamples);
-        gEffectsChain.process(buffer, gWasmSnapshot);
-        
-        static float currentMasterGain = 0.0f;
-        float rawMasterVol = gWasmSnapshot.system.masterVol;
-        float targetGain = (rawMasterVol / 10.0f) * CZ101::Core::HardwareConstants::MASTER_HEADROOM_GAIN;
-        
-        buffer.applyGainRamp(0, buffer.getNumSamples(), currentMasterGain, targetGain);
-        buffer.applyGainRamp(1, buffer.getNumSamples(), currentMasterGain, targetGain);
-        currentMasterGain = targetGain;
+        {
+            float* channelData[2] = { outputL, outputR };
+            juce::AudioBuffer<float> buffer(channelData, 2, numSamples);
+            gEffectsChain.process(buffer, gWasmSnapshot);
+        }
 
-        for (int ch = 0; ch < buffer.getNumChannels(); ++ch) {
-            float* channelDataPtr = buffer.getWritePointer(ch);
-            for (int i = 0; i < buffer.getNumSamples(); ++i) {
-                 channelDataPtr[i] = std::clamp(channelDataPtr[i], -0.99f, 0.99f);
-            }
+        // Master gain ramp + hard clamp, hand-rolled ON PURPOSE.
+        // Do NOT use juce::AudioBuffer::applyGainRamp here: on the WASM target
+        // (-O3 -msimd128 over an external-data buffer) its vectorized ramp
+        // writes past the emmalloc region (SAFE_HEAP flags the OOB store inside
+        // wasm_process; see HANDOFF 2026-09-21). The scalar loop below keeps
+        // the exact ramp semantics: gain for sample i is g0 + inc*i, then the
+        // +/-0.99 clamp. Only the WASM bridge used this path.
+        static float currentMasterGain = 0.0f;
+        const float rawMasterVol = gWasmSnapshot.system.masterVol;
+        const float targetGain = (rawMasterVol / 10.0f) * CZ101::Core::HardwareConstants::MASTER_HEADROOM_GAIN;
+        const float inc = (targetGain - currentMasterGain) / static_cast<float>(numSamples);
+
+        for (int i = 0; i < numSamples; ++i) {
+            outputL[i] = std::clamp(outputL[i] * currentMasterGain, -0.99f, 0.99f);
+            outputR[i] = std::clamp(outputR[i] * currentMasterGain, -0.99f, 0.99f);
+            currentMasterGain += inc;
         }
     }
 }
