@@ -65,7 +65,9 @@ describe('fitStage / integración CZ101', () =>
 
         mountFitStage(stage, { ...DESIGN, viewport });
 
-        expect(stage.style.transform).toBe('scale(1)');
+        // Identidad = SIN transform (un scale(1) residual crea containing
+        // block y re-anclaria overlays position:fixed; contrato del paquete).
+        expect(stage.style.transform).toBe('');
         expect(stage.style.marginLeft).toBe('0px');
         expect(stage.style.marginTop).toBe('0px');
     });
