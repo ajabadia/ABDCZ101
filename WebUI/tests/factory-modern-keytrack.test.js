@@ -47,10 +47,10 @@ describe('Factory preset: Modern Key Track (Authentic Key Track source)', () => 
 describe('Preset load syncs the mode-driven UI (regression)', () => {
   const fs = require('node:fs');
   const path = require('node:path');
-  const appJs = fs.readFileSync(path.resolve(__dirname, '../src/app.js'), 'utf8');
+  const appJs = fs.readFileSync(path.resolve(__dirname, '../src/app.js'), 'utf8').replace(/\r\n/g, '\n');
   // applyModernMatrixSeeds (which calls syncModSlotBadges internally) moved to
   // src/ui/modMatrix.js during the app split; app.js keeps the load path.
-  const modJs = fs.readFileSync(path.resolve(__dirname, '../src/ui/modMatrix.js'), 'utf8');
+  const modJs = fs.readFileSync(path.resolve(__dirname, '../src/ui/modMatrix.js'), 'utf8').replace(/\r\n/g, '\n');
 
   it('loads a preset carrying its own matrix without leaving badges stale', () => {
     // applyParameterToUI sets the MOD_SLOT controls but not the ON/OFF badges;

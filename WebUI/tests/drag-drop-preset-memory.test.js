@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const appJs = readFileSync(join(__dirname, '..', 'src', 'app.js'), 'utf8');
-const mainCss = readFileSync(join(__dirname, '..', 'src', 'styles', 'themes.css'), 'utf8');
+const appJs = readFileSync(join(__dirname, '..', 'src', 'app.js'), 'utf8').replace(/\r\n/g, '\n');
+const mainCss = readFileSync(join(__dirname, '..', 'src', 'styles', 'themes.css'), 'utf8').replace(/\r\n/g, '\n');
 
 describe('drag & drop file loading (native PluginEditor::filesDropped parity)', () => {
   it('accepts .syx/.sysex/.json drops and ignores other extensions', () => {

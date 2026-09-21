@@ -5,10 +5,10 @@ import { dirname, join } from 'node:path';
 import { MOD_MATRIX_EXAMPLE_SEEDS, isMatrixEmpty } from '../src/contracts/modMatrixDefaults.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const appJs = readFileSync(join(__dirname, '..', 'src', 'app.js'), 'utf8');
+const appJs = readFileSync(join(__dirname, '..', 'src', 'app.js'), 'utf8').replace(/\r\n/g, '\n');
 // The seeding logic lives in src/ui/modMatrix.js (app split); app.js still
 // owns the import of the seed contract + the load/mode-change call sites.
-const modJs = readFileSync(join(__dirname, '..', 'src', 'ui', 'modMatrix.js'), 'utf8');
+const modJs = readFileSync(join(__dirname, '..', 'src', 'ui', 'modMatrix.js'), 'utf8').replace(/\r\n/g, '\n');
 
 // The source/dest option lists in the matrix (parity with the registry choices)
 const SOURCES = ['None', 'Velocity', 'Mod Wheel', 'Aftertouch', 'Key Track', 'LFO', 'Env DCW', 'Env DCA', 'Env Pitch', 'Pitch Bend', 'Noise'];
@@ -60,7 +60,7 @@ describe('mod matrix example seeds (new presets in Modern)', () => {
     // onSysExLoaded + syncUiAfterParamLoad live in app.js; the opMode input /
     // change listeners moved to the LCD panel module with the mode sync.
     const appCalls = (appJs.match(/applyModernMatrixSeeds\(\);/g) || []).length;
-    const lcdJs = readFileSync(join(__dirname, '..', 'src', 'ui', 'lcdPanel.js'), 'utf8');
+    const lcdJs = readFileSync(join(__dirname, '..', 'src', 'ui', 'lcdPanel.js'), 'utf8').replace(/\r\n/g, '\n');
     const lcdCalls = (lcdJs.match(/applyModernMatrixSeeds\(\);/g) || []).length;
     // onSysExLoaded + syncUiAfterParamLoad (app) + opMode input + opMode change (LCD)
     expect(appCalls + lcdCalls).toBeGreaterThanOrEqual(4);
