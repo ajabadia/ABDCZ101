@@ -2,6 +2,26 @@
 
 All notable changes to the CZ-101 Emulator project will be documented in this file.
 
+## [1.2.1] - 2026-09-21
+### Fixed
+- **Critical (WASM heap corruption)**: the offline WASM tests (36 failures across
+  `dsp-offline`, `mod-matrix-wasm`, `kf-vs-matrix`, `write-wasm`, `transpose-wasm`...) died
+  with `memory access out of bounds`. Root cause, isolated by rebuild with
+  `SAFE_HEAP` + `ASSERTIONS=2` + emmalloc debug assertions and a code-level bisect:
+  `juce::AudioBuffer::applyGainRamp` over an EXTERNAL-data buffer, under the WASM recipe
+  (`-O3 -msimd128`), wrote past the emmalloc region of the caller-provided output buffers
+  (SAFE_HEAP flagged the OOB store inside `wasm_process`; emmalloc flagged inconsistent
+  regions on the following `free`). Fix in `Source/Wasm/WasmBridge.cpp`: the master-gain
+  ramp + `+/-0.99` clamp are hand-rolled scalar loops with identical semantics (no
+  `AudioBuffer` wrapper on the gain stage). Only the WASM bridge used this path.
+- **Build config drift**: `wasm/CMakeLists.txt` now includes `node` in `-sENVIRONMENT`
+  (the shipped binary always ran under node for the test suite, but the committed config
+  could not rebuild it).
+### Verified
+- `dsp-offline` (pitch accuracy, voice termination, param bridge) passes; suite-wide
+  failures drop from 37 to 16 with ZERO new failures — every remaining failure predates
+  this change and was previously masked by the crashes.
+
 ## [1.2.0] - 2025-12-15
 ### Added
 - **8-Stage Envelopes**: Complete implementation of the CZ-101's unique 8-stage envelope system (Rate/Level) for Pitch, Timbre (DCW), and Amplitude (DCA).
