@@ -98,22 +98,18 @@ EMSCRIPTEN_KEEPALIVE void wasm_process(float* outputL, float* outputR, int numSa
             gEffectsChain.process(buffer, gWasmSnapshot);
         }
 
-        // Master gain ramp + hard clamp, hand-rolled ON PURPOSE.
-        // Do NOT use juce::AudioBuffer::applyGainRamp here: on the WASM target
-        // (-O3 -msimd128 over an external-data buffer) its vectorized ramp
-        // writes past the emmalloc region (SAFE_HEAP flags the OOB store inside
-        // wasm_process; see HANDOFF 2026-09-21). The scalar loop below keeps
-        // the exact ramp semantics: gain for sample i is g0 + inc*i, then the
-        // +/-0.99 clamp. Only the WASM bridge used this path.
-        static float currentMasterGain = 0.0f;
-        const float rawMasterVol = gWasmSnapshot.system.masterVol;
-        const float targetGain = (rawMasterVol / 10.0f) * CZ101::Core::HardwareConstants::MASTER_HEADROOM_GAIN;
-        const float inc = (targetGain - currentMasterGain) / static_cast<float>(numSamples);
-
+        // Hard clamp ±0.99, scalar ON PURPOSE. No master-gain stage here: the
+        // native plugin applies masterVol INSIDE the voice (Voice::masterVolume,
+        // 0..1 smoothed) plus MASTER_HEADROOM_GAIN per voice; a second gain
+        // stage at the bridge output double-attenuated the whole engine (the
+        // stale (vol/10)*HEADROOM formula was -29 dB with a snapshot nobody
+        // updated) and never tracked the knob. Do NOT use juce::AudioBuffer
+        // helpers here either: on the WASM target (-O3 -msimd128 over an
+        // external-data buffer) their vectorized loops write past the emmalloc
+        // region (SAFE_HEAP flags the OOB store; see HANDOFF 2026-09-21).
         for (int i = 0; i < numSamples; ++i) {
-            outputL[i] = std::clamp(outputL[i] * currentMasterGain, -0.99f, 0.99f);
-            outputR[i] = std::clamp(outputR[i] * currentMasterGain, -0.99f, 0.99f);
-            currentMasterGain += inc;
+            outputL[i] = std::clamp(outputL[i], -0.99f, 0.99f);
+            outputR[i] = std::clamp(outputR[i], -0.99f, 0.99f);
         }
     }
 }
