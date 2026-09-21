@@ -146,7 +146,7 @@ set_target_properties(cz101_dsp PROPERTIES
         -s INITIAL_MEMORY=33554432 \
         -s STACK_SIZE=1048576 \
         -s NO_EXIT_RUNTIME=1 \
-        -s ENVIRONMENT=web,worker \
+        -s ENVIRONMENT=web,worker,node \
         -s SINGLE_FILE=1 \
         -s MALLOC=emmalloc \
         -s ASSERTIONS=0 \
