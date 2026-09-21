@@ -2,6 +2,37 @@
 
 All notable changes to the CZ-101 Emulator project will be documented in this file.
 
+## [1.2.2] - 2026-09-21
+### Fixed
+- **WASM output -29 dB + volume knob dead (bridge)**: `wasm_process` applied a
+  second master-gain stage with the stale formula `(masterVol/10) * HEADROOM`:
+  the native parameter is 0..1 (not 0..10) and `gWasmSnapshot.system.masterVol`
+  was never updated after init, so the whole engine played at a fixed 0.035
+  factor (-29 dB) and MASTER_VOLUME did nothing in the web engine. The native
+  plugin has NO such stage (the voice applies masterVol inside, smoothed, plus
+  per-voice headroom) — the stage is removed; the scalar +/-0.99 clamp stays,
+  with the same SAFE_HEAP reason as 1.2.1 (no AudioBuffer helpers over
+  external-data buffers on this target). Exposed by `mode-gating`,
+  `scope-real-audio` and `mod-matrix-wasm` (their level thresholds were tuned
+  by ear against an engine that always played 29 dB low and could never pass).
+- **KEY_FOLLOW_DCW knob silent in BOTH engines**: the d4132ca refactor moved
+  the DCW anti-aliasing limit into PhaseDistOscillator AND removed the KF
+  FIX/VAR timbre-curve injection, leaving `smoothedMatrix.keyTrackDcw` with no
+  consumer (the knob had no audible effect; `kf-vs-matrix` failed with an
+  exact-zero FIX-vs-VAR difference). The authentic curve
+  (`getAuthenticDCWKeytrack(note, env, mode)`) is restored in
+  `Voice::calculateDCWModulation` at full amount when FIX or VAR is selected —
+  shared by the native plugin and the WASM bridge; the matrix source 11 path
+  is unchanged.
+- **Source-scan tests broke on CRLF**: three test files read `app.js` /
+  `modMatrix.js` / `themes.css` / `lcdPanel.js` with `\n` anchors via
+  `readFileSync`; the sources carry CRLF, so `toContain` failed on FORMAT, not
+  content. The readers now normalise CRLF to LF (`drag-drop-preset-memory`,
+  `factory-modern-keytrack`, `mod-matrix-defaults`).
+### Verified
+- Full suite GREEN for the first time: **47/47 files, 370/370 tests** (was
+  15 failures across 7 files after 1.2.1 removed the crashes that masked all
+  of this).
 ## [1.2.1] - 2026-09-21
 ### Fixed
 - **Critical (WASM heap corruption)**: the offline WASM tests (36 failures across
