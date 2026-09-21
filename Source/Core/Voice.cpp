@@ -470,10 +470,24 @@ void Voice::calculateLFOAndVibrato() noexcept
 
 void Voice::calculateDCWModulation() noexcept
 {
-    // DCW Key Tracking & Modulation
-    // Note: The authentic hardware DCW limit (anti-aliasing) is now applied directly in PhaseDistOscillator
-    // so we no longer apply a heuristic ktOffset here. The envelope naturally gets clamped at high pitches.
-    
+    // DCW Key Tracking & Modulation.
+    // Two independent mechanisms (do not conflate them):
+    //   1. KF FIX/VAR (matrix.kfDcw): the TIMBRE curve of the hardware key
+    //      follow, injected into the DCW envelope at full amount whenever FIX
+    //      or VAR is selected. RESTORED 2026-09-21: its removal left the
+    //      KEY_FOLLOW_DCW knob silent in BOTH engines (the smoothed amount
+    //      ended up with no consumer). The PhaseDistOscillator limit is the
+    //      ANTI-ALIASING ceiling, not this curve, and does not replace it.
+    //   2. Free matrix source 11 routes the same curve as an amount (depth
+    //      scales it), which is why getAuthenticDCWKeytrack keeps the mode arg.
+    float ktOffset = 0.0f;
+    const float ktDcw = smoothedMatrix.keyTrackDcw.getNextValue();
+    if (matrix.kfDcw != 0) // FIX (1) or VAR (2): full authentic tracking
+    {
+        const float avgEnv = (dcwVal1 + dcwVal2) * 0.5f;
+        ktOffset = HardwareConstants::getAuthenticDCWKeytrack(currentNote, avgEnv, matrix.kfDcw) * ktDcw;
+    }
+
     float veloDcw = smoothedMatrix.veloToDcw.getNextValue();
     float wheelDcw = smoothedMatrix.wheelToDcw.getNextValue();
     float atDcw = smoothedMatrix.atToDcw.getNextValue();
@@ -483,8 +497,8 @@ void Voice::calculateDCWModulation() noexcept
     modDcw += getModSlotContribution(1);
     
     // Apply Velocity Sensitivity to DCW Envelope Output
-    dcwVal1 = juce::jlimit(0.0f, 0.99f, (dcwVal1 * velModDcw) + modDcw);
-    dcwVal2 = juce::jlimit(0.0f, 0.99f, (dcwVal2 * velModDcw) + modDcw);
+    dcwVal1 = juce::jlimit(0.0f, 0.99f, (dcwVal1 * velModDcw) + ktOffset + modDcw);
+    dcwVal2 = juce::jlimit(0.0f, 0.99f, (dcwVal2 * velModDcw) + ktOffset + modDcw);
 }
 
 void Voice::calculateDCAModulation() noexcept
