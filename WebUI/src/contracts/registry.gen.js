@@ -1464,6 +1464,17 @@ export const PARAM_MAP = new Map(
   PARAMETER_REGISTRY.parameters.map(p => [p.id, p])
 );
 
+/**
+ * La regla de skew del proyecto, en UN solo sitio. Un parametro con skew lleva
+ * el control en NORMALIZADO (es lo que escribe `applyParameterToUI` y lo que lee
+ * el motor) y sin skew lo lleva en CRUDO. `skew: 1.0` es identidad: cuenta como
+ * SIN skew, que es como lo trata `juce::NormalisableRange`.
+ *
+ * @param {{skew?: number}} spec
+ * @returns {boolean}
+ */
+export const usesSkew = (spec) => Boolean(spec && spec.skew != null && spec.skew !== 1.0);
+
 export function rawToNormalized(paramId, rawValue) {
   const spec = PARAM_MAP.get(paramId);
   if (!spec) return 0.0;
@@ -1473,7 +1484,7 @@ export function rawToNormalized(paramId, rawValue) {
   // Reproduce juce::NormalisableRange::convertTo0to1 for a non-symmetric skew.
   // With skew < 1 (e.g. 0.3 on the filter cutoffs) the lower end of the range
   // fills more of the normalized space, exactly like the native APVTS.
-  if (spec.skew && spec.skew !== 1.0) {
+  if (usesSkew(spec)) {
     return Math.pow(proportion, spec.skew);
   }
   return proportion;
@@ -1486,7 +1497,7 @@ export function normalizedToRaw(paramId, normalizedValue) {
   let proportion = clampedNorm;
   // Reproduce juce::NormalisableRange::convertFrom0to1 for a non-symmetric skew
   // (inverse of rawToNormalized: norm -> pow(norm, 1/skew)).
-  if (spec.skew && spec.skew !== 1.0) {
+  if (usesSkew(spec)) {
     proportion = Math.pow(clampedNorm, 1.0 / spec.skew);
   }
   const raw = spec.min + proportion * (spec.max - spec.min);

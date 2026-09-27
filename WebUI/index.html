@@ -271,7 +271,11 @@
           <div class="octave-led" id="octave-down-led"></div>
         </button>
       </div>
-      <div class="keyboard" id="keyboard" style="flex-grow: 1;"></div>
+      <!-- Franja del keybed (180px, contrato de altura) con el contenedor
+           que monta el componente compartido @abdsynths/midi-keyb. -->
+      <div class="keyboard" style="flex-grow: 1;">
+        <div id="piano-keyboard"></div>
+      </div>
     </footer>
     
     </div> <!-- end synth-panel-center -->
@@ -287,6 +291,12 @@
   <div class="block-drawer" id="block-drawer" aria-hidden="true">
     <div class="block-drawer-header">
       <span class="block-drawer-title" id="block-drawer-title">SETTINGS</span>
+      <!-- Distintivo VIVO de la seccion abierta: celdas tocadas sobre las que
+           tiene (modulo src/ui/blockBadges.js). Region viva y polita: se
+           anuncia al abrir el cajon, no en cada celda de una carga. El texto
+           lo escribe el modulo, aqui solo la plaza. -->
+      <span class="block-drawer-badge" id="block-drawer-badge" role="status"
+            aria-live="polite" aria-atomic="true"></span>
       <button type="button" class="block-drawer-close" id="btn-block-drawer-close" title="Close (Esc)">✕</button>
     </div>
     <div class="block-drawer-body" id="block-drawer-body">

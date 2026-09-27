@@ -33,6 +33,97 @@ All notable changes to the CZ-101 Emulator project will be documented in this fi
 - Full suite GREEN for the first time: **47/47 files, 370/370 tests** (was
   15 failures across 7 files after 1.2.1 removed the crashes that masked all
   of this).
+## [Unreleased]
+### Added
+- **Distintivo VIVO en la cabecera del cajon de bloques (parametros tocados por
+  bloque)**: el cajon de bloques es uno para toda la maquina, asi que sus 17
+  secciones se turnaban para decir CUAL era la abierta y nada mas. Ahora la
+  cabecera lleva el dato de la seccion visible: `3/12`, celdas que se han
+  apartado del default de FABRICA sobre las que tiene la seccion. Se lee del
+  DOM vivo, no del HTML: la seccion de la matriz de modulacion construye sus 24
+  celdas en tiempo de ejecucion y tambien tiene distintivo (0/24 al abrir).
+  La verdad es la del motor, no una cuenta del DOM: los dos lados se comparan
+  ya NORMALIZADOS con el mapeo del contrato.
+  - **La trampa del skew (medida, y por eso hay regresion)**: los dos lados NO
+    llevan la misma unidad. El CONTROL lleva el valor normalizado cuando el
+    parametro tiene skew (es lo que escribe `applyParameterToUI`), pero el
+    `default` del registro llega siempre en CRUDO. Con el default pasado por la
+    regla del control, el corte del paso alto salia **1/1 al abrir**, senalando
+    como tocado un control que nadie habia movido. Son dos funciones
+    (`normalizedValueOf` para el control, `factoryValueOf` para la fabrica).
+  - **Fuera del contrato no se cuenta**: un id que el registro no declara no
+    trae default con el que compararse (el `MACRO_CONTOUR` de la ficha VOICE) y
+    un control sin valor legible tampoco (los 17 readout de la matriz, los
+    24 ids de la seccion son 41). No se inventa un default para poder marcarlo.
+  - **El contrato de foco es el compartido**: `overlayFocus.js` sigue siendo el
+    del cajon (sin copia). El distintivo se respeta desde dentro —cerrado, el
+    cajon lleva `inert` + `aria-hidden` y el distintivo se vacia al cerrar; al
+    abrir se repinta ANTES de que entre el foco, para que la region viva
+    (`role="status"`, `aria-live="polite"`) diga la verdad de la seccion que se
+    esta anunciando. Los gestos se oyen por delegacion en el cuerpo del cajon;
+    los valores que llegan SIN evento (preset, banco, push del motor, CC
+    aprendido) repintan desde `applyParameterToUI`, que es la puerta publica y
+    ahora envuelve al pintado de la celda.
+  - **Lo que el distintivo ensena de la pagina, sin haber movido nada**: dos
+    bloques nacen con una celda fuera de fabrica —VOICE ENGINE `1/6` por
+    `LINE_SELECT` (la pagina arranca en Line 1, indice 0, y el contrato dice
+    Line 1+1, indice 2) y ARPEGGIATOR `1/9` por `ARP_GATE` (la pagina escribe
+    0.8 y el contrato dice 0.5). No se toco ninguno: el valor con el que arranca
+    el motor es decision de la pagina, no del distintivo.
+- `WebUI/tests/block-badge.test.js`: 12 casos (12 ficheros mas, **48/48 y
+  383/383** en verde; antes 47/47 y 370/370), con la regla de skew, la
+  regresion del default, el filtrado de lo que el contrato no puede juzgar, el
+  orden refrescar-antes-del-foco y el embudo de `applyParameterToUI`.
+
+### Fixed
+- **La regla de skew estaba escrita de tres formas y dos no coincidian**: la
+  condicion "este control lleva el valor NORMALIZADO" vivia duplicada en
+  `rawToNormalized`/`normalizedToRaw` (contrato), `normalizedValueOf`
+  (distintivo de bloques) y dos ramas de `app.js` (`applyParameterToControl` y el
+  `updateVal` del input). Dos de ellas trataban `skew: 1.0` como "con skew" y la
+  tercera no, asi que un parametro con la identidad declarada en la APVTS habria
+  escrito el control en normalizado donde el motor espera el CRUDO. Hoy es
+  latente (los 116 parametros del contrato: 114 sin `skew`, 2 con `0.3`, ninguno
+  con `1.0`), pero las copias se podian separar en silencio. Ahora hay UN
+  predicado, `usesSkew(spec)`, en el contrato generado — y tambien en la
+  plantilla de `scripts/registry_generator.js`, que es de donde sale ese
+  fichero, para que la regeneracion no lo pierda.
+- **Un preset que no mencionaba `MODERN_HPF_CUTOFF` lo reiniciaba a 10 kHz**:
+  el reinicio de los parametros no mencionados (`presetLoaded`) pasaba el
+  `default` del registro tal cual cuando el parametro tenia skew, pero ese
+  `default` llega siempre en CRUDO (asi lo declara la APVTS): el 20 Hz del paso
+  alto llegaba a `applyParameterToUI` como si fuera el normalizado y se saturaba
+  a `1.0`. Ahora el default entra SIEMPRE por `rawToNormalized`, con skew o sin
+  el — la misma verdad que ya usaba `factoryValueOf` en el distintivo.
+  (`MODERN_LPF_CUTOFF` no lo notaba: su default es 20000, que saturado y crudo
+  coinciden por accidente.)
+- Regresion de lo anterior en `tests/skew.test.js` (+4 casos): la identidad cuenta
+  como "sin skew", el contrato solo tiene los dos cutoffs con `0.3`, ningun
+  modulo vuelve a escribir la regla a mano (escaneo de `skew &&` y `.skew ?`), y
+  el reinicio de fabrica pasa por el mapeo.
+
+### Pending
+- **El distintivo solo se ve con el cajon abierto**, y el gesto que lo haria
+  util —saber que bloque esta movido ANTES de abrirlo— es justo el que el cajon
+  esconde. En la superficie cada bloque ya tiene su boton EDIT: ahi es donde
+  tendria que vivir la senal, si se decide que viva. Decision de superficie, no
+  un fallo del distintivo.
+- **Dos bloques nacen con una celda fuera de fabrica** (VOICE ENGINE `1/6` por
+  `LINE_SELECT`, ARPEGGIATOR `1/9` por `ARP_GATE`): el valor con el que arranca
+  el motor es decision de la pagina, no del distintivo. Si el badge debe salir en
+  `0/N` al abrir, hay que alinear markup o contrato — y eso cambia lo que el
+  motor arranca leyendo.
+- **El distintivo nunca se ha visto pasar por un bundle de PRODUCCION.** Se
+  verifico en Chromium contra la pagina de desarrollo (`index.html` con los 11
+  parciales), no despues de `npm run bundle` + `npm run build:css:prod`, que es
+  donde un `querySelector` renombrado o un `:empty` mal colocado se rompen en
+  silencio. Antes de dar el distintivo por cerrado: `npm run bundle`,
+  `npm run build:css:prod`, `npm run validate:css` y mirar el cajon de bloques.
+- **El camino de preset/banco no se ejercita en ningun navegador**: necesita el
+  motor de audio y el reloj del `AudioContext`, que en este navegador no avanza
+  sin `--mute-audio`. Queda cubierto por el test de cableado
+  (`block-badge.test.js`), no por un clic.
+
 ## [1.2.1] - 2026-09-21
 ### Fixed
 - **Critical (WASM heap corruption)**: the offline WASM tests (36 failures across

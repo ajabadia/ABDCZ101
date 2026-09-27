@@ -10,7 +10,6 @@
 // buttons live in one focused module.
 
 import { PARAMETER_REGISTRY, PARAM_MAP, rawToNormalized } from '../contracts/registry.gen.js';
-import { applyTheme } from '../contracts/themes.js';
 import { NAVBAR_MENUS, renderItemHtml } from '../contracts/navbarModel.js';
 import { generateRandomPatch } from '../contracts/patchRandomizer.js';
 import { matchShortcut, isEditableTarget } from '../contracts/shortcuts.js';
@@ -49,6 +48,7 @@ export function createNavbar(deps) {
     getAudioEngine,
     getCurrentThemeId,
     setCurrentThemeId,
+    themeSwitcher,
     lcdLine1,
     lcdLine2,
     inputBankFile,
@@ -354,7 +354,9 @@ export function createNavbar(deps) {
       }
     },
     theme: (v) => {
-      applyTheme(document.documentElement, v);
+      if (themeSwitcher) {
+        themeSwitcher.setValue(v);
+      }
       try { localStorage.setItem('cz101.theme', v); } catch (err) { /* ignore */ }
       setCurrentThemeId(v);
       syncLCDMode();

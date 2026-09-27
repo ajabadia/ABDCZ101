@@ -155,6 +155,28 @@
   padding-left: 8px;
 }
 
+/*
+ * Distintivo VIVO de la cabecera (3/12): el dato de la seccion abierta, no
+ * una etiqueta. Comparte la tipografia de `.block-drawer-title` (es su
+ * Hermano, no un boton) y el tono de `.mod-slot-badge` (los badges de la
+ * familia), con el margen auto que deja el ✕ a la derecha del header.
+ */
+.block-drawer-badge {
+  margin-right: auto;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 0 5px;
+  white-space: nowrap;
+}
+
+.block-drawer-badge:empty {
+  display: none;
+}
+
 .block-drawer-close {
   background: none;
   border: none;

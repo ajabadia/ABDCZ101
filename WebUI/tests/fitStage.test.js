@@ -1,62 +1,38 @@
 /**
- * fitStage en CZ101: dos contratos.
+ * fitStage en CZ101: usa el paquete compartido @abdsynths/shared.
  *
- * 1. COPIA GESTIONADA — WebUI/src/shared/fitStage.js es una copia VERBATIM de
- *    ABDSharedAssets/components/fitStage.js (CZ101 no tiene bundler: ESM nativo
- *    + juce_add_binary_data). Byte a byte contra el paquete del workspace;
- *    editar la copia a mano ROMPE la suite a propósito (node scripts/sync_shared.js).
- *
- * 2. INTEGRACIÓN — el mount escala y centra el lienzo de diseño (1409x768) y
- *    el detach deja de recibir resizes. Sin DOM: la suite corre en entorno
- *    `node` y mountFitStage solo escribe en `stage.style`, así que un stage
- *    falso { style: {} } es observador suficiente. El viewport falso tiene un
- *    fire() que despacha SOLO a los listeners registrados (simular un resize
- *    llamando a la fn capturada siempre repintaria: el detach es que el
- *    registro quede vacio, y eso es lo que se verifica).
+ * El fitStage es una utilidad compartida (ABDSharedAssets/components/fitStage.js)
+ * que se importa vía @abdsynths/shared/components. Los tests verifican que la
+ * integración CZ101 funciona correctamente con el paquete compartido.
  */
 
-import { readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-import { computeFit, mountFitStage } from '../src/shared/fitStage.js';
+import { computeFit, mountFitStage } from '@abdsynths/shared/components';
 
-const here = dirname(fileURLToPath(import.meta.url));
+const DESIGN = { width: 1409, height: 768 };
 
-describe('fitStage / copia gestionada', () =>
+/**
+ * Viewport falso: innerWidth/innerHeight mutables y un fire() que ejecuta
+ * solo a los listeners AUN registrados (como un window de verdad).
+ */
+function fakeViewport ()
 {
-    it('es byte a byte la del paquete compartido', () =>
-    {
-        const suiteRoot = resolve(here, '..', '..', '..');
-        const origin = join(suiteRoot, 'ABDSharedAssets', 'components', 'fitStage.js');
-        const copy = join(here, '..', 'src', 'shared', 'fitStage.js');
+    const listeners = new Map();
 
-        expect(readFileSync(copy, 'utf8')).toBe(readFileSync(origin, 'utf8'));
-    });
-});
+    return {
+        listeners,
+        innerWidth: 1409,
+        innerHeight: 768,
+        addEventListener: (name, fn) => listeners.set(name, fn),
+        removeEventListener: (name) => listeners.delete(name),
+        fire (name) { for (const fn of listeners.values()) fn(); },
+    };
+}
 
 describe('fitStage / integración CZ101', () =>
 {
     const DESIGN = { width: 1409, height: 768 };
-
-    /**
-     * Viewport falso: innerWidth/innerHeight mutables y un fire() que ejecuta
-     * solo a los listeners AUN registrados (como un window de verdad).
-     */
-    function fakeViewport ()
-    {
-        const listeners = new Map();
-
-        return {
-            listeners,
-            innerWidth: 1409,
-            innerHeight: 768,
-            addEventListener: (name, fn) => listeners.set(name, fn),
-            removeEventListener: (name) => listeners.delete(name),
-            fire (name) { for (const fn of listeners.values()) fn(); },
-        };
-    }
 
     it('escala el lienzo para caber en el viewport y centra con offsets', () =>
     {

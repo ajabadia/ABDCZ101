@@ -1,13 +1,13 @@
 import CZ101DSP from '../wasm/cz101_dsp.js';
-import { initFilmstrips } from './ui/filmstrips.js';
 import { CZ101AudioEngine } from './engine/cz101AudioEngine.js';
-import { PARAMETER_REGISTRY, PARAM_MAP, rawToNormalized, normalizedToRaw } from './contracts/registry.gen.js';
+import { PARAMETER_REGISTRY, PARAM_MAP, rawToNormalized, normalizedToRaw, usesSkew } from './contracts/registry.gen.js';
 import { FACTORY_PRESETS } from './contracts/factoryPresets.js';
 import { buildLcdMenu } from './contracts/lcdMenu.js';
-import { applyTheme, getTheme } from './contracts/themes.js';
 import { NAVBAR_MENUS, renderItemHtml } from './contracts/navbarModel.js';
 import { generateRandomPatch } from './contracts/patchRandomizer.js';
 import { matchShortcut, isEditableTarget } from './contracts/shortcuts.js';
+import { ThemeSwitcher, mountFitStage } from '@abdsynths/shared/components';
+import { enhanceRangeInputs } from '@abdsynths/shared/utils';
 import {
   LCD_NAME_MAX_LEN as LCD_NAME_MAX_LEN_CONST,
   LCD_NAME_CHARS as LCD_NAME_CHARS_CONST,
@@ -51,7 +51,8 @@ import { parseSyxFile, humanizePatchNames } from './contracts/syxNames.js';
 import { CZ230S_BANK_NAMES, CZ_PACK1_NAMES, factoryBankNames } from './contracts/factoryBankNames.js';
 import { attachHoldRepeat } from './contracts/holdRepeat.js';
 import { createEnvelopeEditor } from './ui/envelopeEditor.js';
-import { createKeyboard } from './ui/keyboard.js';
+import { createKeyboard, CZ101_PRESET } from '@abdsynths/midi-keyb';
+import '@abdsynths/midi-keyb/keyboard.css';
 import { createOscilloscope } from './ui/oscilloscope.js';
 import { createModMatrix } from './ui/modMatrix.js';
 import { createLcdPanel } from './ui/lcdPanel.js';
@@ -88,21 +89,16 @@ const ctx = canvas.getContext('2d');
 // Initialize LCD static graphics
 drawLcdGraphics();
 
-// --- Theme (parity with the native SkinManager: 9 themes via View menu) ---
+// --- Theme (parity with the native SkinManager: 6 themes via ThemeSwitcher) ---
 // Apply the saved (or default Dark) theme immediately to avoid a flash of the
 // wrong skin. The active theme id is tracked here so the View -> theme
 // submenu can show the checkmark (the native keeps it in the menu only).
 let currentThemeId = 'dark';
 let navbarApi = null; // assigned at the end (navbar module); getters are lazy
 let midiApi = null; // assigned later (midiSystem module); consumers use lazy getters
-(() => {
-  const savedTheme = (() => {
-    try { return localStorage.getItem('cz101.theme'); } catch (err) { return null; }
-  })();
-  const initialTheme = getTheme(savedTheme);
-  currentThemeId = initialTheme.id;
-  applyTheme(document.documentElement, initialTheme.id);
-})();
+let blockBadgeApi = null; // assigned later (blockDrawer module): el distintivo del cajon
+
+// ThemeSwitcher will be initialized in DOMContentLoaded
 
 // Populate waveform choices (main + second waveform selects + windows, from the registry contract)
 const waveSelects = {
@@ -184,7 +180,20 @@ function requestSysexDisplayUpdate() {
 }
 
 // Apply a normalized value coming from the host/engine to the visual control (inverse sync)
+//
+// ES LA PUERTA PUBLICA de este archivo: aqui se repinta el distintivo vivo del
+// cajon de bloques (celdas tocadas por bloque), porque por este embudo pasa
+// TODO valor — gesto del usuario, carga de preset, banco, push del motor e
+// INIT— y los que llegan SIN evento (los tres ultimos) no los oye la
+// delegacion que el distintivo escucha dentro del cajon. Cuesta una cuenta de
+// las ~20 celdas de la seccion abierta.
 function applyParameterToUI(paramId, normalizedValue) {
+  applyParameterToControl(paramId, normalizedValue);
+  blockBadgeApi?.refresh();
+}
+
+// El pintado de la celda, sin distintivo: la mitad que se puede llamar suelta.
+function applyParameterToControl(paramId, normalizedValue) {
   const spec = PARAM_MAP.get(paramId);
   if (!spec) return;
   const inputEl = document.getElementById(paramId);
@@ -209,7 +218,7 @@ function applyParameterToUI(paramId, normalizedValue) {
   // exactly like the native plugin. normalizedToRaw rounds int/choice/bool.
   const rawVal = normalizedToRaw(paramId, normVal);
 
-  if (spec.skew && spec.skew !== 1.0) {
+  if (usesSkew(spec)) {
     inputEl.value = normVal;
   } else {
     inputEl.value = rawVal;
@@ -249,15 +258,83 @@ PARAMETER_REGISTRY.parameters.forEach(p => {
   }
 });
 
-// --- On-screen keyboard (extracted module: src/ui/keyboard.js) ---
-// The 49-key CZ-101 keyboard (build + vintage wear + note handlers) lives in
-// its own module; instantiate with the live app references. The same noteOn /
-// noteOff / triggerMidiActivity wiring as before, now module-scoped.
+// --- On-screen keyboard (componente compartido @abdsynths/midi-keyb) ---
+// El keybed de 49 teclas (marfil envejecido + desgaste determinista + QWERTY +
+// octava) es el componente COMPARTIDO de la suite: CZ101_PRESET aporta el
+// caracter vintage y solo se sobrescribe el rango, que sigue siendo el del
+// host (C2..C6 = 36..84) y no el del preset (C3..C7).
+//
+// El enrutado de audio/MIDI sigue siendo el del host (bridge JUCE primero,
+// motor WASM como respaldo): el componente solo pinta teclas y reporta notas.
+// Los botones de octava y sus LEDs son los del chasis; el componente los manda.
+const midiActivity = (...args) => midiApi && midiApi.triggerMidiActivity(...args);
+
+function getJuceMidiBackend() {
+  return window.getJuceBackend
+    ? window.getJuceBackend()
+    : ((window.__JUCE__ && window.__JUCE__.backend) || (window.Juce && window.Juce.backend));
+}
+
+/** CC suelto al bridge JUCE o, en standalone WASM, al motor. */
+function sendMidiCc(controller, value) {
+  const backend = getJuceMidiBackend();
+  if (backend) {
+    if (typeof backend.sendMidiMessage === 'function') backend.sendMidiMessage([0xB0, controller, value]);
+    if (typeof backend.emitEvent === 'function') backend.emitEvent('sendMidiMessage', [0xB0, controller, value]);
+    return;
+  }
+  if (audioEngine && typeof audioEngine.sendMidiMessage === 'function') {
+    audioEngine.sendMidiMessage(new Uint8Array([0xB0, controller, value]));
+  }
+}
+
 createKeyboard({
-  getAudioEngine: () => audioEngine,
-  lcdLine1,
-  lcdLine2,
-  triggerMidiActivity: (...args) => midiApi && midiApi.triggerMidiActivity(...args)
+  containerId: 'piano-keyboard',
+  // El ALL OFF del chasis (navbar.js) es el boton de panico del componente: asi
+  // no aparece un segundo ALL OFF dentro del keybed.
+  panicBtnId: 'btn-panic',
+  octUpId: 'octave-up-btn',
+  octDownId: 'octave-down-btn',
+  ledUpId: 'octave-up-led',
+  ledDownId: 'octave-down-led',
+  // Las ruedas PITCH/MOD del CZ-101 son las del chasis (sprites propios,
+  // cableadas en midiSystem.js): el componente no pinta ruedas aqui.
+  onNoteOn: (note, velocity) => {
+    const backend = getJuceMidiBackend();
+    const midiVelocity = Math.max(1, Math.min(127, Math.round(velocity * 127)));
+    if (window.logToCpp) window.logToCpp(`Key down: note=${note} hasBackend=${!!backend}`);
+    if (backend) {
+      if (typeof backend.sendMidiMessage === 'function') backend.sendMidiMessage([0x90, note, midiVelocity]);
+      if (typeof backend.emitEvent === 'function') backend.emitEvent('sendMidiMessage', [0x90, note, midiVelocity]);
+    } else if (audioEngine) {
+      audioEngine.noteOn(note, velocity);
+    }
+    lcdLine1.innerText = 'NOTE ON';
+    lcdLine2.innerText = `MIDI NOTE: ${note}`;
+    midiActivity();
+  },
+  onNoteOff: (note) => {
+    const backend = getJuceMidiBackend();
+    if (backend) {
+      if (typeof backend.sendMidiMessage === 'function') backend.sendMidiMessage([0x80, note, 0]);
+      if (typeof backend.emitEvent === 'function') backend.emitEvent('sendMidiMessage', [0x80, note, 0]);
+    } else if (audioEngine) {
+      audioEngine.noteOff(note);
+    }
+    midiActivity();
+  },
+  onPanic: () => sendMidiCc(123, 0),      // All Notes Off
+  // El sostenido lo ejecuta el motor (CC64): el boton SUST del componente, que
+  // el host no tenia, queda cableado en vez de ser un adorno.
+  onSustainChange: (on) => sendMidiCc(64, on ? 127 : 0),
+  config: {
+    ...CZ101_PRESET,
+    startNote: 36,            // C2 — el rango de siempre del host (36..84)
+    maxOctaveShift: 2,        // OCT +/-2 octavas, como el keybed anterior
+    fixedOctaves: true,       // las 49 teclas del CZ-101 no dependen del ancho
+    velocitySource: 'fixed',
+    fixedVelocity: 102 / 127, // la velocity fija de siempre (MIDI 102)
+  }
 });
 // Visual feedback and parameter linkage
 function setLCDParam(id, val) {
@@ -316,7 +393,7 @@ PARAMETER_REGISTRY.parameters.forEach(p => {
   const updateVal = () => {
     let rawVal;
     let normVal;
-    if (p.skew && p.skew !== 1.0) {
+    if (usesSkew(p)) {
       normVal = parseFloat(inputEl.value);
       rawVal = normalizedToRaw(p.id, normVal);
     } else {
@@ -368,7 +445,11 @@ const setupJuceListeners = () => {
         // Reset unmentioned parameters to their defaults
         PARAMETER_REGISTRY.parameters.forEach(p => {
           if (detail.params[p.id] === undefined) {
-            applyParameterToUI(p.id, p.default !== undefined ? (p.skew ? p.default : rawToNormalized(p.id, p.default)) : 0.0);
+            // El `default` del registro llega siempre en CRUDO (asi lo declara la
+            // APVTS), con skew o sin el: pasa por el mapeo SIEMPRE. Pasarlo en crudo
+            // cuando hay skew mandaba 20 donde el motor espera 0 y el corte de paso
+            // bajo se abria al tope en vez de en su minimo.
+            applyParameterToUI(p.id, p.default !== undefined ? rawToNormalized(p.id, p.default) : 0.0);
           }
         });
         for (const [id, val] of Object.entries(detail.params)) {
@@ -1023,9 +1104,12 @@ const {
 
 
 // ─── Slide-out settings drawer (extracted module: src/ui/blockDrawer.js) ---
-const { openBlockDrawer, closeBlockDrawer, toggleBlockDrawer } = createBlockDrawer({
+const { openBlockDrawer, closeBlockDrawer, toggleBlockDrawer, refreshBlockBadge } = createBlockDrawer({
   redrawEnvelopes
 });
+// El distintivo vive en el cajon (lo abre, lo cierra y lo pinta); app.js solo lo
+// despierta desde el embudo de arriba.
+blockBadgeApi = { refresh: refreshBlockBadge };
 
 // ─── Navbar (extracted module: src/ui/navbar.js) ---
 // The menu bar, undo/redo, keyboard shortcuts and header buttons live in their
@@ -1035,6 +1119,7 @@ navbarApi = createNavbar({
   getAudioEngine: () => audioEngine,
   getCurrentThemeId: () => currentThemeId,
   setCurrentThemeId: (v) => { currentThemeId = v; },
+  themeSwitcher,
   lcdLine1,
   lcdLine2,
   inputBankFile,
@@ -1059,8 +1144,40 @@ navbarApi = createNavbar({
   triggerMidiActivity: (...args) => midiApi && midiApi.triggerMidiActivity(...args)
 });
 
-// Upgrade sliders to filmstrip faders
-initFilmstrips();
+// Initialize ThemeSwitcher (shared component)
+let themeSwitcher = null;
+const themeHost = document.getElementById('theme-selector') || document.querySelector('.theme-switcher-host');
+if (themeHost) {
+  themeSwitcher = new ThemeSwitcher(themeHost, {
+    themes: [
+      { id: 'dark', label: 'Dark', bodyClass: 'theme-dark', payload: 'dark' },
+      { id: 'vintage', label: 'Vintage', bodyClass: 'theme-vintage', payload: 'vintage' },
+      { id: 'cyberglow', label: 'CyberGlow', bodyClass: 'theme-cyberglow', payload: 'cyberglow' },
+      { id: 'neonretro', label: 'Neon Retro', bodyClass: 'theme-neonretro', payload: 'neonretro' },
+      { id: 'steampunk', label: 'Steampunk', bodyClass: 'theme-steampunk', payload: 'steampunk' },
+      { id: 'retroterminal', label: 'Retro Terminal', bodyClass: 'theme-retroterminal', payload: 'retroterminal' },
+    ],
+    variant: 'select',
+    storageKey: 'cz101.theme',
+    onChange: (themeId) => {
+      currentThemeId = themeId;
+      // Navbar will pick up the change via getCurrentThemeId
+      if (navbarApi && navbarApi.onThemeChange) {
+        navbarApi.onThemeChange(themeId);
+      }
+    },
+  });
+}
+
+// Upgrade sliders to filmstrip faders (shared utility)
+enhanceRangeInputs(document, {
+  spriteUrl: 'dist/ST_Fader_230x69_128f.png',
+  frameWidth: 230,
+  frameHeight: 69,
+  frames: 128,
+  orientationAttr: 'data-orientation',
+  verticalClass: 'vertical-fader',
+});
 
 // Fit del lienzo de diseño (1409x768) al viewport: la pieza compartida de la
 // suite (computeFit: escala acotada + centrado; mountFitStage: resize con
