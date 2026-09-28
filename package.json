@@ -10,7 +10,9 @@
     "build:css": "node scripts/build_css.js",
     "build:css:prod": "node scripts/build_css.js --prod",
     "build:css:dev": "node scripts/build_css.js --dev",
-    "test": "vitest run"
+    "test": "vitest run",
+    "bundle": "node scripts/build_webui.js",
+    "dev": "vite WebUI --port 5173"
   },
   "dependencies": {
     "@abdsynths/midi-keyb": "workspace:*",

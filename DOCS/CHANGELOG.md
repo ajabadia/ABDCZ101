@@ -35,6 +35,30 @@ All notable changes to the CZ-101 Emulator project will be documented in this fi
   of this).
 ## [Unreleased]
 ### Added
+- **Bundle de PRODUCCION de la WebUI (`npm run bundle`)**, con el patron del
+  hermano ABDMS2000: `WebUI/vite.build.config.js` (Vite resuelve los bare imports
+  `@abdsynths/shared` y `@abdsynths/midi-keyb` y empaqueta el grafo de JS) y
+  `scripts/build_webui.js`, que construye y DESPUES comprueba lo que salio. Los
+  comandos `bundle` y `dev` vuelven al `package.json` ahora que los ficheros
+  existen; `dev` es el servidor de desarrollo pelado (`vite WebUI`), sin el
+  config del bundle.
+  - **La cascada no se empaqueta, y es la decision del fichero.** Vite trata cada
+    `<link rel=stylesheet>` como entrada de su grafo CSS y los funde en un unico
+    `assets/index.css` (medido: ademas se come el `<link>` de Google Fonts). Con
+    once parciales en orden canonico, eso entrega "quien gana una regla" al
+    empaquetador. Aqui los `<link>` se apartan del grafo con un testigo en la
+    fase `pre` y se reponen en la `post`, y los once parciales se copian
+    VERBATIM a `dist/styles/`: la hoja del bundle es, por construccion, la de la
+    pagina de desarrollo. `validate_css_order.js` aprende a mirar el
+    `dist/index.html` con el MISMO `EXPECTED_ORDER`, y `build_webui.js` falla si
+    el orden se mueve o si un parcial deja de ser identico al de origen.
+  - **`juce.js` no esta en el repo** (lo inyecta el WebView): sale del grafo con
+    el mismo truco y vuelve con su URL original, para que el build no falle
+    intentando resolverlo.
+  - `juce.js` y el binario del motor son dos cosas distintas: el PEGAMENTO
+    (`wasm/cz101_dsp.js`) si esta y el bundle lo exige; el `.wasm` no esta en el
+    arbol (lo produce el build de emscripten) y el bundle lo arrastra en
+    cuanto aparezca.
 - **Distintivo VIVO en la cabecera del cajon de bloques (parametros tocados por
   bloque)**: el cajon de bloques es uno para toda la maquina, asi que sus 17
   secciones se turnaban para decir CUAL era la abierta y nada mas. Ahora la
@@ -113,12 +137,27 @@ All notable changes to the CZ-101 Emulator project will be documented in this fi
   el motor es decision de la pagina, no del distintivo. Si el badge debe salir en
   `0/N` al abrir, hay que alinear markup o contrato — y eso cambia lo que el
   motor arranca leyendo.
-- **El distintivo nunca se ha visto pasar por un bundle de PRODUCCION.** Se
-  verifico en Chromium contra la pagina de desarrollo (`index.html` con los 11
-  parciales), no despues de `npm run bundle` + `npm run build:css:prod`, que es
-  donde un `querySelector` renombrado o un `:empty` mal colocado se rompen en
-  silencio. Antes de dar el distintivo por cerrado: `npm run bundle`,
-  `npm run build:css:prod`, `npm run validate:css` y mirar el cajon de bloques.
+- ~~**El distintivo nunca se ha visto pasar por un bundle de PRODUCCION**~~ —
+  **RESUELTO (2026-09-28)**: `WebUI/e2e/blockBadgeBundle.spec.js` abre el MISMO
+  cajon en las dos paginas (desarrollo en el 5236, bundle servido en el 5239) y
+  compara el dato, la PINTURA de la cabecera (por hash) y el orden de la hoja
+  que cada una tiene cargada. Medido: `1/6` en VOICE ENGINE, `PERFORMANCE
+  CONTROLS` y `DCO OSCILLATOR 1` dan el mismo dato y el mismo hash de cabecera en
+  dev y en dist, y los once parciales llegan en el mismo orden en las dos
+  (la hoja importada desde JS sale como un doceavo `index.css` en el bundle,
+  donde en desarrollo la inyecta el cliente de Vite como `<style>` sin href: el
+  mismo sitio en la cascada). La comparacion, ademas, **destapo un fallo real**
+  de la pagina de desarrollo, que quedo arreglado en la entrega siguiente.
+- **PROPUESTO, no hecho: que CMake sirva `WebUI/dist/` en vez de `WebUI/`.** La
+  comparacion NO lo pide —el bundle es fiel en dato, pintura y cascada—, asi que
+  sigue siendo decision del lado nativo. Lo que haria falta, en este orden:
+  (1) que `cz101_dsp.wasm` este en el arbol (hoy solo esta el pegamento, y el
+  WebView lo resuelve con `new URL(..., import.meta.url)`, o sea al lado del
+  empaquetado); (2) construir el bundle ANTES de generar los binarios, porque
+  `juce_add_binary_data` congela el glob en tiempo de configuracion; (3)
+  cambiar el glob de `CMakeLists.txt:37-47` de `WebUI/src/*` a `WebUI/dist/*` y
+  anadir la dependencia de `npm run bundle` al target. Sin (1) y (2), el
+  plugin serviria un bundle sin motor.
 - **El camino de preset/banco no se ejercita en ningun navegador**: necesita el
   motor de audio y el reloj del `AudioContext`, que en este navegador no avanza
   sin `--mute-audio`. Queda cubierto por el test de cableado

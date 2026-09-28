@@ -34,6 +34,17 @@ export const EXPECTED_ORDER = [
   'themes.css',
 ];
 
+// El prefijo de un <link> de hoja, con el punto ESCAPADO: en el bundle los
+// parciales viven en `./styles/`, en la pagina de desarrollo en `./src/styles/`,
+// y el orden canonico es el mismo en los dos casos (mismo EXPECTED_ORDER).
+function styleLinkOrder(html, hrefPrefix) {
+  const prefix = hrefPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(
+    `<link[^>]*rel="stylesheet"[^>]*href="${prefix}([^"]+\\.css)"`, 'g');
+
+  return [...html.matchAll(pattern)].map(m => m[1]);
+}
+
 export function readCssEntryPoints(rootDir = ROOT_DIR) {
   const indexPath = path.join(rootDir, 'WebUI', 'index.html');
   const mainCssPath = path.join(rootDir, 'WebUI', 'src', 'styles', 'main.css');
@@ -43,8 +54,7 @@ export function readCssEntryPoints(rootDir = ROOT_DIR) {
 
   // <link rel="stylesheet" href="./src/styles/xxx.css"> → ['xxx.css', ...]
   // Only local styles (skip the Google Fonts <link>).
-  const htmlOrder = [...html.matchAll(/<link[^>]*rel="stylesheet"[^>]*href="\.\/src\/styles\/([^"]+\.css)"/g)]
-    .map(m => m[1]);
+  const htmlOrder = styleLinkOrder(html, './src/styles/');
 
   // @import './xxx.css'; → ['xxx.css', ...]
   const cssOrder = [...mainCss.matchAll(/@import\s+['"]\.\/([^'"]+\.css)['"]\s*;/g)]
@@ -87,6 +97,36 @@ export function validateCssOrder(rootDir = ROOT_DIR) {
   }
 
   return { ok: problems.length === 0, problems };
+}
+
+/**
+ * El MISMO orden canonico,mirado en el `dist/index.html` del bundle: los once
+ * parciales se copian verbatim a `dist/styles/` y sus `<link>` se reescriben a
+ * `./styles/<parcial>.css` (ver WebUI/vite.build.config.js). Esta es la
+ * COMPROBACION de que la cascada del bundle es la de la pagina de desarrollo:
+ * si alguien deja que el bundler fusione los parciales, o reordena los `<link>`,
+ * aqui falla el build en vez de cambiar quien gana una regla en silencio.
+ *
+ * @param {string} distHtml  contenido de dist/index.html
+ * @returns {{ ok: boolean, problems: string[], order: string[] }}
+ */
+export function validateDistOrder(distHtml) {
+  const order = styleLinkOrder(distHtml, './styles/');
+  const problems = [];
+
+  if (order.length !== EXPECTED_ORDER.length || order.some((value, i) => value !== EXPECTED_ORDER[i])) {
+    problems.push(
+      `dist/index.html <link> order diverges from canonical.\n` +
+      `  expected: ${EXPECTED_ORDER.join(', ')}\n` +
+      `  actual:   ${order.join(', ') || '(none)'}`
+    );
+  }
+
+  if (new Set(order).size !== order.length) {
+    problems.push('dist/index.html lists the same partial more than once.');
+  }
+
+  return { ok: problems.length === 0, problems, order };
 }
 
 // CLI entry point

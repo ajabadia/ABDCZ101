@@ -59,3 +59,7 @@ bundle_code/
 !best_practices.md
 !THIRD_PARTY.md
 node_modules/
+
+# Salida del E2E de navegador (Playwright, `npx playwright test`).
+test-results/
+playwright-report/
