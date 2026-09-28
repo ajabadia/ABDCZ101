@@ -1111,6 +1111,40 @@ const { openBlockDrawer, closeBlockDrawer, toggleBlockDrawer, refreshBlockBadge 
 // despierta desde el embudo de arriba.
 blockBadgeApi = { refresh: refreshBlockBadge };
 
+// EL SELECTOR DE TEMA, antes de armar el navbar: el navbar lo recibe como
+// ARGUMENTO (`themeSwitcher`), asi que declarandolo despues la pagina moria
+// aqui con un "Cannot access 'themeSwitcher' before initialization" y TODO lo
+// que viene despues -el propio selector, el filmstrip de los deslizadores
+// (`enhanceRangeInputs`) y el ajuste del lienzo (`mountFitStage`)- se quedaba
+// sin ejecutar. Medido en las dos paginas (desarrollo y bundle) el 2026-09-28:
+// el error sale en ambas, con el nombre minificado en el bundle, que es la misma
+// causa. Es un fallo de ORDEN, no de valores: `currentThemeId` (96) y `navbarApi`
+// (97) estan declarados mucho antes, y el `onChange` solo corre cuando el
+// usuario cambia de tema, con el navbar ya vivo.
+let themeSwitcher = null;
+const themeHost = document.getElementById('theme-selector') || document.querySelector('.theme-switcher-host');
+if (themeHost) {
+  themeSwitcher = new ThemeSwitcher(themeHost, {
+    themes: [
+      { id: 'dark', label: 'Dark', bodyClass: 'theme-dark', payload: 'dark' },
+      { id: 'vintage', label: 'Vintage', bodyClass: 'theme-vintage', payload: 'vintage' },
+      { id: 'cyberglow', label: 'CyberGlow', bodyClass: 'theme-cyberglow', payload: 'cyberglow' },
+      { id: 'neonretro', label: 'Neon Retro', bodyClass: 'theme-neonretro', payload: 'neonretro' },
+      { id: 'steampunk', label: 'Steampunk', bodyClass: 'theme-steampunk', payload: 'steampunk' },
+      { id: 'retroterminal', label: 'Retro Terminal', bodyClass: 'theme-retroterminal', payload: 'retroterminal' },
+    ],
+    variant: 'select',
+    storageKey: 'cz101.theme',
+    onChange: (themeId) => {
+      currentThemeId = themeId;
+      // Navbar will pick up the change via getCurrentThemeId
+      if (navbarApi && navbarApi.onThemeChange) {
+        navbarApi.onThemeChange(themeId);
+      }
+    },
+  });
+}
+
 // ─── Navbar (extracted module: src/ui/navbar.js) ---
 // The menu bar, undo/redo, keyboard shortcuts and header buttons live in their
 // own module. Instantiated LAST: earlier factories receive pushUndo/flashLcd
@@ -1143,31 +1177,6 @@ navbarApi = createNavbar({
   applyParameterToUI,
   triggerMidiActivity: (...args) => midiApi && midiApi.triggerMidiActivity(...args)
 });
-
-// Initialize ThemeSwitcher (shared component)
-let themeSwitcher = null;
-const themeHost = document.getElementById('theme-selector') || document.querySelector('.theme-switcher-host');
-if (themeHost) {
-  themeSwitcher = new ThemeSwitcher(themeHost, {
-    themes: [
-      { id: 'dark', label: 'Dark', bodyClass: 'theme-dark', payload: 'dark' },
-      { id: 'vintage', label: 'Vintage', bodyClass: 'theme-vintage', payload: 'vintage' },
-      { id: 'cyberglow', label: 'CyberGlow', bodyClass: 'theme-cyberglow', payload: 'cyberglow' },
-      { id: 'neonretro', label: 'Neon Retro', bodyClass: 'theme-neonretro', payload: 'neonretro' },
-      { id: 'steampunk', label: 'Steampunk', bodyClass: 'theme-steampunk', payload: 'steampunk' },
-      { id: 'retroterminal', label: 'Retro Terminal', bodyClass: 'theme-retroterminal', payload: 'retroterminal' },
-    ],
-    variant: 'select',
-    storageKey: 'cz101.theme',
-    onChange: (themeId) => {
-      currentThemeId = themeId;
-      // Navbar will pick up the change via getCurrentThemeId
-      if (navbarApi && navbarApi.onThemeChange) {
-        navbarApi.onThemeChange(themeId);
-      }
-    },
-  });
-}
 
 // Upgrade sliders to filmstrip faders (shared utility)
 enhanceRangeInputs(document, {

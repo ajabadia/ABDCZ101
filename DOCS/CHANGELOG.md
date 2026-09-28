@@ -100,6 +100,22 @@ All notable changes to the CZ-101 Emulator project will be documented in this fi
   orden refrescar-antes-del-foco y el embudo de `applyParameterToUI`.
 
 ### Fixed
+- **La pagina moria a mitad de `app.js` y se llevaba por delante el selector de
+  tema, el filmstrip de los deslizadores y el ajuste del lienzo**:
+  `createNavbar({ ..., themeSwitcher, ... })` se ejecutaba antes de
+  `let themeSwitcher = null`, y en un modulo eso no es `undefined` sino un
+  `ReferenceError`: "Cannot access 'themeSwitcher' before initialization". La
+  excepcion abortaba el cuerpo del modulo, asi que `new ThemeSwitcher(...)`,
+  `enhanceRangeInputs(...)` (los faders de pelicula) y `mountFitStage(...)` (el
+  encaje del lienzo) no se ejecutaban nunca. Medido el 2026-09-28 en las dos
+  paginas (desarrollo y bundle) con el E2E que las compara: el error sale en
+  ambas, con el nombre minificado en el bundle, que es la misma causa; y en las
+  dos el selector de tema salia vacio. El bloque se mueve ANTES de armar el
+  navbar, que es lo unico que hace falta —es un fallo de ORDEN, no de valores:
+  `currentThemeId` y `navbarApi` se declaran mucho antes, y el `onChange` solo
+  corre cuando el usuario cambia de tema, con el navbar ya vivo—. Lo destapo la
+  comparacion dev-vs-dist del bloque: el distintivo se calcula antes de esa linea,
+  asi que la pagina "funcionaba" para el distintivo y no para el resto.
 - **La regla de skew estaba escrita de tres formas y dos no coincidian**: la
   condicion "este control lleva el valor NORMALIZADO" vivia duplicada en
   `rawToNormalized`/`normalizedToRaw` (contrato), `normalizedValueOf`
