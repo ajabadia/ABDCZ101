@@ -1,17 +1,57 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(CZ101Emulator VERSION 1.0.0)
+# Definición del proyecto sin forzar el generador de VS para ser compatible con cualquier entorno moderno.
+project(CZ101Emulator VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(JUCE_DIR "C:/JUCE")
-if(EXISTS "${JUCE_DIR}/CMakeLists.txt")
-    add_subdirectory(${JUCE_DIR} ${CMAKE_BINARY_DIR}/JUCE)
-else()
-    message(FATAL_ERROR "JUCE not found at ${JUCE_DIR}.")
+# --- JUCE ---
+#
+# Antes esto era set(JUCE_DIR "D:/desarrollos/juce"): una ruta ABSOLUTA de la
+# maquina de desarrollo, metida a mano. En el runner de GitHub no existe, asi que
+# el `if(EXISTS)` caia al `FATAL_ERROR` y el job moria en "Configure CMake" en
+# los dos sistemas operativos, antes de compilar una sola linea. Un repo cuyo
+# build solo funciona en la maquina de quien lo escribio.
+#
+# Ahora se resuelve en este orden, y el orden es lo que importa:
+#
+#   1. Si quien compila pasa -DJUCE_DIR=<ruta>, se respeta. Es lo que necesita el
+#      que ya tiene JUCE a mano y no quiere volver a bajarlo.
+#   2. Si no, y hay un JUCE/ junto al CMakeLists, se usa ese.
+#   3. Si no, se baja con FetchContent, fijando la version.
+#
+# El pin es 8.0.4, el mismo que usa ABDAudioLab en esta suite, donde su CI
+# compila con MSVC sin problema. Fijarlo no es opcional: JUCE cambia la API
+# entre minors y un `master` haria que el mismo commit compilase un dia y no al
+# siguiente.
+include(FetchContent)
+
+if(NOT DEFINED JUCE_DIR)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/JUCE/CMakeLists.txt")
+        set(JUCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/JUCE")
+        message(STATUS "Using JUCE from the source tree: ${JUCE_DIR}")
+    endif()
 endif()
 
+if(DEFINED JUCE_DIR)
+    if(NOT EXISTS "${JUCE_DIR}/CMakeLists.txt")
+        message(FATAL_ERROR "JUCE_DIR points at ${JUCE_DIR}, and there is no CMakeLists.txt there.")
+    endif()
+    message(STATUS "Using JUCE from JUCE_DIR: ${JUCE_DIR}")
+    add_subdirectory(${JUCE_DIR} ${CMAKE_BINARY_DIR}/JUCE)
+else()
+    message(STATUS "Fetching JUCE 8.0.4...")
+    FetchContent_Declare(
+        JUCE
+        GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
+        GIT_TAG 8.0.4
+        GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(JUCE)
+endif()
+
+# --- Plugin Definition (Simplified for modern CMake) ---
 juce_add_plugin(CZ101Emulator
     COMPANY_NAME "CZ101"
     FORMATS Standalone VST3
