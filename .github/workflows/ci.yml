@@ -24,6 +24,16 @@ jobs:
     - uses: actions/checkout@v3
     
     # 1. Setup Dependencies
+    #
+    # `libwebkit2gtk-4.1-dev`, y no `4.0-dev`: el 4.0 se elimino de Ubuntu hace
+    # versiones y `ubuntu-latest` ya no lo trae, asi que el `apt-get install`
+    # fallaba con "Unable to locate package" y se caia el job entero ANTES de
+    # llegar a compilar. El rojo no era de este repositorio: estaba asi desde
+    # antes de que hubiera aqui ninguna puerta que lo mirase.
+    #
+    # El 4.1 es el que corresponde a WebKitGTK 2.42 en adelante, que es lo que
+    # JUCE linka. ABDBankManager, en esta misma suite, ya pedia el 4.1 y su
+    # build pasa, asi que el cambio no es una suposicion.
     - name: Install Linux Dependencies
       if: runner.os == 'Linux'
       run: |
@@ -33,7 +43,7 @@ jobs:
           libcurl4-openssl-dev  \
           libfreetype6-dev \
           libx11-dev libxcomposite-dev libxcursor-dev libxcursor1 libxext-dev libxinerama-dev libxrandr-dev libxrender-dev \
-          libwebkit2gtk-4.0-dev \
+          libwebkit2gtk-4.1-dev \
           libglu1-mesa-dev mesa-common-dev
 
     # 2. Configure CMake
