@@ -21,7 +21,7 @@ jobs:
             cmake_gen: "Visual Studio 17 2022"
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
     
     # 1. Setup Dependencies
     #
@@ -93,7 +93,7 @@ jobs:
         fi
         
     # 6. Upload Artifacts (Optional)
-    # - uses: actions/upload-artifact@v3
+    # - uses: actions/upload-artifact@v7
     #   with:
     #     name: golden-master-${{ matrix.os }}
     #     path: golden_master.wav
