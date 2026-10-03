@@ -21,7 +21,7 @@ jobs:
             cmake_gen: "Visual Studio 17 2022"
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     
     # 1. Setup Dependencies
     #
