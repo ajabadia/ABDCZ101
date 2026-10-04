@@ -20,8 +20,41 @@ jobs:
           - os: windows-latest
             cmake_gen: "Visual Studio 17 2022"
 
+    # ESTE REPO NO SE COMPILE SOLO. Su CMakeLists.txt mete `../ABDSharedCode`
+    # en los includes de tres targets, y PhaseDistOsc.h llega hasta el hermano
+    # con una ruta relativa fija, "../../../../ABDSharedCode/LutDSP/...", que
+    # desde Source/DSP/Oscillators/ sale justo un nivel por encima del repo.
+    #
+    # En la maquina de desarrollo el hermano ya esta ahi, al lado, y no falta
+    # nada. En el runner no hay nadie al lado, y el job se caia al compilar,
+    # muy despues de configurar y de que el build ya hubiera empezado:
+    #
+    #   PhaseDistOsc.h:4:10: fatal error:
+    #     ../../../../ABDSharedCode/LutDSP/LutEvaluatorSimd.h: No such file or directory
+    #
+    # Por eso los dos checkouts van a SUBCARPETAS y no a la raiz del workspace:
+    # el layout tiene que ser el del monorepo, con ABDCZ101 y ABDSharedCode al
+    # mismo nivel. Es el mismo motivo, y el mismo reparto, que usa el job de
+    # contratos de ABDSharedAssets para sus cuatro hermanos.
+    #
+    # El hermano va FIJADO a un SHA y no a una rama. Con `main`, un PR pasaria
+    # en verde contra el codigo de hoy y en rojo contra el de dentro de dos
+    # dias, sin que nadie haya tocado nada aqui.
+    defaults:
+      run:
+        working-directory: ABDCZ101
+
     steps:
     - uses: actions/checkout@v7
+      with:
+        path: ABDCZ101
+
+    - uses: actions/checkout@v7
+      with:
+        repository: ajabadia/ABDSharedCode
+        ref: 3d4006a0db07771d6d39ee225f073a0ce8d3b4a1
+        path: ABDSharedCode
+        fetch-depth: 1
     
     # 1. Setup Dependencies
     #
