@@ -96,36 +96,38 @@ jobs:
     # NuGet, no lo encuentra y aborta el configure con
     #   Could NOT find WebView2 (missing: WebView2_include_dir WebView2_library)
     #
-    # El script deja dos caminos: instalar el paquete NuGet, o instalar el SDK y
-    # pasarle JUCE_WEBVIEW2_PACKAGE_LOCATION. Se usa el segundo porque descarga
-    # el SDK oficial de Microsoft, que trae tanto WebView2.h como el
-    # WebView2LoaderStatic.lib que el find script busca, y no depende de que
-    # PowerShell traiga o no el proveedor NuGet.
+    # El script deja dos caminos: instalar el paquete NuGet en la carpeta del
+    # usuario, o descargarlo y pasarle JUCE_WEBVIEW2_PACKAGE_LOCATION apuntando
+    # al directorio que lo contiene. Se usa el segundo porque no depende de que
+    # el runner traiga el proveedor NuGet de PackageManagement.
     - name: Install WebView2 SDK
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $sdk = Join-Path $env:RUNNER_TEMP "webview2"
-        New-Item -ItemType Directory -Force -Path $sdk | Out-Null
-        $url = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
-        $zip = Join-Path $env:RUNNER_TEMP "webview2.zip"
-        Invoke-WebRequest -Uri $url -OutFile $zip
-        Expand-Archive -Path $zip -DestinationPath $sdk -Force
-        $header = Get-ChildItem -Path $sdk -Filter "WebView2.h" -Recurse | Select-Object -First 1
-        if (-not $header) {
-          Write-Error "El SDK de WebView2 no trae WebView2.h: la descarga ha fallado"
-          exit 1
-        }
         # FindWebView2.cmake hace glob de "<location>/*Microsoft.Web.WebView2*"
-        # y de ahi saca build/native/include y build/native/x64. Lo que hay que
-        # pasarle es el directorio que contiene esa carpeta, o sea el padre de
-        # la version, no la carpeta en si.
-        $includeDir = Split-Path $header.FullName -Parent
-        $nativeDir = Split-Path $includeDir -Parent
-        $buildDir = Split-Path $nativeDir -Parent
-        $packageDir = Split-Path $buildDir -Parent
-        $root = Split-Path $packageDir -Parent
-        Write-Host "WebView2.h en $($header.FullName)"
+        # y de ahi saca build/native/include/WebView2.h y
+        # build/native/x64/WebView2LoaderStatic.lib. El paquete NuGet trae
+        # justo ese arbol, asi que se descarga y se extrae con ese nombre.
+        # Ojo: el enlace go.microsoft.com/fwlink/p/?LinkId=2124703 ya no da el
+        # SDK, redirige a MicrosoftEdgeWebview2Setup.exe, que no es un zip.
+        $version = "1.0.4258.31"
+        $root = Join-Path $env:RUNNER_TEMP "webview2"
+        $pkg = Join-Path $root "Microsoft.Web.WebView2"
+        New-Item -ItemType Directory -Force -Path $pkg | Out-Null
+        $zip = Join-Path $env:RUNNER_TEMP "webview2.zip"
+        $url = "https://api.nuget.org/v3-flatcontainer/microsoft.web.webview2/$version/microsoft.web.webview2.$version.nupkg"
+        Invoke-WebRequest -Uri $url -OutFile $zip
+        Expand-Archive -Path $zip -DestinationPath $pkg -Force
+        $esperados = @(
+          (Join-Path $pkg "build/native/include/WebView2.h"),
+          (Join-Path $pkg "build/native/x64/WebView2LoaderStatic.lib")
+        )
+        foreach ($f in $esperados) {
+          if (-not (Test-Path $f)) {
+            Write-Error "Falta $f en el paquete de WebView2: la descarga ha fallado"
+            exit 1
+          }
+        }
         Write-Host "Raiz del SDK: $root"
         "WEBVIEW2_ROOT=$root" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
