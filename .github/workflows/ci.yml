@@ -67,6 +67,17 @@ jobs:
     # El 4.1 es el que corresponde a WebKitGTK 2.42 en adelante, que es lo que
     # JUCE linka. ABDBankManager, en esta misma suite, ya pedia el 4.1 y su
     # build pasa, asi que el cambio no es una suposicion.
+    #
+    # `libgtk-3-dev` va explicito, y no porque se pogiera en el mismo sitio que
+    # el 4.1. Durante anos llego de rebote: lo arrastraba
+    # `libwebkit2gtk-4.1-dev` como dependencia. En el runner de hoy ya no lo
+    # arrastra, y sin el el build moria mucho mas abajo, al compilar de verdad:
+    #
+    #   juce_gui_extra.cpp:127:11: fatal error: gtk/gtk.h: No such file or directory
+    #
+    # que es el mismogenre de fallo que el 4.0-dev de antes: un paquete que
+    # el runner ya no trae, y que aqui se daba por instalado sin estar en la
+    # lista. Ponerlo a mano es lo que evita depender de que algo lo arrastre.
     - name: Install Linux Dependencies
       if: runner.os == 'Linux'
       run: |
@@ -77,6 +88,7 @@ jobs:
           libfreetype6-dev \
           libx11-dev libxcomposite-dev libxcursor-dev libxcursor1 libxext-dev libxinerama-dev libxrandr-dev libxrender-dev \
           libwebkit2gtk-4.1-dev \
+          libgtk-3-dev \
           libglu1-mesa-dev mesa-common-dev
 
     # 2. Configure CMake
