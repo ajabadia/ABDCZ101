@@ -91,9 +91,47 @@ jobs:
           libgtk-3-dev \
           libglu1-mesa-dev mesa-common-dev
 
+    # juce_add_plugin pide NEEDS_WEBVIEW2 TRUE, y el SDK de WebView2 no viene
+    # con el runner: FindWebView2.cmake de JUCE lo busca en la carpeta local de
+    # NuGet, no lo encuentra y aborta el configure con
+    #   Could NOT find WebView2 (missing: WebView2_include_dir WebView2_library)
+    #
+    # El script deja dos caminos: instalar el paquete NuGet, o instalar el SDK y
+    # pasarle JUCE_WEBVIEW2_PACKAGE_LOCATION. Se usa el segundo porque descarga
+    # el SDK oficial de Microsoft, que trae tanto WebView2.h como el
+    # WebView2LoaderStatic.lib que el find script busca, y no depende de que
+    # PowerShell traiga o no el proveedor NuGet.
+    - name: Install WebView2 SDK
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $sdk = Join-Path $env:RUNNER_TEMP "webview2"
+        New-Item -ItemType Directory -Force -Path $sdk | Out-Null
+        $url = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
+        $zip = Join-Path $env:RUNNER_TEMP "webview2.zip"
+        Invoke-WebRequest -Uri $url -OutFile $zip
+        Expand-Archive -Path $zip -DestinationPath $sdk -Force
+        $header = Get-ChildItem -Path $sdk -Filter "WebView2.h" -Recurse | Select-Object -First 1
+        if (-not $header) {
+          Write-Error "El SDK de WebView2 no trae WebView2.h: la descarga ha fallado"
+          exit 1
+        }
+        # FindWebView2.cmake hace glob de "<location>/*Microsoft.Web.WebView2*"
+        # y de ahi saca build/native/include y build/native/x64. Lo que hay que
+        # pasarle es el directorio que contiene esa carpeta, o sea el padre de
+        # la version, no la carpeta en si.
+        $includeDir = Split-Path $header.FullName -Parent
+        $nativeDir = Split-Path $includeDir -Parent
+        $buildDir = Split-Path $nativeDir -Parent
+        $packageDir = Split-Path $buildDir -Parent
+        $root = Split-Path $packageDir -Parent
+        Write-Host "WebView2.h en $($header.FullName)"
+        Write-Host "Raiz del SDK: $root"
+        "WEBVIEW2_ROOT=$root" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
     # 2. Configure CMake
     - name: Configure CMake
-      run: cmake -S . -B build -DJUCE_BUILD_EXTRAS=ON -DCMAKE_BUILD_TYPE=Release
+      run: cmake -S . -B build -DJUCE_BUILD_EXTRAS=ON -DCMAKE_BUILD_TYPE=Release -DJUCE_WEBVIEW2_PACKAGE_LOCATION="${{ env.WEBVIEW2_ROOT }}"
 
     # 3. Build Plugin & Tests
     - name: Build
