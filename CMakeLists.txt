@@ -1,7 +1,18 @@
 cmake_minimum_required(VERSION 3.21)
 
 # Definición del proyecto sin forzar el generador de VS para ser compatible con cualquier entorno moderno.
-project(CZ101Emulator VERSION 1.0.0 LANGUAGES CXX)
+#
+# 'C' esta aqui por un motivo concreto, no por adorno. JUCE lo exige: su
+# JUCEModuleSupport.cmake comprueba CMAKE_C_COMPILE_OBJECT al includirse, y su
+# proyecto tambien lo pide con LANGUAGES C CXX. Declarando aqui solo CXX, el C
+# queda habilitado dentro del subdirectorio de JUCE, no en el ambito raiz, y el
+# generador se encuentra sin la regla de compilacion de C al generar: "Missing
+# variable is: CMAKE_C_COMPILE_OBJECT", con "Configuring done" ya impreso y
+# Generate(step) fallando despues. Pasaba en los dos sistemas operativos a la vez.
+#
+# ABDAudioLab, en esta misma suite, con el mismo JUCE 8.0.4 por FetchContent,
+# declara LANGUAGES C CXX y su build pasa. Esta linea es esa, puesta aqui.
+project(CZ101Emulator VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
