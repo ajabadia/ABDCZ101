@@ -24,7 +24,7 @@ $ErrorActionPreference = "Stop"
 # --- Configuration ---
 $ProjectRoot = Get-Item $PSScriptRoot\..
 $BuildDir = "$($ProjectRoot.FullName)\build"
-$JuceDir = "C:\JUCE"
+$JuceDir = "D:\desarrollos\juce"
 
 function Show-Header {
     Write-Host "========================================" -ForegroundColor Cyan
@@ -55,15 +55,18 @@ function Find-CMake {
 }
 
 function Find-VSVars {
+    # Prioritize the specific Insiders paths provided by the user for maximum compatibility.
     $PotentialPaths = @(
+        "C:\Program Files\Microsoft Visual Studio\18\Insiders\Common7\Tools\VsDevCmd.bat",
+        "C:\Program Files (x86)\Microsoft Visual Studio\18\Common7\Tools\VsDevCmd.bat",
+        # Fallback to general paths if the specific ones fail
         "${env:ProgramFiles}\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat",
-        "${env:ProgramFiles}\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat",
-        "${env:ProgramFiles}\Microsoft Visual Studio\18\Insiders\Common7\Tools\VsDevCmd.bat",
-        "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
+        "${env:ProgramFiles}\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat"
     )
 
     foreach ($path in $PotentialPaths) {
         if (Test-Path $path) {
+            Write-Host "Found VS Dev Command Script at: $path" -ForegroundColor Yellow
             return $path
         }
     }
