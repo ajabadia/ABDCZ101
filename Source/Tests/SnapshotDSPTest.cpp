@@ -146,9 +146,21 @@ static std::unique_ptr<ParameterSnapshot> buildTestSnapshot() {
     // Envelopes — populate all 6 with known distinct values
     auto fillEnv = [](ParameterSnapshot::EnvParam& ep, int baseRate, float baseLevel,
                        int susStep, int endStep) {
+        // baseRate y el paso de +5 son pasos de HARDWARE (0-99), pero el snapshot
+        // los guarda NORMALIZADOS a [0,1]. Los tres sitios que lo confirman:
+        // MultiStageEnvelope::setStage satura a [0,1], rateToSeconds multiplica
+        // por 99 para deshacerlo, y EnvelopeSerializer::mapRate escribe
+        // clamp(rate/99) cuando lee un SysEx. Escribir los pasos crudos aqui
+        // saturaba las 8 etapas de los 6 envelopes a 1.0 y por eso fallaban los
+        // 48 checks de esta seccion.
         for (int i = 0; i < 8; ++i) {
-            ep.rates[i]  = (float)(baseRate + i * 5);
-            ep.levels[i] = baseLevel + (float)i * 0.08f;
+            ep.rates[i]  = (float)(baseRate + i * 5) / 99.0f;
+            // El paso es 0.04 y no 0.08 porque `level` tambien se satura a [0,1]
+            // en setStage: con 0.08 los envelopes que arrancan en 0.55 o mas se
+            // pasaban de 1.0 en las ultimas etapas (pitch1 llegaba a 1.26) y
+            // esas etapas se comparaban contra un valor que el engine nunca
+            // puede devolver.
+            ep.levels[i] = baseLevel + (float)i * 0.04f;
         }
         ep.sustain = susStep;
         ep.end = endStep;
@@ -194,7 +206,7 @@ static void testEnvelopeStages(VoiceManager& vm, const ParameterSnapshot& snap) 
             std::snprintf(buf, sizeof(buf), "%s stage %d rate=%.2f level=%.2f",
                           e.name, i, e.src.rates[i], e.src.levels[i]);
             check(buf,
-                  std::abs(r - e.src.rates[i]) < 0.1f &&
+                  std::abs(r - e.src.rates[i]) < 0.01f &&
                   std::abs(l - e.src.levels[i]) < 0.02f);
         }
     }
@@ -242,23 +254,28 @@ static void testAudioOutput(VoiceManager& vm, const ParameterSnapshot& snap) {
     // Play a C4 note
     vm.noteOn(60, 1.0f);
 
-    float outL[64], outR[64];
-    std::memset(outL, 0, sizeof(outL));
-    std::memset(outR, 0, sizeof(outR));
-    vm.renderNextBlock(outL, outR, 64);
-
-    // Verify output after 64 samples
+    // 64 samples son 1,5 ms. Con los rates en su escala real el DCA todavia no
+    // ha subido y el pico se quedaba en 0.0002; antes pasaba porque los rates
+    // venian saturados a 1.0 por el clamp, o sea el envelope a maxima velocidad.
+    // Se acumulan bloques hasta darle tiempo real a la envolvente.
     bool hasSignal = false;
     bool hasNaN = false;
     float peak = 0.0f;
-    for (int i = 0; i < 64; ++i) {
-        if (std::isnan(outL[i]) || std::isnan(outR[i])) hasNaN = true;
-        if (std::isinf(outL[i]) || std::isinf(outR[i])) hasNaN = true;
-        float absL = std::abs(outL[i]);
-        float absR = std::abs(outR[i]);
-        if (absL > 0.0001f || absR > 0.0001f) hasSignal = true;
-        if (absL > peak) peak = absL;
-        if (absR > peak) peak = absR;
+    for (int block = 0; block < 64; ++block) {
+        float outL[64], outR[64];
+        std::memset(outL, 0, sizeof(outL));
+        std::memset(outR, 0, sizeof(outR));
+        vm.renderNextBlock(outL, outR, 64);
+
+        for (int i = 0; i < 64; ++i) {
+            if (std::isnan(outL[i]) || std::isnan(outR[i])) hasNaN = true;
+            if (std::isinf(outL[i]) || std::isinf(outR[i])) hasNaN = true;
+            float absL = std::abs(outL[i]);
+            float absR = std::abs(outR[i]);
+            if (absL > 0.0001f || absR > 0.0001f) hasSignal = true;
+            if (absL > peak) peak = absL;
+            if (absR > peak) peak = absR;
+        }
     }
 
     check("No NaN/Inf in output", !hasNaN);
@@ -280,14 +297,17 @@ static void testSnapshotDifferentiation(VoiceManager& vm) {
     vm.getDCAStage(1, 0, r1, l1);
 
     auto s2 = buildTestSnapshot();
-    s2->envelopes.dca1.rates[0] = 99.0f;
+    // Normalizado: el paso de hardware 99 sobre 99. Antes se escribia 99.0f, que
+    // en [0,1] se satura a 1.0 y hacia el rate identico al del primer snapshot.
+    s2->envelopes.dca1.rates[0] = 1.0f;
     s2->envelopes.dca1.levels[0] = 0.99f;
     vm.applySnapshot(s2.get());
     float r2, l2;
     vm.getDCAStage(1, 0, r2, l2);
 
+    // El umbral tambien estaba en escala 0-99; normalizado, 0.1 contra 1.0.
     check("DCA1 stage 0 rate changes with snapshot",
-          std::abs(r1 - r2) > 5.0f);
+          std::abs(r1 - r2) > 0.5f);
     check("DCA1 stage 0 level changes with snapshot",
           std::abs(l1 - l2) > 0.1f);
 }
@@ -301,7 +321,21 @@ static void testSystemParams(VoiceManager& vm) {
     s->system.opMode = 0;
     s->system.voiceLimit = 4;
     vm.applySnapshot(s.get());
-    check("opMode 0 sets CZ-101 voice limit", vm.getActiveVoiceCount() == 0); // no notes active
+
+    // Antes este check afirmaba `getActiveVoiceCount() == 0`: no miraba el voice
+    // limit, sino que no hubiera notas activas, y fallaba por las voces que
+    // habian dejado las suites anteriores. No se replaces por
+    // allNotesOff() == 0 porque allNotesOff deja las voces en release y siguen
+    // contando como activas. Lo que si se comprueba es el limite de verdad.
+    vm.allNotesOff();
+    vm.noteOn(60, 1.0f);
+    vm.noteOn(62, 1.0f);
+    vm.noteOn(64, 1.0f);
+    vm.noteOn(65, 1.0f);
+    vm.noteOn(67, 1.0f);
+    const int cz101Voices = vm.getActiveVoiceCount();
+    vm.allNotesOff();
+    check("opMode 0 sets CZ-101 voice limit", cz101Voices == 4);
 
     // Note on + check voice count
     vm.noteOn(48, 1.0f);
@@ -391,33 +425,36 @@ static void testCZ1ModMatrix(VoiceManager& vm) {
     s->lfo.depth = 0.0f;
 
     vm.applySnapshot(s.get());
-    vm.noteOn(60, 1.0f); // Full velocity
 
-    float outFull[128];
-    std::memset(outFull, 0, sizeof(outFull));
-    float dummy[128];
-    std::memset(dummy, 0, sizeof(dummy));
-    vm.renderNextBlock(outFull, dummy, 128);
-    vm.noteOff(60);
+    // Pico tras una nota a una velocidad dada. Se acumulan bloques porque con el
+    // envelope en su escala real la diferencia de velocidad no se ve en los
+    // primeros 128 samples: la envolvente aun no ha subido.
+    auto peakAtVelocity = [&vm](float velocity) {
+        vm.noteOn(60, velocity);
+        float p = 0.0f;
+        for (int block = 0; block < 16; ++block) {
+            float out[128], dummy[128];
+            std::memset(out, 0, sizeof(out));
+            std::memset(dummy, 0, sizeof(dummy));
+            vm.renderNextBlock(out, dummy, 128);
+            for (int i = 0; i < 128; ++i) {
+                const float a = std::abs(out[i]);
+                if (a > p) p = a;
+            }
+        }
+        vm.noteOff(60);
+        return p;
+    };
 
-    vm.noteOn(60, 0.25f); // Low velocity — should be quieter with max velo→DCA sensitivity
-    float outQuiet[128];
-    std::memset(outQuiet, 0, sizeof(outQuiet));
-    vm.renderNextBlock(outQuiet, dummy, 128);
-    vm.noteOff(60);
+    const float peakFull  = peakAtVelocity(1.0f);
+    const float peakQuiet = peakAtVelocity(0.25f);
 
-    // Peak should be different
-    float peakFull = 0.0f, peakQuiet = 0.0f;
-    for (int i = 0; i < 128; ++i) {
-        float a = std::abs(outFull[i]);
-        if (a > peakFull) peakFull = a;
-        a = std::abs(outQuiet[i]);
-        if (a > peakQuiet) peakQuiet = a;
-    }
-
-    check("Full velocity produces signal", peakFull > 0.001f);
-    check("Low velocity produces quieter signal",
-          peakQuiet < peakFull * 0.8f);
+    char velBuf[96];
+    std::snprintf(velBuf, sizeof(velBuf), "Full velocity produces signal (peak %.4f)", peakFull);
+    check(velBuf, peakFull > 0.001f);
+    std::snprintf(velBuf, sizeof(velBuf), "Low velocity produces quieter signal (%.4f < %.4f)",
+                  peakQuiet, peakFull * 0.8f);
+    check(velBuf, peakQuiet < peakFull * 0.8f);
 }
 
 // ── Suite 8: Notes off → silence after release ──
@@ -431,9 +468,11 @@ static void testSilenceAfterRelease(VoiceManager& vm) {
     s->lineMod.mode = 0;
 
     // Short release: set DCA envelope release stage rate very high
+    // 1.0 es el maximo normalizado (paso de hardware 99). 200.0f no es un rate
+    // valido en ninguna escala y dentro de setStage se saturaba a 1.0.
     for (int i = 0; i < 8; ++i) {
-        s->envelopes.dca1.rates[i] = 200.0f;
-        s->envelopes.dca2.rates[i] = 200.0f;
+        s->envelopes.dca1.rates[i] = 1.0f;
+        s->envelopes.dca2.rates[i] = 1.0f;
     }
     s->envelopes.dca1.end = 7;
     s->envelopes.dca2.end = 7;
@@ -465,7 +504,9 @@ static void testSilenceAfterRelease(VoiceManager& vm) {
         if (a > peakFinal) peakFinal = a;
     }
 
-    check("Voice silent after release", peakFinal < 0.01f);
+    char relBuf[80];
+    std::snprintf(relBuf, sizeof(relBuf), "Voice silent after release (peak %.4f)", peakFinal);
+    check(relBuf, peakFinal < 0.01f);
 }
 
 // ── Suite 9: Line modulation modes (exhaustive 0-5) ──
