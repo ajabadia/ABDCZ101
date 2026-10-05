@@ -87,11 +87,15 @@ juce_add_plugin(CZ101Emulator
     # editor. La otra parte del arreglo es la de abajo, que ya es WebView2.
     #
     # NEEDS_CURL esta por el mismo motivo y lo encontro el paso siguiente del CI.
-    # `juce_core` en Linux llama a `curl_easy_*` y `curl_multi_*`, pero JUCE solo
-    # las enlaza con esta bandera: sin ella la COMPIACION pasa y el ENLAZADO se
-    # cae con `undefined reference to curl_easy_cleanup` y veinte mas. El paquete
-    # `libcurl4-openssl-dev` ya estaba en el `apt-get install` del runner, o sea
-    # que la dependencia estaba y faltaba la bandera que la usa.
+    # `juce_core` en Linux llama a `curl_easy_*` y `curl_multi_*` (`JUCE_USE_CURL`
+    # va 1 por defecto) pero su cabecera solo declara `linuxLibs: rt dl pthread`:
+    # no trae curl. JUCE solo lo enlaza con esta bandera, asi que sin ella la
+    # COMPILACION pasa y el ENLAZADO se cae con `undefined reference to
+    # curl_easy_cleanup` y veinte mas. El paquete `libcurl4-openssl-dev` ya estaba
+    # en el `apt-get install` del runner, o sea que la dependencia estaba y faltaba
+    # la bandera que la usa. Ojo: esta bandera solo la leen `juce_add_plugin` y
+    # `juce_add_console_app`. Los ejecutables que se crean con `add_executable`
+    # a mano hay que arreglarlos aparte, mas abajo.
     #
     # Los tres son opcionales a proposito en JUCE, no por descuido: enlazan
     # librerias que no todo plugin necesita, y por eso hay que pedir cada una.
@@ -256,6 +260,23 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
     target_compile_definitions(CZ101SysExRoundTripTest PUBLIC JUCE_CONSOLE_APP=1)
     set_target_properties(CZ101SysExRoundTripTest PROPERTIES CXX_STANDARD 17)
 
+    # --- curl en Linux para los ejecutables que no pasan por juce_add_* ---
+    # Estos dos son `add_executable` a mano, no `juce_add_plugin` ni
+    # `juce_add_console_app`, y por eso NEEDS_CURL no les llega: esa bandera la
+    # lee `_juce_link_optional_libraries`, que solo se invoca desde
+    # `_juce_initialise_target`, y los targets de aqui no pasan por ahi. Compilan
+    # `juce_core`, que llama a curl, y el enlazado se cae con
+    # `undefined reference to curl_easy_init`. El paquete `libcurl4-openssl-dev`
+    # ya esta en el runner: lo que faltaba era la linea de enlace.
+    # `juce::pkgconfig_JUCE_CURL_LINUX_DEPS` es el mismo target que usa JUCE por
+    # dentro cuando ve NEEDS_CURL, enlazado aqui para no duplicar su lista de -l.
+    # Solo en Linux/BSD, que es donde `JUCE_USE_CURL` llama a curl; en el resto de
+    # plataformas JUCE no lo usa y el target ni siquiera existe.
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME MATCHES ".*BSD")
+        target_link_libraries(CZ101SysExTest PRIVATE juce::pkgconfig_JUCE_CURL_LINUX_DEPS)
+        target_link_libraries(CZ101SysExRoundTripTest PRIVATE juce::pkgconfig_JUCE_CURL_LINUX_DEPS)
+    endif()
+
     message(STATUS "Defined Test Target: CZ101SysExRoundTripTest")
 
 endif()
@@ -269,6 +290,16 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
     
     juce_add_console_app(CZ101GoldenMaster
         PRODUCT_NAME "CZ101GoldenMaster"
+
+        # Este target enlaza `juce_core` (que en Linux llama a curl) y
+        # `juce_gui_extra` (que al compilarse pide `<gtk/gtk.h>` y webkit). Las dos
+        # banderas se quedan a cero por defecto porque enlazan librerias que no
+        # todo target necesita, y JUCE no puede deducirlas de los defines del
+        # target. Sin ellas el runner de Linux se caia dos veces: primero con
+        # `fatal error: gtk/gtk.h`, y despues ya en el enlazado con los
+        # `undefined reference to curl_*`. Son opcionales por diseno, no por descuido.
+        NEEDS_CURL TRUE
+        NEEDS_WEB_BROWSER TRUE
     )
     
     target_sources(CZ101GoldenMaster PRIVATE
@@ -338,6 +369,11 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
 
     juce_add_console_app(CZ101SnapshotDSPTest
         PRODUCT_NAME "CZ101SnapshotDSPTest"
+
+        # Lo mismo que CZ101GoldenMaster y por el mismo motivo: enlaza `juce_core`
+        # y `juce_gui_extra`, y en Linux eso son curl y gtk/webkit.
+        NEEDS_CURL TRUE
+        NEEDS_WEB_BROWSER TRUE
     )
 
     target_sources(CZ101SnapshotDSPTest PRIVATE
