@@ -68,6 +68,24 @@ juce_add_plugin(CZ101Emulator
     FORMATS Standalone VST3
     PRODUCT_NAME "CZ-5000_Emulator"
     IS_SYNTH TRUE
+
+    # POR QUE LOS DOS, Y POR QUE ESTE FALTABA. Son cosas distintas y una no
+    # sustituye a la otra. Leido en JUCE 8.0.4, `extras/Build/CMake/JUCEUtils.cmake`:
+    #
+    #   NEEDS_WEBVIEW2    # link WebView2 statically on Windows
+    #   NEEDS_WEB_BROWSER  # link webkit on Linux
+    #
+    # `_juce_link_optional_libraries` solo mira NEEDS_WEBVIEW2 dentro de la rama
+    # `elseif(WIN32)`: en Linux no hace nada. El unico camino que enlaza
+    # `pkgconfig_JUCE_BROWSER_LINUX_DEPS` -webkit2gtk- es `NEEDS_WEB_BROWSER`. Por
+    # eso el runner de Ubuntu se caia en `juce_gui_extra.cpp` con
+    # `fatal error: gtk/gtk.h`: `WebBrowserComponent` compila y al incluir
+    # `<gtk/gtk.h>` no lo encuentra, porque nadie le dijo que lo enlazara.
+    #
+    # El plugin usa `WebBrowserComponent` de verdad (`Source/PluginEditor.cpp`), asi
+    # que quitar el enlace de `juce_gui_extra` no era una opcion: sin el no hay
+    # editor. La otra parte del arreglo es la de abajo, que ya es WebView2.
+    NEEDS_WEB_BROWSER TRUE
     NEEDS_WEBVIEW2 TRUE
 )
 
