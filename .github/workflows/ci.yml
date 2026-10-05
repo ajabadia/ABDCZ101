@@ -143,15 +143,28 @@ jobs:
     - name: Run Unit Tests
       shell: bash
       run: |
+        # CZ101SysExTest no se vale solo: su main() devuelve 1 y se limita a
+        # imprimir "Usage: CZ101SysExTest <path_to_syx_file>" si no le pasan un
+        # fichero. Le damos uno de verdad del repo.
+        #
+        # Las rutas no son las mismas por dos motivos. Con MSVC el generador es
+        # multi-config, asi que todo lleva build/Release/ delante. Y ademas
+        # CZ101SnapshotDSPTest lo crea juce_add_console_app, que le pone
+        # RUNTIME_OUTPUT_DIRECTORY y lo manda a su propia carpeta de artefactos;
+        # solo los dos add_executable a mano se quedan en la raiz de build.
         if [ "$RUNNER_OS" == "Windows" ]; then
-          ./build/Release/CZ101SysExTest.exe
-          ./build/Release/CZ101SysExRoundTripTest.exe
-          ./build/Release/CZ101SnapshotDSPTest.exe
+          SYSEX="./build/Release/CZ101SysExTest.exe"
+          ROUNDTRIP="./build/Release/CZ101SysExRoundTripTest.exe"
+          SNAPSHOT="./build/CZ101SnapshotDSPTest_artefacts/Release/CZ101SnapshotDSPTest.exe"
         else
-          ./build/CZ101SysExTest
-          ./build/CZ101SysExRoundTripTest
-          ./build/CZ101SnapshotDSPTest
+          SYSEX="./build/CZ101SysExTest"
+          ROUNDTRIP="./build/CZ101SysExRoundTripTest"
+          SNAPSHOT="./build/CZ101SnapshotDSPTest_artefacts/Release/CZ101SnapshotDSPTest"
         fi
+
+        "$SYSEX" ./DOCS/info/patches/cz-pack-1/Afterxylo.syx
+        "$ROUNDTRIP"
+        "$SNAPSHOT"
 
     # 5. Run Offline Golden Master Verification
     # (Requires Standalone to be built)
