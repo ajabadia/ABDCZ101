@@ -85,6 +85,17 @@ juce_add_plugin(CZ101Emulator
     # El plugin usa `WebBrowserComponent` de verdad (`Source/PluginEditor.cpp`), asi
     # que quitar el enlace de `juce_gui_extra` no era una opcion: sin el no hay
     # editor. La otra parte del arreglo es la de abajo, que ya es WebView2.
+    #
+    # NEEDS_CURL esta por el mismo motivo y lo encontro el paso siguiente del CI.
+    # `juce_core` en Linux llama a `curl_easy_*` y `curl_multi_*`, pero JUCE solo
+    # las enlaza con esta bandera: sin ella la COMPIACION pasa y el ENLAZADO se
+    # cae con `undefined reference to curl_easy_cleanup` y veinte mas. El paquete
+    # `libcurl4-openssl-dev` ya estaba en el `apt-get install` del runner, o sea
+    # que la dependencia estaba y faltaba la bandera que la usa.
+    #
+    # Los tres son opcionales a proposito en JUCE, no por descuido: enlazan
+    # librerias que no todo plugin necesita, y por eso hay que pedir cada una.
+    NEEDS_CURL TRUE
     NEEDS_WEB_BROWSER TRUE
     NEEDS_WEBVIEW2 TRUE
 )
