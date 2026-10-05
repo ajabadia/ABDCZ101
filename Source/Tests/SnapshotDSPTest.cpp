@@ -426,23 +426,32 @@ static void testCZ1ModMatrix(VoiceManager& vm) {
 
     vm.applySnapshot(s.get());
 
-    // Pico tras una nota a una velocidad dada. Se acumulan bloques porque con el
-    // envelope en su escala real la diferencia de velocidad no se ve en los
-    // primeros 128 samples: la envolvente aun no ha subido.
-    auto peakAtVelocity = [&vm](float velocity) {
-        vm.noteOn(60, velocity);
+    // Pico tras una nota a una velocidad dada. Cada velocidad se mide en un
+    // VoiceManager NUEVO: antes las dos notas compartian el mismo, y como la
+    // voz de la primera sigue sonando tras su noteOff, la segunda se media
+    // encima de la primera y salia al reves.
+    auto peakAtVelocity = [&s](float velocity) {
+        VoiceManager fresh;
+        fresh.setSampleRate(44100.0f);
+        fresh.setOperationMode(s->system.opMode);
+        fresh.setVoiceLimit(s->system.voiceLimit);
+        fresh.applySnapshot(s.get());
+        fresh.noteOn(60, velocity);
         float p = 0.0f;
-        for (int block = 0; block < 16; ++block) {
+        // 128 bloques de 128 son 16384 muestras, unos 370 ms. Con 46 ms la
+        // envolvente apenas habia subido y el pico era 0.0004, por debajo del
+        // umbral, asi que no reach a distinguir una velocidad de otra.
+        for (int block = 0; block < 128; ++block) {
             float out[128], dummy[128];
             std::memset(out, 0, sizeof(out));
             std::memset(dummy, 0, sizeof(dummy));
-            vm.renderNextBlock(out, dummy, 128);
+            fresh.renderNextBlock(out, dummy, 128);
             for (int i = 0; i < 128; ++i) {
                 const float a = std::abs(out[i]);
                 if (a > p) p = a;
             }
         }
-        vm.noteOff(60);
+        fresh.noteOff(60);
         return p;
     };
 
@@ -458,8 +467,15 @@ static void testCZ1ModMatrix(VoiceManager& vm) {
 }
 
 // ── Suite 8: Notes off → silence after release ──
-static void testSilenceAfterRelease(VoiceManager& vm) {
+static void testSilenceAfterRelease(VoiceManager&) {
     section("Silence after noteOff + release");
+
+    // VoiceManager propio: el compartido llegaba aqui con voces de las suites
+    // anteriores y la medicion era sobre su residuo, no sobre esta nota.
+    VoiceManager vm;
+    vm.setSampleRate(44100.0f);
+    vm.setOperationMode(3);
+    vm.setVoiceLimit(16);
 
     auto s = buildTestSnapshot();
     s->system.opMode = 3;
@@ -488,8 +504,10 @@ static void testSilenceAfterRelease(VoiceManager& vm) {
     vm.renderNextBlock(ring, dum, 64);
     vm.noteOff(60);
 
-    // After release, should go silent
-    for (int b = 0; b < 8; ++b) {
+    // After release, should go silent.
+    // 512 bloques de 64 son 32768 muestras, unos 743 ms. Con 8 bloques (11 ms)
+    // el envelope no ha tenido tiempo de bajar.
+    for (int b = 0; b < 512; ++b) {
         vm.renderNextBlock(dum, dum, 64);
     }
 
