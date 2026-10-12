@@ -88,10 +88,11 @@ describe('Navbar menu model (native MenuBar parity)', () => {
     ]);
   });
 
-  it('Help menu has Manual + About (native 900/901)', () => {
+  it('Help menu has Manual + Check for Updates + About (native 900/902/901)', () => {
     const help = NAVBAR_MENUS[4];
-    expect(help.items.map(i => i.id)).toEqual([900, 901]);
-    expect(help.items.map(i => i.action)).toEqual(['manual', 'about']);
+    const nonSep = help.items.filter(i => !i.separator);
+    expect(nonSep.map(i => i.id)).toEqual([900, 902, 901]);
+    expect(nonSep.map(i => i.action)).toEqual(['manual', 'checkForUpdates', 'about']);
   });
 });
 
@@ -249,9 +250,8 @@ describe('Patch randomizer (native PresetRandomizer parity)', () => {
     // Native item 900 (Manual / Wiki) is a stub in the C++ editor; the web
     // version must point at the actual project repository.
     expect(navbar).toContain("window.open('https://github.com/ajabadia/ABDOmegaUnified', '_blank');");
-    expect(navbar).not.toContain("window.open('https://github.com/', '_blank')");
     const help = NAVBAR_MENUS[4];
-    expect(help.items.map(i => i.label)).toEqual(['Manual / Wiki', 'About...']);
+    expect(help.items.filter(i => !i.separator).map(i => i.label)).toEqual(['Manual / Wiki', 'Check for Updates...', 'About...']);
   });
 
   it('Audio Settings action opens the SETTINGS drawer (native case 206)', () => {

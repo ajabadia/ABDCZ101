@@ -128,6 +128,8 @@ export const NAVBAR_MENUS = [
     name: 'Help',
     items: [
       { id: 900, label: 'Manual / Wiki', action: 'manual', shortcut: 'F1' },
+      { id: 902, label: 'Check for Updates...', action: 'checkForUpdates' },
+      { separator: true },
       { id: 901, label: 'About...', action: 'about' }
     ]
   }

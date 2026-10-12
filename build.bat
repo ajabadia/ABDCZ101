@@ -9,13 +9,8 @@ echo =======================================================
 echo          ABDCZ101 - Compilacion Release
 echo =======================================================
 
-echo [0/5] Sincronizando modulos compartidos...
-if not exist "scripts\sync_shared.js" goto paso_1
-node scripts\sync_shared.js
-if errorlevel 1 goto error_exit
-
 :paso_1
-echo [1/5] Generando registros y contratos...
+echo [1/4] Generando registros y contratos...
 if not exist "scripts\registry_generator.js" goto paso_2
 node scripts\registry_generator.js
 if errorlevel 1 goto error_exit

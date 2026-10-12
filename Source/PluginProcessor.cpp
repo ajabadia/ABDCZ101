@@ -72,11 +72,24 @@ CZ101AudioProcessor::CZ101AudioProcessor()
         }
     }
 
+    // AutoUpdater transversal initialization
+    ABDShared::AutoUpdaterConfig updaterConfig;
+    updaterConfig.currentVersion = "1.0.0";
+    updaterConfig.repoOwner = "ajabadia";
+    updaterConfig.repoName = "ABDSynths";
+    updaterConfig.appName = "ABDCZ101";
+    updaterConfig.userAgent = "ABDCZ101-AutoUpdater/1.0.0";
+    updaterConfig.checkOnStartup = false;
+    updaterConfig.assetNames.windows = "CZ-5000_Emulator-windows-x64.zip";
+    autoUpdater = std::make_unique<ABDShared::AutoUpdater>(updaterConfig);
+
     juce::Logger::writeToLog("CZ101 Processor: Constructor End");
 }
 
 CZ101AudioProcessor::~CZ101AudioProcessor() 
 { 
+    autoUpdater.reset();
+
     // Unregister listeners
     for (auto* p : juce::AudioProcessor::getParameters()) {
         if (auto* rp = dynamic_cast<juce::RangedAudioParameter*>(p)) {
@@ -84,6 +97,12 @@ CZ101AudioProcessor::~CZ101AudioProcessor()
         }
     }
     juce::Logger::setCurrentLogger(nullptr); 
+}
+
+void CZ101AudioProcessor::checkForUpdates(bool silent)
+{
+    if (autoUpdater != nullptr)
+        autoUpdater->checkForUpdates(silent);
 }
 
 // --- APPLY PRESET ENVELOPES (Lock-Free) ---

@@ -23,15 +23,15 @@ const here = dirname(fileURLToPath(import.meta.url));
 const suiteRoot = resolve(here, '..', '..');   // ABDSynths/
 const filesToSync = [
   {
-    source: join(suiteRoot, 'ABDSharedAssets', 'components', 'fitStage.js'),
+    source: join(suiteRoot, 'ABDShared', 'Components', 'FitStage', 'FitStage.js'),
     target: resolve(here, '..', 'WebUI', 'src', 'shared', 'fitStage.js')
   },
   {
-    source: join(suiteRoot, 'ABDSharedAssets', 'components', 'liveSysExInspector.js'),
+    source: join(suiteRoot, 'ABDShared', 'Components', 'LiveSysExInspector', 'LiveSysExInspector.js'),
     target: resolve(here, '..', 'WebUI', 'src', 'shared', 'liveSysExInspector.js')
   },
   {
-    source: join(suiteRoot, 'ABDSharedAssets', 'styles', 'components', 'live-sysex-inspector.css'),
+    source: join(suiteRoot, 'ABDShared', 'Components', 'LiveSysExInspector', 'LiveSysExInspector.css'),
     target: resolve(here, '..', 'WebUI', 'src', 'styles', 'live-sysex-inspector.css')
   }
 ];

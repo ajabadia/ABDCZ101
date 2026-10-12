@@ -10,6 +10,7 @@
 #include "MIDI/SysExManager.h"
 #include "State/Parameters.h"
 #include "State/PresetManager.h"
+#include <AutoUpdater/AutoUpdater.h>
 
 #include "DSP/Effects/Chorus.h"
 #include "DSP/Effects/StereoDelay.h" // Audit Fix 10.5
@@ -97,6 +98,8 @@ public:
     CZ101::State::Parameters& getParameters() { return parameters; }
     CZ101::Core::VoiceManager& getVoiceManager() { return voiceManager; }
     CZ101::Utils::PerformanceMonitor& getPerformanceMonitor() { return performanceMonitor; }
+    ABDShared::AutoUpdater* getAutoUpdater() { return autoUpdater.get(); }
+    void checkForUpdates(bool silent = false);
 
     juce::UndoManager& getUndoManager() { return undoManager; }
     
@@ -263,6 +266,7 @@ private:
     void updateSystemGlobal(); // Hardware model, protection, etc.
 
     std::unique_ptr<juce::FileLogger> fileLogger;
+    std::unique_ptr<ABDShared::AutoUpdater> autoUpdater;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CZ101AudioProcessor)
 };

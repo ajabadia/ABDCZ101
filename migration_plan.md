@@ -190,8 +190,12 @@ Utilice esta tabla para rellenar los marcadores de posición `[MIN]`, `[MAX]`, `
 | Área | Estado |
 | :--- | :--- |
 | Registro generado (`registry.gen.js`, `ParameterRegistry.gen.*`) | ✅ Corregido y regenerado (coherente con `Parameters.cpp`) |
-| Tests (`npm test`) | ✅ **19/19 pasando** (contracts, normalización+skew, sysex, **persistencia de efectos en presets/banks**) |
+| Tests WebUI (`npm test`) | ✅ **51/51 suites pasando (399 tests en verde)** |
 | Controles de la tabla | ✅ 35/35 migrados en la WebUI (17 ya existían + 18 nuevos) |
-| Puente WASM | ✅ Casos DSP para LFO_WAVE, MASTER_TUNE, OVERSAMPLING_QUALITY, HARDWARE_NOISE + fix OSC*_WAVEFORM2 + **cadena de efectos completa conectada a `wasm_process`** + **procesador MIDI (MIDI_CH, PITCH_BEND_RANGE, `wasm_midi_message`, WebMIDI)** |
+| Puente WASM | ✅ Casos DSP para LFO_WAVE, MASTER_TUNE, OVERSAMPLING_QUALITY, HARDWARE_NOISE + fix OSC*_WAVEFORM2 + cadena de efectos completa conectada a `wasm_process` + procesador MIDI (MIDI_CH, PITCH_BEND_RANGE, `wasm_midi_message`, WebMIDI) |
+| Actualizador (`ABDShared::AutoUpdater`) | ✅ **Piloto completado e integrado en C++ y WebUI** (`checkForUpdates`, `getUpdateStatus`, `openBrowserUrl`, evento `updateCheckResult` y sección reactiva en `#about-modal`) |
+| Barra de Navegación (`navbar`) | ✅ Inicialización corregida a nivel de módulo (100% interactiva en arranque) con menú `Help ➔ Check for Updates...` |
+| Monitor de Tramas (`LiveSysExInspector`) | ✅ Integrado en la navbar (`View ➔ Live SysEx Inspector...` / `Ctrl+I`) con ventana flotante desacoplable sobre el Edit Buffer activo |
+| Componentes Transversales Compartidos | ✅ `SynthNavBar` y `AboutDialog` extraídos a `ABDSharedAssets/components/` con cobertura Vitest al 100% |
 | Pendiente (opcional, no crítico) | `DETUNE_OCT`, `NOISE_MOD`, `MOD_WHEEL_DCW`, `MOD_WHEEL_LFORATE`, `MOD_AT_*`, `KEY_TRACK_*`, `DRIVE_COLOR`, `CHORUS_DEPTH`, `DELAY_FEEDBACK`, macros, `KEY_TRANSPOSE` |
 | Nota DSP WASM | Los controles de efectos `DRIVE_*`, `CHORUS_*`, `DELAY_*`, `REVERB_*` y `MODERN_*` solo se oyen en modo Modern (`OPERATION_MODE = 2`), igual que en el plugin nativo |

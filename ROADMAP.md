@@ -27,7 +27,9 @@ Este documento define la hoja de ruta técnica y de evolución para **ABDCZ101**
 | **Sistema wire ↔ domain** | Implementado para CZ-101 y sintetizadores de la suite | ✅ Completo |
 | **Módulos DSP en DspCore** | `DspCz1.h` (uPD933 firmware base), `ResonantFilterStage`, `OscPolyBlep` | ✅ Disponible |
 | **Diccionario de parámetros** | Parámetros CZ mapeados con schemas JSON en `WebUI/contracts` | ✅ Completo |
-| **Tests JS / Vitest** | 49/49 suites (390 tests) en verde (incluyendo `registry-check.test.js`) | ✅ Verificado |
+| **Inspector SysEx en Vivo** | `LiveSysExInspector` transversal (`View ➔ Live SysEx Inspector...`, `Ctrl+I`) | ✅ Integrado |
+| **Actualizaciones Automáticas** | Integración piloto de `ABDShared::AutoUpdater` (`Help ➔ Check for Updates...`, `About...`) | 🎯 En prueba piloto |
+| **Tests JS / Vitest** | 50/50 suites (395 tests) en verde (incluyendo `registry-check.test.js`) | ✅ Verificado |
 | **Compilación y Build C++** | Build limpio con MSVC para Standalone, VST3 y tests C++ (Cz101ParamsTests, CZ101SnapshotDSPTest, GoldenMaster, SysEx) | ✅ Verificado |
 
 ---

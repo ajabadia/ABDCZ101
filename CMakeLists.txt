@@ -63,23 +63,34 @@ else()
 endif()
 
 # ============================================================
-# ABDSharedCode — DspCore, SynthCore, WebView2Bridge
+# ABDShared — DspCore, SynthCore, AutoUpdater, WebView2Bridge
+# Prioriza el repositorio canónico ABDShared/Code, con fallback a ABDSharedCode.
 # ============================================================
-set(ABDSHARED_CODE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../ABDShared/Code/CMakeLists.txt")
+    set(ABDSHARED_CODE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../ABDShared/Code")
+    message(STATUS "ABDShared: Using canonical Code at ${ABDSHARED_CODE_DIR}")
+elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode/CMakeLists.txt")
+    set(ABDSHARED_CODE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode")
+    message(STATUS "ABDShared: Using legacy sibling at ${ABDSHARED_CODE_DIR}")
+endif()
+
 set(ABDSHAREDCODE_BUILD_SYNTHCORE_TESTS OFF CACHE BOOL "" FORCE)
 set(ABDSHAREDCODE_BUILD_DSPEFFECTS_TESTS OFF CACHE BOOL "" FORCE)
-set(ABDSHAREDCODE_BUILD_AUTOUPDATER OFF CACHE BOOL "" FORCE)
-if(EXISTS "${ABDSHARED_CODE_DIR}/CMakeLists.txt")
-    message(STATUS "ABDSharedCode: Using local at ${ABDSHARED_CODE_DIR}")
-    add_subdirectory("${ABDSHARED_CODE_DIR}" "${CMAKE_BINARY_DIR}/ABDSharedCode")
+set(ABDSHAREDCODE_BUILD_AUTOUPDATER ON CACHE BOOL "" FORCE)
+set(ABDSHARED_BUILD_SYNTHCORE_TESTS OFF CACHE BOOL "" FORCE)
+set(ABDSHARED_BUILD_DSPEFFECTS_TESTS OFF CACHE BOOL "" FORCE)
+set(ABDSHARED_BUILD_AUTOUPDATER ON CACHE BOOL "" FORCE)
+
+if(DEFINED ABDSHARED_CODE_DIR)
+    add_subdirectory("${ABDSHARED_CODE_DIR}" "${CMAKE_BINARY_DIR}/ABDShared_build")
 else()
     include(FetchContent)
     FetchContent_Declare(
-      ABDSharedCode
-      GIT_REPOSITORY https://github.com/ajabadia/ABDSharedCode.git
-      GIT_TAG        master
+      ABDShared
+      GIT_REPOSITORY https://github.com/ajabadia/ABDShared.git
+      GIT_TAG        main
     )
-    FetchContent_MakeAvailable(ABDSharedCode)
+    FetchContent_MakeAvailable(ABDShared)
 endif()
 
 # --- Plugin Definition (Simplified for modern CMake) ---
@@ -174,6 +185,7 @@ endif()
 
 # --- Include Directories (ROBUST VERSION) ---
 target_include_directories(CZ101Emulator PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../ABDShared/Code
     ${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode
     Source
     Source/Core
@@ -191,6 +203,7 @@ target_include_directories(CZ101Emulator PRIVATE
 
 # --- Modules & Shared Libraries ---
 target_link_libraries(CZ101Emulator PRIVATE
+    ABDShared::AutoUpdater
     ABDShared::DspCore
     ABDShared::SynthCore
     ABDShared::WebView2Bridge
@@ -346,6 +359,7 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
     
     # Link Full JUCE modules (needs Audio, Graphics for Editor classes)
     target_link_libraries(CZ101GoldenMaster PRIVATE
+        ABDShared::AutoUpdater
         WebUIAssets
         juce::juce_audio_basics
         juce::juce_audio_devices
@@ -419,6 +433,7 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
     )
 
     target_link_libraries(CZ101SnapshotDSPTest PRIVATE
+        ABDShared::AutoUpdater
         WebUIAssets
         juce::juce_audio_basics
         juce::juce_audio_devices

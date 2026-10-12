@@ -1,7 +1,11 @@
 #pragma once
 
 #include "WaveTable.h"
+#if __has_include(<LutDSP/LutEvaluatorSimd.h>)
+#include <LutDSP/LutEvaluatorSimd.h>
+#else
 #include "../../../../ABDSharedCode/LutDSP/LutEvaluatorSimd.h"
+#endif
 #include <cmath>
 
 namespace CZ101 {

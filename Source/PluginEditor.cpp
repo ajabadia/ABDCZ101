@@ -6,6 +6,24 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
 {
     setupWebBrowserBindings();
 
+    if (auto* updater = audioProcessor.getAutoUpdater())
+    {
+        updater->setUpdateCallback([this](const ABDShared::AutoUpdater::UpdateInfo& info, bool isManual) {
+            juce::DynamicObject::Ptr result = new juce::DynamicObject();
+            if (auto* u = audioProcessor.getAutoUpdater())
+            {
+                result->setProperty("currentVersion", u->getCurrentVersion());
+                result->setProperty("isUpdateAvailable", u->isUpdateAvailable());
+                result->setProperty("latestVersion", info.version.isNotEmpty() ? info.version : u->getCurrentVersion());
+                result->setProperty("downloadUrl", info.downloadUrl);
+                result->setProperty("releaseNotes", info.releaseNotes);
+                result->setProperty("isManualCheck", isManual);
+            }
+            if (webComponent != nullptr)
+                webComponent->emitEventIfBrowserIsVisible("updateCheckResult", juce::var(result.get()));
+        });
+    }
+
     if (webComponent != nullptr)
         addAndMakeVisible(webComponent.get());
 
@@ -31,6 +49,10 @@ CZ101AudioProcessorEditor::CZ101AudioProcessorEditor(CZ101AudioProcessor& p)
 CZ101AudioProcessorEditor::~CZ101AudioProcessorEditor()
 {
     stopTimer();
+    if (auto* updater = audioProcessor.getAutoUpdater())
+    {
+        updater->setUpdateCallback(nullptr);
+    }
     audioProcessor.getPresetManager().removeListener(this);
 
     for (auto* param : audioProcessor.AudioProcessor::getParameters())
@@ -262,6 +284,26 @@ void CZ101AudioProcessorEditor::setupWebBrowserBindings()
         })
         .withEventListener("jsLog", [](const juce::var& data) {
             juce::Logger::writeToLog("[JS EVENT LOG] " + data.toString());
+        })
+        .withEventListener("checkForUpdates", [this](const juce::var&) {
+            if (auto* updater = audioProcessor.getAutoUpdater())
+                updater->checkForUpdates(true);
+        })
+        .withNativeFunction("getUpdateStatus", [this](const juce::Array<juce::var>&, juce::WebBrowserComponent::NativeFunctionCompletion completion) {
+            juce::DynamicObject::Ptr result = new juce::DynamicObject();
+            if (auto* u = audioProcessor.getAutoUpdater())
+            {
+                auto info = u->getLastUpdateInfo();
+                result->setProperty("currentVersion", u->getCurrentVersion());
+                result->setProperty("isUpdateAvailable", u->isUpdateAvailable());
+                result->setProperty("latestVersion", info.version.isNotEmpty() ? info.version : u->getCurrentVersion());
+                result->setProperty("downloadUrl", info.downloadUrl);
+            }
+            completion(juce::var(result.get()));
+        })
+        .withEventListener("openBrowserUrl", [](const juce::var& data) {
+            if (data.isString() && data.toString().isNotEmpty())
+                juce::URL(data.toString()).launchInDefaultBrowser();
         });
         
     webComponent = std::make_unique<juce::WebBrowserComponent>(options);

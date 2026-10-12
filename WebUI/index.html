@@ -1130,13 +1130,24 @@
   </div>
   <div class="block-drawer-backdrop" id="block-drawer-backdrop" hidden></div>
 
-  <!-- About dialog (native AboutDialog) -->
+  <!-- About dialog (native AboutDialog + AutoUpdater) -->
   <div id="about-modal" class="modal-overlay" hidden>
     <div class="modal-box">
       <h3>ABD CZ-101</h3>
       <p class="modal-sub">Phase Distortion Synthesizer — WebView2 / Web</p>
       <p>Authentic CZ-101 / CZ-5000 / Modern engine (WASM, shared with the C++ core).</p>
       <p id="about-build"></p>
+      <div class="about-update-section" id="about-update-section">
+        <div class="about-update-row">
+          <span class="about-update-label">Version:</span>
+          <span id="about-version-text" class="about-update-val">v1.0.0</span>
+          <button type="button" id="btn-check-updates" class="btn-glow btn-sm">CHECK FOR UPDATES</button>
+        </div>
+        <div id="about-update-status" class="about-update-status"></div>
+        <div id="about-update-action" class="about-update-action" hidden>
+          <a id="btn-download-update" class="btn-glow btn-sm btn-update-avail" href="#" target="_blank" rel="noopener noreferrer">DOWNLOAD UPDATE</a>
+        </div>
+      </div>
       <button type="button" id="btn-about-close" class="btn-glow">CLOSE</button>
     </div>
   </div>

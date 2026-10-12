@@ -368,9 +368,15 @@ export function createNavbar(deps) {
       // houses the CZ-101 emulator; DOCS/ holds the full spec documentation).
       window.open('https://github.com/ajabadia/ABDOmegaUnified', '_blank');
     },
+    checkForUpdates: () => {
+      const el = document.getElementById('about-modal');
+      if (el) el.hidden = false;
+      triggerUpdateCheck();
+    },
     about: () => {
       const el = document.getElementById('about-modal');
-      if (el) { el.hidden = false; }
+      if (el) el.hidden = false;
+      queryUpdateStatus();
     },
     liveSysExInspector: () => {
       if (typeof toggleLiveSysExInspector === 'function') {
@@ -461,8 +467,104 @@ export function createNavbar(deps) {
     });
   }
 
-  // About dialog wiring (native AboutDialog)
+  // About dialog wiring (native AboutDialog + AutoUpdater)
   const aboutModal = document.getElementById('about-modal');
+  const updateStatusEl = document.getElementById('about-update-status');
+  const updateActionEl = document.getElementById('about-update-action');
+  const downloadLinkEl = document.getElementById('btn-download-update');
+  const checkBtnEl = document.getElementById('btn-check-updates');
+  const versionTextEl = document.getElementById('about-version-text');
+
+  function renderUpdateResult(data) {
+    if (!updateStatusEl) return;
+    const currentVer = (data && data.currentVersion) || '1.0.0';
+    if (versionTextEl) versionTextEl.textContent = currentVer.startsWith('v') ? currentVer : `v${currentVer}`;
+
+    if (data && data.isUpdateAvailable) {
+      updateStatusEl.className = 'about-update-status success';
+      updateStatusEl.textContent = `New version available: ${data.latestVersion || 'latest'}`;
+      if (updateActionEl && downloadLinkEl) {
+        updateActionEl.hidden = false;
+        downloadLinkEl.textContent = `DOWNLOAD ${data.latestVersion || 'UPDATE'}`;
+        downloadLinkEl.href = data.downloadUrl || 'https://github.com/ajabadia/ABDSynths/releases/latest';
+        downloadLinkEl.onclick = (e) => {
+          const backend = window.getJuceBackend ? window.getJuceBackend() : ((window.__JUCE__ && window.__JUCE__.backend) || (window.Juce && window.Juce.backend));
+          if (backend && typeof backend.openBrowserUrl === 'function') {
+            e.preventDefault();
+            backend.openBrowserUrl(downloadLinkEl.href);
+          } else if (backend && typeof backend.emitEvent === 'function') {
+            backend.emitEvent('openBrowserUrl', downloadLinkEl.href);
+          }
+        };
+      }
+    } else {
+      updateStatusEl.className = 'about-update-status';
+      updateStatusEl.textContent = 'You are running the latest version.';
+      if (updateActionEl) updateActionEl.hidden = true;
+    }
+  }
+
+  function triggerUpdateCheck() {
+    if (!updateStatusEl) return;
+    updateStatusEl.className = 'about-update-status warning';
+    updateStatusEl.textContent = 'Checking for updates...';
+    if (updateActionEl) updateActionEl.hidden = true;
+
+    const backend = window.getJuceBackend ? window.getJuceBackend() : ((window.__JUCE__ && window.__JUCE__.backend) || (window.Juce && window.Juce.backend));
+    if (backend && (typeof backend.checkForUpdates === 'function' || typeof backend.emitEvent === 'function')) {
+      if (typeof backend.checkForUpdates === 'function') {
+        backend.checkForUpdates();
+      } else {
+        backend.emitEvent('checkForUpdates', {});
+      }
+    } else {
+      // Browser / Offline fallback
+      if (typeof fetch === 'function') {
+        fetch('https://api.github.com/repos/ajabadia/ABDSynths/releases/latest', {
+          headers: { 'Accept': 'application/vnd.github.v3+json' }
+        })
+          .then(res => res.ok ? res.json() : Promise.reject(new Error(res.statusText)))
+          .then(release => {
+            const latestVer = release.tag_name || '1.0.0';
+            const isNewer = latestVer.replace(/^v/, '') > '1.0.0';
+            renderUpdateResult({
+              currentVersion: '1.0.0',
+              latestVersion: latestVer,
+              isUpdateAvailable: isNewer,
+              downloadUrl: release.html_url || 'https://github.com/ajabadia/ABDSynths/releases'
+            });
+          })
+          .catch(() => {
+            renderUpdateResult({
+              currentVersion: '1.0.0',
+              latestVersion: '1.0.0',
+              isUpdateAvailable: false
+            });
+          });
+      } else {
+        renderUpdateResult({
+          currentVersion: '1.0.0',
+          latestVersion: '1.0.0',
+          isUpdateAvailable: false
+        });
+      }
+    }
+  }
+
+  function queryUpdateStatus() {
+    const backend = window.getJuceBackend ? window.getJuceBackend() : ((window.__JUCE__ && window.__JUCE__.backend) || (window.Juce && window.Juce.backend));
+    if (backend && typeof backend.getUpdateStatus === 'function') {
+      try {
+        const res = backend.getUpdateStatus();
+        if (res && typeof res.then === 'function') {
+          res.then(renderUpdateResult).catch(() => {});
+        } else if (res) {
+          renderUpdateResult(res);
+        }
+      } catch (err) { /* ignore */ }
+    }
+  }
+
   if (aboutModal) {
     const buildEl = document.getElementById('about-build');
     if (buildEl) buildEl.textContent = 'Build: CZ-101 WASM core (shared with native) — web interface.';
@@ -470,6 +572,18 @@ export function createNavbar(deps) {
     document.getElementById('btn-about-close')?.addEventListener('click', closeAbout);
     aboutModal.addEventListener('click', (e) => { if (e.target === aboutModal) closeAbout(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') aboutModal.hidden = true; });
+
+    checkBtnEl?.addEventListener('click', triggerUpdateCheck);
+
+    const backend = window.getJuceBackend ? window.getJuceBackend() : ((window.__JUCE__ && window.__JUCE__.backend) || (window.Juce && window.Juce.backend));
+    if (backend && typeof backend.addEventListener === 'function') {
+      backend.addEventListener('updateCheckResult', (data) => {
+        renderUpdateResult(data);
+      });
+    }
+    window.addEventListener('updateCheckResult', (e) => {
+      if (e.detail) renderUpdateResult(e.detail);
+    });
   }
 
   // --- Keyboard shortcuts (native keyPressed parity + web/DAW standards) ---

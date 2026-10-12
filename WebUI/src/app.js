@@ -6,7 +6,7 @@ import { buildLcdMenu } from './contracts/lcdMenu.js';
 import { NAVBAR_MENUS, renderItemHtml } from './contracts/navbarModel.js';
 import { generateRandomPatch } from './contracts/patchRandomizer.js';
 import { matchShortcut, isEditableTarget } from './contracts/shortcuts.js';
-import { ThemeSwitcher, mountFitStage } from '@abdsynths/shared/components';
+import { ThemeSwitcher, mountFitStage, createLiveSysExInspector } from '@abdsynths/shared/components';
 import { enhanceRangeInputs } from '@abdsynths/shared/utils';
 import {
   LCD_NAME_MAX_LEN as LCD_NAME_MAX_LEN_CONST,
@@ -62,11 +62,13 @@ import { createBlockDrawer } from './ui/blockDrawer.js';
 import { createNavbar } from './ui/navbar.js';
 import { createMidiSystem } from './ui/midiSystem.js';
 import { drawLcdGraphics } from './ui/lcdGraphics.js';
-import { createLiveSysExInspector } from './shared/liveSysExInspector.js';
 
 let audioEngine = null;
 let dspModule = null;
 let isAudioStarted = false;
+let liveSysExInspectorInstance = null;
+let isSysExInspectorVisible = false;
+let currentActiveSysExBuffer = null;
 
 // If running in JUCE (Standalone/VST), immediately flag for styling and auto-start
 if (window.logToCpp) {
@@ -499,7 +501,7 @@ const setupJuceListeners = () => {
       const parts = hex.trim().split(/\s+/).filter(Boolean);
       const bytes = new Uint8Array(parts.map(p => parseInt(p, 16)));
       currentActiveSysExBuffer = bytes;
-      if (liveSysExInspectorInstance && isSysExInspectorVisible) {
+      if (liveSysExInspectorInstance && liveSysExInspectorInstance.isOpen()) {
         liveSysExInspectorInstance.updateBuffer(bytes);
       }
       const el = document.getElementById('sysex-hex-content');
@@ -871,56 +873,11 @@ btnInit.addEventListener('click', () => {
     lcdLine2.innerText = "DOWNLOAD STARTED";
   };
 
-  // --- Live SysEx Inspector (flotante transversal) ---
-  function getLiveSysExInspector() {
-    if (!liveSysExInspectorInstance) {
-      liveSysExInspectorInstance = createLiveSysExInspector({
-        title: 'CZ-101 Live SysEx Inspector',
-        floating: true,
-        bytesPerRow: 16,
-        initialBuffer: currentActiveSysExBuffer || new Uint8Array(0),
-        onClose: () => {
-          isSysExInspectorVisible = false;
-          if (liveSysExInspectorInstance && liveSysExInspectorInstance.rootEl) {
-            liveSysExInspectorInstance.rootEl.style.display = 'none';
-          }
-        },
-        onExport: (blob, filename) => {
-          const patchName = (inputPresetName?.value || 'CZ101_Patch').trim();
-          const fname = filename || `${patchName}.syx`;
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = fname;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }
-      });
-      if (liveSysExInspectorInstance && liveSysExInspectorInstance.rootEl) {
-        liveSysExInspectorInstance.rootEl.style.display = 'none';
-      }
-    }
-    return liveSysExInspectorInstance;
-  }
-
-  function toggleLiveSysExInspector() {
-    const inspector = getLiveSysExInspector();
-    isSysExInspectorVisible = !isSysExInspectorVisible;
-    if (inspector && inspector.rootEl) {
-      inspector.rootEl.style.display = isSysExInspectorVisible ? 'flex' : 'none';
-    }
-    if (isSysExInspectorVisible) {
-      requestSysexDisplayUpdate();
-    }
-  }
-
   audioEngine.onSysExSaved = (sysexBytes, name) => {
     if (name === '__UI_SYSEX_DISPLAY__') {
       if (sysexBytes && sysexBytes.length > 0) {
         currentActiveSysExBuffer = new Uint8Array(sysexBytes);
-        if (liveSysExInspectorInstance && isSysExInspectorVisible) {
+        if (liveSysExInspectorInstance && liveSysExInspectorInstance.isOpen()) {
           liveSysExInspectorInstance.updateBuffer(currentActiveSysExBuffer);
         }
         const hex = Array.from(sysexBytes).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
@@ -946,21 +903,63 @@ btnInit.addEventListener('click', () => {
     lcdLine1.innerText = "SYSEX EXPORTED";
     lcdLine2.innerText = `${name}.syx`;
   };
-
-  const sysexHexContentEl = document.getElementById('sysex-hex-content');
-  if (sysexHexContentEl) {
-    sysexHexContentEl.style.cursor = 'pointer';
-    sysexHexContentEl.title = 'Click to open Live SysEx Inspector (Ctrl+I)';
-    sysexHexContentEl.addEventListener('click', toggleLiveSysExInspector);
-  }
-
-  const btnCopySysex = document.getElementById('btn-copy-sysex');
-  if (btnCopySysex) {
-    btnCopySysex.addEventListener('click', () => {
-      toggleLiveSysExInspector();
-    });
-  }
 });
+
+// --- Live SysEx Inspector (flotante transversal, nivel de módulo) ---
+function getLiveSysExInspector() {
+  if (!liveSysExInspectorInstance) {
+    liveSysExInspectorInstance = createLiveSysExInspector({
+      title: 'CZ-101 Live SysEx Inspector',
+      floating: true,
+      bytesPerRow: 16,
+      initialBuffer: currentActiveSysExBuffer || new Uint8Array(0),
+      onClose: () => {
+        isSysExInspectorVisible = false;
+      },
+      onOpen: () => {
+        isSysExInspectorVisible = true;
+      },
+      onExport: (blob, filename) => {
+        const patchName = (inputPresetName?.value || 'CZ101_Patch').trim();
+        const fname = filename || `${patchName}.syx`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fname;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    });
+    // Inicia oculto hasta que el usuario lo invoque
+    liveSysExInspectorInstance.hide();
+  }
+  return liveSysExInspectorInstance;
+}
+
+function toggleLiveSysExInspector() {
+  const inspector = getLiveSysExInspector();
+  inspector.toggle();
+  isSysExInspectorVisible = inspector.isOpen();
+  if (isSysExInspectorVisible) {
+    requestSysexDisplayUpdate();
+  }
+}
+
+const sysexHexContentEl = document.getElementById('sysex-hex-content');
+if (sysexHexContentEl) {
+  sysexHexContentEl.style.cursor = 'pointer';
+  sysexHexContentEl.title = 'Click to open Live SysEx Inspector (Ctrl+I)';
+  sysexHexContentEl.addEventListener('click', toggleLiveSysExInspector);
+}
+
+const btnCopySysex = document.getElementById('btn-copy-sysex');
+if (btnCopySysex) {
+  btnCopySysex.addEventListener('click', () => {
+    toggleLiveSysExInspector();
+  });
+}
 
 // Shared preset-loading path: the slot select, the prev/next buttons and the
 // LCD slot navigation all go through here (parity with the native

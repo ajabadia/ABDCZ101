@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { NAVBAR_MENUS } from '../src/contracts/navbarModel.js';
 import { SHORTCUTS, matchShortcut } from '../src/contracts/shortcuts.js';
-import { createLiveSysExInspector } from '../src/shared/liveSysExInspector.js';
+import { createLiveSysExInspector } from '@abdsynths/shared/components';
 
 describe('LiveSysExInspector / Integración ABDCZ101', () => {
   it('el menú View incluye la opción Live SysEx Inspector', () => {
@@ -31,19 +31,13 @@ describe('LiveSysExInspector / Integración ABDCZ101', () => {
     expect(matchShortcut(ev)).toBe('liveSysExInspector');
   });
 
-  it('el módulo compartido liveSysExInspector.js en WebUI está sincronizado con ABDSharedAssets', () => {
-    const localJsPath = resolve(__dirname, '../src/shared/liveSysExInspector.js');
-    const sharedJsPath = resolve(__dirname, '../../../ABDSharedAssets/components/liveSysExInspector.js');
-
-    const localJs = readFileSync(localJsPath, 'utf8');
-    const sharedJs = readFileSync(sharedJsPath, 'utf8');
-
-    expect(localJs).toBe(sharedJs);
+  it('el componente LiveSysExInspector se exporta correctamente desde @abdsynths/shared/components', () => {
+    expect(typeof createLiveSysExInspector).toBe('function');
   });
 
-  it('los estilos live-sysex-inspector.css en WebUI están sincronizados con ABDSharedAssets', () => {
+  it('los estilos live-sysex-inspector.css en WebUI están sincronizados con ABDShared', () => {
     const localCssPath = resolve(__dirname, '../src/styles/live-sysex-inspector.css');
-    const sharedCssPath = resolve(__dirname, '../../../ABDSharedAssets/styles/components/live-sysex-inspector.css');
+    const sharedCssPath = resolve(__dirname, '../../../ABDShared/Components/LiveSysExInspector/LiveSysExInspector.css');
 
     const localCss = readFileSync(localCssPath, 'utf8');
     const sharedCss = readFileSync(sharedCssPath, 'utf8');

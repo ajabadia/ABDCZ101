@@ -148,7 +148,8 @@ describe('DOM to Registry Parity Tests', () => {
     'ARP_OCTAVES',
     'LINE1_KF_PITCH', 'LINE1_KF_DCW', 'LINE1_KF_DCA',
     'LINE2_KF_PITCH', 'LINE2_KF_DCW', 'LINE2_KF_DCA',
-    'octave-up-btn', 'octave-down-btn'
+    'octave-up-btn', 'octave-down-btn',
+    'btn-check-updates', 'btn-download-update'
   ]);
 
   // Parameters defined in registry that do not have UI controls in index.html.
