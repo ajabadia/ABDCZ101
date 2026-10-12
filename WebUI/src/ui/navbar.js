@@ -70,7 +70,8 @@ export function createNavbar(deps) {
     openBlockDrawer,
     sendParameter,
     applyParameterToUI,
-    triggerMidiActivity
+    triggerMidiActivity,
+    toggleLiveSysExInspector
   } = deps;
 
   const navbarMenuBar = document.getElementById('menu-bar');
@@ -370,6 +371,11 @@ export function createNavbar(deps) {
     about: () => {
       const el = document.getElementById('about-modal');
       if (el) { el.hidden = false; }
+    },
+    liveSysExInspector: () => {
+      if (typeof toggleLiveSysExInspector === 'function') {
+        toggleLiveSysExInspector();
+      }
     }
   };
 

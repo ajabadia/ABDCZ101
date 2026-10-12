@@ -27,6 +27,7 @@ export const SHORTCUTS = [
   { action: 'exportSysEx', key: 'e', primary: true },
   { action: 'resetPatch', key: 'n', primary: true },
   { action: 'settingsSystem', key: ',', primary: true },
+  { action: 'liveSysExInspector', key: 'i', primary: true },
   { action: 'manual', key: 'f1' }
 ];
 

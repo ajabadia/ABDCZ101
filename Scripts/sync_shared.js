@@ -21,11 +21,24 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const suiteRoot = resolve(here, '..', '..');   // ABDSynths/
-const source = join(suiteRoot, 'ABDSharedAssets', 'components', 'fitStage.js');
-const target = resolve(here, '..', 'WebUI', 'src', 'shared', 'fitStage.js');
+const filesToSync = [
+  {
+    source: join(suiteRoot, 'ABDSharedAssets', 'components', 'fitStage.js'),
+    target: resolve(here, '..', 'WebUI', 'src', 'shared', 'fitStage.js')
+  },
+  {
+    source: join(suiteRoot, 'ABDSharedAssets', 'components', 'liveSysExInspector.js'),
+    target: resolve(here, '..', 'WebUI', 'src', 'shared', 'liveSysExInspector.js')
+  },
+  {
+    source: join(suiteRoot, 'ABDSharedAssets', 'styles', 'components', 'live-sysex-inspector.css'),
+    target: resolve(here, '..', 'WebUI', 'src', 'styles', 'live-sysex-inspector.css')
+  }
+];
 
-const contents = readFileSync(source, 'utf8');
-mkdirSync(dirname(target), { recursive: true });
-writeFileSync(target, contents, 'utf8');
-
-console.log(`fitStage sincronizado -> ${target} (${contents.length} bytes)`);
+for (const { source, target } of filesToSync) {
+  const contents = readFileSync(source, 'utf8');
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, contents, 'utf8');
+  console.log(`Sincronizado -> ${target} (${contents.length} bytes)`);
+}

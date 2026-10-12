@@ -119,7 +119,9 @@ export const NAVBAR_MENUS = [
       { id: 314, label: 'CyberGlow Theme', action: 'theme', value: 'cyberglow' },
       { id: 315, label: 'Neon Retro Theme', action: 'theme', value: 'neonretro' },
       { id: 316, label: 'Steampunk Theme', action: 'theme', value: 'steampunk' },
-      { id: 318, label: 'Retro Terminal Theme', action: 'theme', value: 'retroterminal' }
+      { id: 318, label: 'Retro Terminal Theme', action: 'theme', value: 'retroterminal' },
+      { separator: true },
+      { id: 320, label: 'Live SysEx Inspector...', action: 'liveSysExInspector', shortcut: 'Ctrl+I' }
     ]
   },
   {

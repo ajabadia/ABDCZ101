@@ -62,6 +62,7 @@ import { createBlockDrawer } from './ui/blockDrawer.js';
 import { createNavbar } from './ui/navbar.js';
 import { createMidiSystem } from './ui/midiSystem.js';
 import { drawLcdGraphics } from './ui/lcdGraphics.js';
+import { createLiveSysExInspector } from './shared/liveSysExInspector.js';
 
 let audioEngine = null;
 let dspModule = null;
@@ -495,6 +496,12 @@ const setupJuceListeners = () => {
   backend.addEventListener('sysexDump', (e) => {
     const hex = typeof e === 'string' ? e : (e && (e.sysexHex || e.detail)) || '';
     if (hex) {
+      const parts = hex.trim().split(/\s+/).filter(Boolean);
+      const bytes = new Uint8Array(parts.map(p => parseInt(p, 16)));
+      currentActiveSysExBuffer = bytes;
+      if (liveSysExInspectorInstance && isSysExInspectorVisible) {
+        liveSysExInspectorInstance.updateBuffer(bytes);
+      }
       const el = document.getElementById('sysex-hex-content');
       if (el) el.innerText = hex;
     }
@@ -864,9 +871,58 @@ btnInit.addEventListener('click', () => {
     lcdLine2.innerText = "DOWNLOAD STARTED";
   };
 
+  // --- Live SysEx Inspector (flotante transversal) ---
+  function getLiveSysExInspector() {
+    if (!liveSysExInspectorInstance) {
+      liveSysExInspectorInstance = createLiveSysExInspector({
+        title: 'CZ-101 Live SysEx Inspector',
+        floating: true,
+        bytesPerRow: 16,
+        initialBuffer: currentActiveSysExBuffer || new Uint8Array(0),
+        onClose: () => {
+          isSysExInspectorVisible = false;
+          if (liveSysExInspectorInstance && liveSysExInspectorInstance.rootEl) {
+            liveSysExInspectorInstance.rootEl.style.display = 'none';
+          }
+        },
+        onExport: (blob, filename) => {
+          const patchName = (inputPresetName?.value || 'CZ101_Patch').trim();
+          const fname = filename || `${patchName}.syx`;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fname;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      });
+      if (liveSysExInspectorInstance && liveSysExInspectorInstance.rootEl) {
+        liveSysExInspectorInstance.rootEl.style.display = 'none';
+      }
+    }
+    return liveSysExInspectorInstance;
+  }
+
+  function toggleLiveSysExInspector() {
+    const inspector = getLiveSysExInspector();
+    isSysExInspectorVisible = !isSysExInspectorVisible;
+    if (inspector && inspector.rootEl) {
+      inspector.rootEl.style.display = isSysExInspectorVisible ? 'flex' : 'none';
+    }
+    if (isSysExInspectorVisible) {
+      requestSysexDisplayUpdate();
+    }
+  }
+
   audioEngine.onSysExSaved = (sysexBytes, name) => {
     if (name === '__UI_SYSEX_DISPLAY__') {
       if (sysexBytes && sysexBytes.length > 0) {
+        currentActiveSysExBuffer = new Uint8Array(sysexBytes);
+        if (liveSysExInspectorInstance && isSysExInspectorVisible) {
+          liveSysExInspectorInstance.updateBuffer(currentActiveSysExBuffer);
+        }
         const hex = Array.from(sysexBytes).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
         const el = document.getElementById('sysex-hex-content');
         if (el) el.innerText = hex;
@@ -891,19 +947,17 @@ btnInit.addEventListener('click', () => {
     lcdLine2.innerText = `${name}.syx`;
   };
 
+  const sysexHexContentEl = document.getElementById('sysex-hex-content');
+  if (sysexHexContentEl) {
+    sysexHexContentEl.style.cursor = 'pointer';
+    sysexHexContentEl.title = 'Click to open Live SysEx Inspector (Ctrl+I)';
+    sysexHexContentEl.addEventListener('click', toggleLiveSysExInspector);
+  }
+
   const btnCopySysex = document.getElementById('btn-copy-sysex');
   if (btnCopySysex) {
     btnCopySysex.addEventListener('click', () => {
-      const el = document.getElementById('sysex-hex-content');
-      if (el && el.innerText) {
-        navigator.clipboard.writeText(el.innerText).then(() => {
-          const originalText = btnCopySysex.innerText;
-          btnCopySysex.innerText = "COPIED!";
-          setTimeout(() => { btnCopySysex.innerText = originalText; }, 1500);
-        }).catch(err => {
-          console.error("Failed to copy sysex:", err);
-        });
-      }
+      toggleLiveSysExInspector();
     });
   }
 });
@@ -1199,7 +1253,8 @@ navbarApi = createNavbar({
   openBlockDrawer,
   sendParameter,
   applyParameterToUI,
-  triggerMidiActivity: (...args) => midiApi && midiApi.triggerMidiActivity(...args)
+  triggerMidiActivity: (...args) => midiApi && midiApi.triggerMidiActivity(...args),
+  toggleLiveSysExInspector
 });
 
 // Upgrade sliders to filmstrip faders (shared utility)
@@ -1225,3 +1280,5 @@ const detachFitStage = mountFitStage(document.querySelector('.synth-container'),
 // Test hooks de la casa (mismo patrón que el resto de subsistemas).
 window.__czTestHooks__ = window.__czTestHooks__ || {};
 window.__czTestHooks__.detachFitStage = detachFitStage;
+window.__czTestHooks__.toggleLiveSysExInspector = toggleLiveSysExInspector;
+window.__czTestHooks__.getLiveSysExInspector = getLiveSysExInspector;
