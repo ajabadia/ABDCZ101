@@ -105,28 +105,17 @@ describe('WASM free matrix: extended sources & destinations', () => {
     // The curve is zero at C3 (note 60) and grows with |note−60|: positive
     // above C3 (brightening DCW), negative below (darkening). Rendering the
     // SAME note with the slot off vs on must therefore shift the DCW energy.
-    const renderNote = async (withSlot, note) => {
-      const dsp = await CZ101DSP();
-      dsp._wasm_init(44100);
-      const alloc = (s) => { const p = dsp._malloc(s.length + 1); for (let i = 0; i < s.length; i++) dsp.HEAPU8[p + i] = s.charCodeAt(i); dsp.HEAPU8[p + s.length] = 0; return p; };
-      const set = (id, v) => { const p = alloc(id); dsp._wasm_set_param(p, v); dsp._free(p); };
-      set('OPERATION_MODE', 2);
-      if (withSlot) {
-        set('MOD_SLOT_4_SRC', 11 / 11); // Authentic Key Track
-        set('MOD_SLOT_4_DEST', 1 / 7);  // DCW
-        set('MOD_SLOT_4_DEPTH', 1.0);   // depth +1
-      }
+    const renderNote = (withSlot, note) => {
+      engine.setParam('MOD_SLOT_4_SRC', withSlot ? 11 / 11 : 0);
+      engine.setParam('MOD_SLOT_4_DEST', withSlot ? 1 / 7 : 0);
+      engine.setParam('MOD_SLOT_4_DEPTH', withSlot ? 1.0 : 0.5);
       const n = 44100; // 1 s
-      const l = dsp._malloc(n * 4), r = dsp._malloc(n * 4);
-      dsp._wasm_note_on(note, 1.0);
-      dsp._wasm_process(l, r, n);
-      dsp._wasm_note_off(note);
-      const data = new Float32Array(n);
-      data.set(dsp.HEAPF32.subarray(l / 4, l / 4 + n));
-      dsp._free(l); dsp._free(r);
+      engine.noteOn(note, 1.0);
+      const { outL } = engine.renderBlock(n);
+      engine.noteOff(note);
       let e = 0;
-      for (let i = 4410; i < n; i += 8) e += Math.abs(data[i]);
-      return { e, data };
+      for (let i = 4410; i < n; i += 8) e += Math.abs(outL[i]);
+      return { e, data: outL };
     };
 
     const off = await renderNote(false, 84); // C6, no slot

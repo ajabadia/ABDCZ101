@@ -5,7 +5,8 @@
   "main": "WebUI/src/contracts/registry.gen.js",
   "type": "module",
   "scripts": {
-    "build:registry": "node scripts/registry_generator.js",
+    "build:registry": "node Scripts/registry_generator.js",
+    "check:registry": "node Scripts/registry_generator.js --check",
     "validate:css": "node scripts/validate_css_order.js",
     "build:css": "node scripts/build_css.js",
     "build:css:prod": "node scripts/build_css.js --prod",

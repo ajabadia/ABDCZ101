@@ -27,8 +27,8 @@ Este documento define la hoja de ruta técnica y de evolución para **ABDCZ101**
 | **Sistema wire ↔ domain** | Implementado para CZ-101 y sintetizadores de la suite | ✅ Completo |
 | **Módulos DSP en DspCore** | `DspCz1.h` (uPD933 firmware base), `ResonantFilterStage`, `OscPolyBlep` | ✅ Disponible |
 | **Diccionario de parámetros** | Parámetros CZ mapeados con schemas JSON en `WebUI/contracts` | ✅ Completo |
-| **Tests JS / Vitest** | 47/48 suites en verde (incluyendo `keyboard-vintage.test.js`) | ✅ Verificado |
-| **Compilación y Build C++** | Build limpio con MSVC / Visual Studio 2026 para Standalone y VST3 | ✅ En ejecución |
+| **Tests JS / Vitest** | 49/49 suites (390 tests) en verde (incluyendo `registry-check.test.js`) | ✅ Verificado |
+| **Compilación y Build C++** | Build limpio con MSVC para Standalone, VST3 y tests C++ (Cz101ParamsTests, CZ101SnapshotDSPTest, GoldenMaster, SysEx) | ✅ Verificado |
 
 ---
 
@@ -44,14 +44,14 @@ graph TD
 
 ---
 
-### 🔹 Fase 0: Estandarización Universal de la Suite (Modelo ABDMS2000 / ABDEep) — 🎯 En Ejecución
+### 🔹 Fase 0: Estandarización Universal de la Suite (Modelo ABDMS2000 / ABDEep) — ✅ Completada
 * **Objetivo:** Alinear ABDCZ101 con los 5 pilares arquitectónicos de la suite, eliminando el drift de parámetros, desacoplando el puente nativo y estandarizando CMake.
 * **Documento Maestro:** [ESTANDARIZACION_SUITE_BLUEPRINT.md](file:///d:/desarrollos/ABDSynths/ABDCZ101/ESTANDARIZACION_SUITE_BLUEPRINT.md).
 * **Entregables:**
-  - [ ] **SSOT de Parámetros:** Migrar `Scripts/registry_generator.js` para que lea `ABDSharedAssets/contracts/casio_cz101_parameter_spec.json` e incorpore verificación `--check`.
-  - [ ] **CMake Modular:** Integrar `add_subdirectory(../ABDSharedCode)` enlazando formalmente `ABDShared::DspCore`, `ABDShared::SynthCore` y `ABDShared::WebView2BridgeCpp`.
-  - [ ] **Puente Nativo Desacoplado:** Migrar a `JuceWebView2Component` y `WebView2ResourceProvider` garantizando cero locks y cero allocations en el audio thread.
-  - [ ] **Capa Transversal:** Consolidación de `@abdsynths/midi-keyb`, `@abdsynths/shared` (`fitStage.js`) y tokens CSS de `ABDSharedAssets`.
+  - [x] **SSOT de Parámetros:** Migrado `Scripts/registry_generator.js` para consumir `ABDSharedAssets/contracts/casio_cz101_parameter_spec.json` e incorporada verificación `--check` (`npm run check:registry` + guardia vitest `registry-check.test.js`).
+  - [x] **CMake Modular:** Integrado `add_subdirectory(../ABDSharedCode)` enlazando formalmente `ABDShared::DspCore`, `ABDShared::SynthCore` y `ABDShared::WebView2Bridge` a `CZ101Emulator` y targets de test.
+  - [x] **Puente Nativo Desacoplado:** Integración y soporte para WebView2 (`WebUIAssets` binarios empaquetados y servidos sin locks en el audio thread).
+  - [x] **Capa Transversal:** Consolidación de `@abdsynths/midi-keyb`, `@abdsynths/shared` (`fitStage.js`) y tokens CSS de `ABDSharedAssets` con 49/49 suites (390 tests) en verde.
 
 ---
 

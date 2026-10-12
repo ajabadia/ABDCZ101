@@ -62,6 +62,26 @@ else()
     FetchContent_MakeAvailable(JUCE)
 endif()
 
+# ============================================================
+# ABDSharedCode — DspCore, SynthCore, WebView2Bridge
+# ============================================================
+set(ABDSHARED_CODE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode")
+set(ABDSHAREDCODE_BUILD_SYNTHCORE_TESTS OFF CACHE BOOL "" FORCE)
+set(ABDSHAREDCODE_BUILD_DSPEFFECTS_TESTS OFF CACHE BOOL "" FORCE)
+set(ABDSHAREDCODE_BUILD_AUTOUPDATER OFF CACHE BOOL "" FORCE)
+if(EXISTS "${ABDSHARED_CODE_DIR}/CMakeLists.txt")
+    message(STATUS "ABDSharedCode: Using local at ${ABDSHARED_CODE_DIR}")
+    add_subdirectory("${ABDSHARED_CODE_DIR}" "${CMAKE_BINARY_DIR}/ABDSharedCode")
+else()
+    include(FetchContent)
+    FetchContent_Declare(
+      ABDSharedCode
+      GIT_REPOSITORY https://github.com/ajabadia/ABDSharedCode.git
+      GIT_TAG        master
+    )
+    FetchContent_MakeAvailable(ABDSharedCode)
+endif()
+
 # --- Plugin Definition (Simplified for modern CMake) ---
 juce_add_plugin(CZ101Emulator
     COMPANY_NAME "CZ101"
@@ -169,8 +189,11 @@ target_include_directories(CZ101Emulator PRIVATE
     Source/Utils
 )
 
-# --- JUCE Modules ---
+# --- Modules & Shared Libraries ---
 target_link_libraries(CZ101Emulator PRIVATE
+    ABDShared::DspCore
+    ABDShared::SynthCore
+    ABDShared::WebView2Bridge
     juce::juce_audio_basics
     juce::juce_audio_devices
     juce::juce_audio_formats
@@ -431,12 +454,17 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
 
     # --- Cz101 Wire-Domain Parameter Roundtrip Tests ---
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Tests/Cz101ParamsTests.cpp")
-        add_executable(Cz101ParamsTests Tests/Cz101ParamsTests.cpp)
+        add_executable(Cz101ParamsTests
+            Tests/Cz101ParamsTests.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode/DspCore/DspCz101Filter.cpp
+        )
         target_include_directories(Cz101ParamsTests PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode
             ${CMAKE_CURRENT_SOURCE_DIR}/Source
         )
+        target_link_libraries(Cz101ParamsTests PRIVATE ABDShared::DspCore)
         set_target_properties(Cz101ParamsTests PROPERTIES CXX_STANDARD 20)
         message(STATUS "Defined Test Target: Cz101ParamsTests")
     endif()
+
 endif()
