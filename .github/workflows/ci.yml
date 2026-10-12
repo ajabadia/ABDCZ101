@@ -1,15 +1,33 @@
 name: CZ-101 Emulator CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
 
+# HIGIENE DE FAMILIA (la llevan ABDEep, ABDBankManager y ABDMS2000): permisos
+# minimos, un solo run por ref y un tope de tiempo por job. Sin concurrency, dos
+# pushes seguidos encolan dos matrices enteras para un resultado que ya no
+# importa; sin timeout, un hang de CMake se come los 6 horas del runner.
+permissions:
+  contents: read
+
+concurrency:
+  group: cz101-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build_and_test:
     name: Build & Verify ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    # Tope de familia. NO hay medicion propia atras de este numero: es el mismo
+    # orden de magnitud que el de ABDEep (30 min para build+tests, 45 para
+    # pluginval) con margen para el runner, que es mas lento que una maquina
+    # local. Si este job llega a cortarse por tiempo, subirlo con la medicion
+    # del log a mano, no a ojo.
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -166,6 +184,24 @@ jobs:
         "$ROUNDTRIP"
         "$SNAPSHOT"
 
+    # ESTATICA (cppcheck) — INFORMATIVA, no bloqueante, y la cuenta va escrita
+    # aqui porque es la razon de que no bloquee. MEDIDO en local con cppcheck
+    # 2.21 sobre Source/ completo: 19 hallazgos (14 warning, 5 performance). Con
+    # esa deuda acumulada, un paso bloqueante dejaria el CI rojo permanente por
+    # un motivo que no es un rojo nuevo. Se emite la anotacion con el recuento y
+    # el paso sale con 0, igual que el gate de formato de ABDEep. Cuando la
+    # deuda se pase, se quita el `exit 0` y pasa a bloquear.
+    - name: Static analysis (cppcheck) - informativo, no bloqueante
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        set +e
+        sudo apt-get update -qq && sudo apt-get install -y -qq cppcheck
+        salida=$(cppcheck --enable=warning,performance,portability --std=c++20 --suppress=missingIncludeSystem --template='{severity}|{file}|{line}|{message}' Source/ 2>&1)
+        hallazgos=$(printf '%s\n' "$salida" | grep -cE '^(warning|performance|portability|error)\|')
+        printf '%s\n' "$salida" | grep -E '^(warning|performance|portability|error)\|' | sed -n '1,30p'
+        echo "::warning title=cppcheck::${hallazgos} hallazgos en Source/ (deuda historica: gate informativo hasta que se pague)."
+        exit 0
     # 5. Run Offline Golden Master Verification
     # (Requires Standalone to be built)
     - name: Generate Golden Master
@@ -195,3 +231,63 @@ jobs:
     #   with:
     #     name: golden-master-${{ matrix.os }}
     #     path: golden_master.wav
+
+  # ----------------------------------------------------------------------------
+  # WEBUI (vitest) — BLOQUEANTE. Este repo tenia los tests de la WebUI (389, en
+  # 48 ficheros, con vitest.config.js apuntando a WebUI/tests/**) sin ninguna
+  # puerta que los ejecutase: pasaban solo quien los corría a mano. MEDIDO en
+  # local: 48/48 ficheros, 389/389 tests, exit 0, ~10 s. Por eso bloquea desde
+  # el primer dia y no hace falta ninguna deuda aqui.
+  #
+  # NO `npm install`, y la razon es medible: el package.json declara dos
+  # dependencias `workspace:*` (@abdsynths/midi-keyb, @abdsynths/shared) sin
+  # ningun workspace raiz que las resuelva, y npm las rechaza en seco —
+  # `npm error Unsupported URL Type "workspace:": workspace:*` — tanto con
+  # `npm ci` como con `npm install`, en un directorio limpio. Un job que
+  # instalase asi naceria rojo por un motivo que no es un rojo del codigo.
+  #
+  # Lo que los tests necesitan de verdad: vitest (el config hace
+  # `import { defineConfig } from 'vitest/config'`, asi que el paquete tiene
+  # que ser resoluble desde la raiz) y @abdsynths/shared, que en la maquina
+  # de desarrollo es un symlink al hermano ABDSharedAssets y aqui se recrea
+  # igual, con el hermano fijado a un SHA y no a una rama. El vitest se
+  # instala en un prefijo scratch (con vite dentro de su propio arbol) y se
+  # enlaza en node_modules — la mecanica misma esta MEDIDA en un arbol limpio
+  # sin node_modules preexistente: 389/389 con vitest 4.1.11.
+  # ----------------------------------------------------------------------------
+  webui-tests:
+    name: WebUI unit tests (vitest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ABDCZ101
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        path: ABDCZ101
+
+    # computeFit/mountFitStage se importan de '@abdsynths/shared/components',
+    # que vive en el hermano ABDSharedAssets. SHA fijo (main remoto), como
+    # en el resto de la suite: con una rama, un PR pasaria verde contra el
+    # codigo de hoy y rojo contra el de manana.
+    - uses: actions/checkout@v7
+      with:
+        repository: ajabadia/ABDSharedAssets
+        ref: 2ae9795797b9b1f2026638aff1df3889be6a24df
+        path: ABDSharedAssets
+        fetch-depth: 1
+
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 20
+
+    - name: Bootstrap vitest (scratch prefix + symlink @abdsynths/shared)
+      run: |
+        npm install --prefix .ci --no-audit --no-fund vitest@4.1.11
+        mkdir -p node_modules/@abdsynths
+        ln -s ../.ci/node_modules/vitest node_modules/vitest
+        ln -s "$GITHUB_WORKSPACE/ABDSharedAssets" node_modules/@abdsynths/shared
+
+    - name: Run vitest
+      run: .ci/node_modules/.bin/vitest run
