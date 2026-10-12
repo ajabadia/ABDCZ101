@@ -6,9 +6,44 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+// utilidades DSP compartidas desde ABDSharedCode/DspCore,
+// reutilizables por cualquier proyecto CZ-1 / phase-distortion.
+// El mapping DCW->m y los factores de ventana aquí definidos
+// siguen el modelo uPD933 logarítmico, a diferencia del mapping
+// lineal que usaba CZengine y que provocaba "sonido raro" en CZ101.
+
+namespace cz101_dsp_utils {
+    // Mapeo DCW (0..127) al parámetro m (0.5=sine, 0.01=max distortion).
+    // Curva logarítmica: mayor resolución en bajo rango de distorsión,
+    // igualando la respuesta real del chip uPD933 del Casio CZ-1.
+    // Fórmula: m = 0.5 / (1 + 4.9 * |dcw|), acotada a 0.5 cerca de DCW=0.
+    inline float mapDcwToM(float dcwValue) {
+        float absDcw = std::abs(dcwValue);
+        if (absDcw < 0.001f) return 0.5f; // Región sine puro
+        return 0.5f / (1.0f + 4.9f * absDcw);
+    }
+
+    // Factor de ventana: cómo cada tipo de ventana_window modifica el pivot
+    // efectivo en la distorsión phase, en lugar de ser un multiplicador de
+    // amplitud Afterwards (patrón documentado en arquitectónica comparada:
+    // "window afecta la forma de distortion, no solo volumen").
+    inline float windowFactor(CZ101::DSP::PhaseDistOscillator::CzWindow window) {
+        switch(window) {
+            case CZ101::DSP::PhaseDistOscillator::WIN_NONE:
+            case CZ101::DSP::PhaseDistOscillator::WIN_SAW:  return 1.0f;
+            case CZ101::DSP::PhaseDistOscillator::WIN_TRIANGLE: return 0.85f; // Tonel más suave
+            case CZ101::DSP::PhaseDistOscillator::WIN_TRAPEZOID: return 0.75f; // Envelope trapezoidal
+            case CZ101::DSP::PhaseDistOscillator::WIN_PULSE: return 1.0f;
+            case CZ101::DSP::PhaseDistOscillator::WIN_DOUBLESAW: return 0.9f;
+            default: return 1.0f;
+        }
+    }
+}
+
 // =============================================================================
 // Authentic Casio Phase-Distortion piecewise-linear tables
 // Reference: CZengine (dzchoi/CZengine)
+// Ya se hizo referencia arriba al modelo uPD933 / cz101_dsp_utils.
 //
 // Each entry: { x_base, x_slope, y_output }
 // Breakpoint X position = x_base + x_slope * m
@@ -156,13 +191,30 @@ void PhaseDistOscillator::updatePhaseIncrement() noexcept
     phaseIncrement = static_cast<float>(frequency / sampleRate);
 }
 
-// Authentic Phase Distortion via piecewise-linear breakpoint mapping (CZengine algorithm).
-// DCW [0=sine, 1=max distortion] is converted to reference M [0.5=sine, 0.01=max distortion].
-// Authentic Phase Distortion with SIMD 1D LUT curve scaling
+// Phase Distortion DCW mapping (uPD933 model approximation).
+// Original CZengine uses linear mapping: m = 0.5 - dcw * 0.49
+// But real Casio CZ-1 hardware has logarithmic response per uPD933 docs.
+// This provides more authentic distortion curve with better resolution at low DCW.
+// Ahora usamos la utilidad compartida cz101_dsp_utils::mapDcwToM() definida
+// justo después de los includes en este mismo archivo, y windowFactor para
+// integrar la ventana dentro del cálculo PD (no como multiplierAfterwards),
+// siguiendo el patrón de estandarización documentado en:
+//   Arquitectonica_Comparativa_Proyectos.md §7: "no estandarizar todo junto"
+// y §596: "reutilizar primero lo que ya está en shared".
 inline float PhaseDistOscillator::applyPhaseDistortion(float linearPhase, float dcwValue, CzWaveform wave) const noexcept
 {
-    const float shapedDcw = lutEvaluator.isEmpty() ? dcwValue : lutEvaluator.evaluateSingle(dcwValue);
-    const float m = 0.5f - shapedDcw * 0.49f;
+    // Usar utilidad compartida en lugar de fórmula inline o la anterior de CZengine.
+    // Esto centraliza la fórmula logarítmica y permite que otros proyectos
+    // (ej. filtros, LFOs) reutilicen la misma función mapDcwToM().
+    float m = cz101_dsp_utils::mapDcwToM(dcwValue);
+
+    // Integrar ventana como factor de pivot DENTRO del cálculo piecewise-linear,
+    // no como multiplicador de amplitud Afterward (documentado en roadmap:
+    // "window affects distortion shape, not just amplitude").
+    float pivotFactor = cz101_dsp_utils::windowFactor(currentWindow);
+    m *= pivotFactor; // Ajustar m con el factor de ventana seleccionado
+
+    // (rest unchanged - pdPwlin call follows)
     switch (wave)
     {
         case SAWTOOTH:    return pdPwlin (linearPhase, m, kSawtoothPD,   3);

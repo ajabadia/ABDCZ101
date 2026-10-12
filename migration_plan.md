@@ -2,6 +2,8 @@
 
 Este documento contiene la guía de precisión y plantillas exactas para realizar la migración del resto de controles del sintetizador **ABD CZ-101** desde la interfaz nativa de C++ hacia el frontend WebUI.
 
+> 📘 **Evolución Arquitectónica:** Este documento describe la migración manual de controles HTML a nivel DOM. Para la arquitectura global del pipeline de parámetros, la integración de `ABDSharedAssets/contracts/casio_cz101_parameter_spec.json`, la verificación `--check` y los componentes transversales de la suite, consulta el documento canónico: [ESTANDARIZACION_SUITE_BLUEPRINT.md](file:///d:/desarrollos/ABDSynths/ABDCZ101/ESTANDARIZACION_SUITE_BLUEPRINT.md).
+
 > **🔄 ACTUALIZACIÓN (auditoría):** Los metadatos de esta tabla fueron verificados contra el código real del proyecto.
 > - **Fuente de verdad de rangos/defaults/tipos:** `Source/State/Parameters.cpp` (el APVTS real) y `juce_component_map.md`.
 > - **Registro generado (`registry.gen.js` / `ParameterRegistry.gen.cpp` / `schemas/parameter-registry.data.json`):** estaba **desactualizado** y contradecía al APVTS en ~15 parámetros (rangos, defaults, tipos y unidades). Ha sido **corregido y regenerado** con `npm run build:registry`. No volváis a "reparar" esos archivos a mano.

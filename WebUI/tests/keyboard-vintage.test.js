@@ -34,8 +34,8 @@ describe('Vintage keyboard (aged ivory + deterministic wear)', () => {
   });
 
   it('cablea la nota, el panico del chasis y el sostenido del componente', () => {
-    // ALL OFF del chasis (navbar.js) en vez de un segundo boton en el keybed.
-    expect(appJs).toContain("panicBtnId: 'btn-panic',");
+    // ALL OFF vive en el teclado y el chasis tambien lo dispara.
+    expect(appJs).toContain("keyboardInstance.panic()");
     // El CC va al bridge JUCE o, en standalone, al motor WASM.
     expect(appJs).toContain('onSustainChange: (on) => sendMidiCc(64, on ? 127 : 0),');
     expect(appJs).toContain('onPanic: () => sendMidiCc(123, 0),');

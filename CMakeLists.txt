@@ -118,17 +118,13 @@ add_custom_command(TARGET CZ101Emulator PRE_BUILD
 
 juce_generate_juce_header(CZ101Emulator)
 
-# --- WebUI Binary Assets ---
+# --- WebUI Binary Assets (native synth UI, bundled dist) ---
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/WebUI/dist/index.html")
+    message(FATAL_ERROR
+        "WebUI/dist/index.html not found. Run 'node scripts/build_webui.js' (npm run bundle) before configuring CMake.")
+endif()
 file(GLOB_RECURSE WEBUI_ASSETS 
-    "WebUI/src/*" 
-    "WebUI/icons/*" 
-    "WebUI/*.html" 
-    "WebUI/*.js" 
-    "WebUI/*.webmanifest" 
-    "WebUI/*.css" 
-    "WebUI/*.png" 
-    "WebUI/*.svg" 
-    "WebUI/*.json"
+    "WebUI/dist/*"
 )
 juce_add_binary_data(WebUIAssets 
     HEADER_NAME "WebUIAssets.h" 
@@ -432,4 +428,15 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
     endif()
 
     message(STATUS "Defined Test Target: CZ101SnapshotDSPTest")
+
+    # --- Cz101 Wire-Domain Parameter Roundtrip Tests ---
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Tests/Cz101ParamsTests.cpp")
+        add_executable(Cz101ParamsTests Tests/Cz101ParamsTests.cpp)
+        target_include_directories(Cz101ParamsTests PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode
+            ${CMAKE_CURRENT_SOURCE_DIR}/Source
+        )
+        set_target_properties(Cz101ParamsTests PROPERTIES CXX_STANDARD 20)
+        message(STATUS "Defined Test Target: Cz101ParamsTests")
+    endif()
 endif()

@@ -288,17 +288,16 @@ function sendMidiCc(controller, value) {
   }
 }
 
-createKeyboard({
+const keyboardInstance = createKeyboard({
   containerId: 'piano-keyboard',
-  // El ALL OFF del chasis (navbar.js) es el boton de panico del componente: asi
-  // no aparece un segundo ALL OFF dentro del keybed.
-  panicBtnId: 'btn-panic',
+  wheelPitchId: 'pitch-wheel-container',
+  wheelModId: 'mod-wheel-container',
+  // El ALL OFF del teclado vive directamente en el keybed junto a SUST; el
+  // boton del chasis en la cabecera tambien dispara el panico de la instancia.
   octUpId: 'octave-up-btn',
   octDownId: 'octave-down-btn',
   ledUpId: 'octave-up-led',
   ledDownId: 'octave-down-led',
-  // Las ruedas PITCH/MOD del CZ-101 son las del chasis (sprites propios,
-  // cableadas en midiSystem.js): el componente no pinta ruedas aqui.
   onNoteOn: (note, velocity) => {
     const backend = getJuceMidiBackend();
     const midiVelocity = Math.max(1, Math.min(127, Math.round(velocity * 127)));
@@ -323,6 +322,26 @@ createKeyboard({
     }
     midiActivity();
   },
+  onPitchBend: (val) => {
+    const shifted = Math.round(val * 8191) + 8192;
+    const lsb = shifted & 0x7F;
+    const msb = (shifted >> 7) & 0x7F;
+    const backend = getJuceMidiBackend();
+    if (backend) {
+      if (typeof backend.sendMidiMessage === 'function') backend.sendMidiMessage([0xE0, lsb, msb]);
+      if (typeof backend.emitEvent === 'function') backend.emitEvent('sendMidiMessage', [0xE0, lsb, msb]);
+      midiActivity();
+      return;
+    }
+    if (audioEngine && typeof audioEngine.sendMidiMessage === 'function') {
+      audioEngine.sendMidiMessage(new Uint8Array([0xE0, lsb, msb]));
+      midiActivity();
+    }
+  },
+  onModWheel: (val) => {
+    const intVal = Math.max(0, Math.min(127, Math.round(val * 127)));
+    sendMidiCc(1, intVal);
+  },
   onPanic: () => sendMidiCc(123, 0),      // All Notes Off
   // El sostenido lo ejecuta el motor (CC64): el boton SUST del componente, que
   // el host no tenia, queda cableado en vez de ser un adorno.
@@ -335,6 +354,11 @@ createKeyboard({
     velocitySource: 'fixed',
     fixedVelocity: 102 / 127, // la velocity fija de siempre (MIDI 102)
   }
+});
+window.__kbd = keyboardInstance;
+// El boton ALL OFF del chasis (cabecera) tambien dispara el panico del teclado
+document.getElementById('btn-panic')?.addEventListener('click', () => {
+  keyboardInstance.panic();
 });
 // Visual feedback and parameter linkage
 function setLCDParam(id, val) {

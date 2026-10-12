@@ -10,6 +10,11 @@
   justify-content: center;
 }
 
+/* Ruedas PITCH y MOD: look vintage limpio, sin readout digital de valores */
+.wheels-block .kbd-wheel-value {
+  display: none !important;
+}
+
 .keyboard {
   display: flex;
   position: relative;
