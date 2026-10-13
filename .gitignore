@@ -64,3 +64,5 @@ node_modules/
 test-results/
 playwright-report/
 build-verify/
+!.github/cppcheck-baseline.txt
+!.github/clang-format-baseline.txt

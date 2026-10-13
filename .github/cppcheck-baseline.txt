@@ -1,0 +1,19 @@
+# Baseline cppcheck de ABDCZ101 — generado midiendo HEAD (78c229c) con el
+# comando exacto de la CI (cppcheck 2.21) ya SIN codigo de terceros ni
+# generado: --suppress de Source/Utils/httplib.h (cpp-httplib: 9 de las 19
+# firmas historicas), Source/Utils/CircularBuffer.h (ICST Zurich, MIT),
+# Source/Core/BuildVersion.h (estampado) y
+# Source/State/ParameterRegistry.gen.* (generado). Firma:
+# severidad|archivo|mensaje (sin linea, paths con /). El gate solo bloquea
+# hallazgos que NO esten aqui.
+performance|Source/MIDI/SysExManager.cpp|Ineffective call of function 'substr' because a prefix of the string is assigned to itself. Use resize() or pop_back() instead.
+performance|Source/Standalone/HeadlessRpcServer.cpp|Variable 'm_server' is assigned in constructor body. Consider performing initialization in initialization list.
+performance|Source/State/Parameters.cpp|Variable 'apvts' is assigned in constructor body. Consider performing initialization in initialization list.
+performance|Source/Tests/SysExRoundTripTest.cpp|Ineffective call of function 'substr' because a prefix of the string is assigned to itself. Use resize() or pop_back() instead.
+warning|Source/Tests/SnapshotDSPTest.cpp|Member variable 'EnvDef::name' has no initializer.
+warning|Source/Wasm/WasmState.h|Member variable 'WasmPreset::dcaEnv' has no initializer.
+warning|Source/Wasm/WasmState.h|Member variable 'WasmPreset::dcaEnv2' has no initializer.
+warning|Source/Wasm/WasmState.h|Member variable 'WasmPreset::dcwEnv' has no initializer.
+warning|Source/Wasm/WasmState.h|Member variable 'WasmPreset::dcwEnv2' has no initializer.
+warning|Source/Wasm/WasmState.h|Member variable 'WasmPreset::pitchEnv' has no initializer.
+warning|Source/Wasm/WasmState.h|Member variable 'WasmPreset::pitchEnv2' has no initializer.
