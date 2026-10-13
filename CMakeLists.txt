@@ -342,6 +342,7 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
     juce_generate_juce_header(CZ101GoldenMaster)
 
     target_include_directories(CZ101GoldenMaster PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../ABDShared/Code
         ${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode 
         Source
         Source/Core
@@ -417,6 +418,7 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
     juce_generate_juce_header(CZ101SnapshotDSPTest)
 
     target_include_directories(CZ101SnapshotDSPTest PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../ABDShared/Code
         ${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode
         Source
         Source/Core
@@ -469,11 +471,17 @@ if (NOT JUCE_BUILD_HELPER_TOOLS)
 
     # --- Cz101 Wire-Domain Parameter Roundtrip Tests ---
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Tests/Cz101ParamsTests.cpp")
+        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../ABDShared/Code/DspCore/DspCz101Filter.cpp")
+            set(DSPCZ101FILTER_SRC "${CMAKE_CURRENT_SOURCE_DIR}/../ABDShared/Code/DspCore/DspCz101Filter.cpp")
+        else()
+            set(DSPCZ101FILTER_SRC "${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode/DspCore/DspCz101Filter.cpp")
+        endif()
         add_executable(Cz101ParamsTests
             Tests/Cz101ParamsTests.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode/DspCore/DspCz101Filter.cpp
+            ${DSPCZ101FILTER_SRC}
         )
         target_include_directories(Cz101ParamsTests PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/../ABDShared/Code
             ${CMAKE_CURRENT_SOURCE_DIR}/../ABDSharedCode
             ${CMAKE_CURRENT_SOURCE_DIR}/Source
         )

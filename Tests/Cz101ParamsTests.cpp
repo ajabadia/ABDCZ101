@@ -7,8 +7,16 @@
 #include <iostream>
 #include <cassert>
 #include <cmath>
+#if __has_include(<DspCore/DspCz1.h>)
+#include <DspCore/DspCz1.h>
+#include <DspCore/DspCz101Filter.h>
+#elif __has_include("../../ABDShared/Code/DspCore/DspCz1.h")
+#include "../../ABDShared/Code/DspCore/DspCz1.h"
+#include "../../ABDShared/Code/DspCore/DspCz101Filter.h"
+#else
 #include "../../ABDSharedCode/DspCore/DspCz1.h"
 #include "../../ABDSharedCode/DspCore/DspCz101Filter.h"
+#endif
 
 int main() {
     std::cout << "===================================================\n";

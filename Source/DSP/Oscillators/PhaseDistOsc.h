@@ -3,6 +3,8 @@
 #include "WaveTable.h"
 #if __has_include(<LutDSP/LutEvaluatorSimd.h>)
 #include <LutDSP/LutEvaluatorSimd.h>
+#elif __has_include("../../../../ABDShared/Code/LutDSP/LutEvaluatorSimd.h")
+#include "../../../../ABDShared/Code/LutDSP/LutEvaluatorSimd.h"
 #else
 #include "../../../../ABDSharedCode/LutDSP/LutEvaluatorSimd.h"
 #endif

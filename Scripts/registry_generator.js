@@ -30,7 +30,11 @@ const SCHEMAS_DIR = path.join(ROOT_DIR, 'schemas');
 const CPP_STATE_DIR = path.join(ROOT_DIR, 'Source', 'State');
 const WEBUI_CONTRACTS_DIR = path.join(ROOT_DIR, 'WebUI', 'src', 'contracts');
 
-const CONTRACT_PATH = path.resolve(ROOT_DIR, '..', 'ABDSharedAssets', 'contracts', 'casio_cz101_parameter_spec.json');
+const CONTRACT_CANDIDATES = [
+  path.resolve(ROOT_DIR, '..', 'ABDShared', 'Contracts', 'casio_cz101_parameter_spec.json'),
+  path.resolve(ROOT_DIR, '..', 'ABDSharedAssets', 'contracts', 'casio_cz101_parameter_spec.json'),
+];
+const CONTRACT_PATH = CONTRACT_CANDIDATES.find(fs.existsSync) ?? CONTRACT_CANDIDATES[1];
 const FALLBACK_DATA_PATH = path.join(SCHEMAS_DIR, 'parameter-registry.data.json');
 
 const args = process.argv.slice(2);
